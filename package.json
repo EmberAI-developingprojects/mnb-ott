@@ -1,0 +1,26 @@
+{
+  "name": "mnb-ott",
+  "version": "1.0.0",
+  "private": true,
+  "description": "МҮОНРТ OTT платформ — monorepo root",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:api": "turbo run dev --filter=@mnb-ott/api",
+    "dev:web": "turbo run dev --filter=@mnb-ott/web",
+    "dev:admin": "turbo run dev --filter=@mnb-ott/admin",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.6",
+    "typescript": "^5.5.2",
+    "@types/node": "^20.14.9"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.5.0"
+}

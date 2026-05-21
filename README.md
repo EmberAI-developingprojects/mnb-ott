@@ -4,10 +4,24 @@
 
 ## Шаардлага
 
-- **Node.js** 18+
-- **PostgreSQL** 16
-- **Redis** 7
-- **Docker** (Redis-д)
+- **Node.js** 20+
+- **pnpm** 9+ (`npm install -g pnpm`)
+- **Docker** + Docker Compose (Postgres, Redis-д)
+
+---
+
+## Төслийн бүтэц (monorepo)
+
+```
+mnb-ott/
+├── apps/
+│   ├── api/     ← Express backend (port 3001)
+│   ├── web/     ← Next.js хэрэглэгчийн вэб (port 3000)
+│   └── admin/   ← Next.js удирдлагын самбар (port 3002)
+├── docs/        ← Архитектур, API reference
+├── images/      ← Сувгийн logo
+└── rest/        ← .rest API тестүүд
+```
 
 ---
 
@@ -18,40 +32,30 @@ git clone <repo-url>
 cd mnb-ott
 ```
 
----
+## 2. Dependency суулгах (нэг удаа)
 
-## 2. PostgreSQL тохируулах
-
-Docker ашиглах (хамгийн хялбар):
+`pnpm install`-ийг **репогийн үндэс**-эс ажиллуулна. Энэ нь гурван apps-ийн dependency-г бүгдийг нь суулгана.
 
 ```bash
-docker run -d --name mnb-pg \
-  -e POSTGRES_USER=mnb \
-  -e POSTGRES_PASSWORD=mnb123 \
-  -e POSTGRES_DB=mnb \
-  -p 5432:5432 \
-  postgres:16
+pnpm install
 ```
 
----
-
-## 3. Redis ажиллуулах
+## 3. Postgres + Redis ажиллуулах
 
 ```bash
 docker-compose up -d
 ```
 
----
+Шалгах:
+```bash
+docker ps
+# mnb-pg, mnb-redis хоёул "Up" гэж харагдана
+```
 
-## 4. Backend тохируулах
+## 4. Backend (apps/api) тохируулах
 
 ```bash
-cd backend
-
-# Packages суулгах
-npm install
-
-# .env файл үүсгэх
+cd apps/api
 cp .env.example .env
 ```
 
@@ -66,33 +70,25 @@ cp .env.example .env
 | `GOOGLE_CLIENT_ID` | Google Cloud Console-с авна |
 | `GOOGLE_CLIENT_SECRET` | Google Cloud Console-с авна |
 
-> SMS, QPay, AWS, Firebase утгуудыг туршилтанд хоосон орхиж болно.  
+> SMS, QPay, AWS, Firebase утгуудыг туршилтанд хоосон орхиж болно.
 > `SMS_MOCK=true` байхад OTP код terminal-д харагдана.
 
 ```bash
 # DB schema үүсгэх
-npx prisma migrate deploy
+pnpm db:migrate
 
-# Backend ажиллуулах
-npm run dev
-# → http://localhost:3001
+# (заавал биш) seed
+pnpm db:seed
 ```
 
----
-
-## 5. Frontend тохируулах
+## 5. Frontend (apps/web) тохируулах
 
 ```bash
-cd ../frontend
-
-# Packages суулгах
-npm install
-
-# .env файл үүсгэх
-cp .env.example .env
+cd ../web
+cp .env.example .env.local
 ```
 
-`.env` дотор заавал бөглөх зүйлс:
+`.env.local` дотор заавал бөглөх зүйлс:
 
 | Key | Утга |
 |-----|------|
@@ -102,42 +98,94 @@ cp .env.example .env
 | `GOOGLE_CLIENT_ID` | Backend-тэй ижил утга |
 | `GOOGLE_CLIENT_SECRET` | Backend-тэй ижил утга |
 
+## 6. Admin (apps/admin) тохируулах
+
 ```bash
-# Frontend ажиллуулах
-npm run dev
-# → http://localhost:3000
+cd ../admin
+cp .env.example .env.local
+```
+
+| Key | Утга |
+|-----|------|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:3001` |
+
+---
+
+## Ажиллуулах
+
+Репогийн үндэс-эс:
+
+```bash
+# Бүгдийг зэрэг ажиллуулах (api + web + admin parallel)
+pnpm dev
+
+# Эсвэл тус тусад нь
+pnpm dev:api      # → http://localhost:3001
+pnpm dev:web      # → http://localhost:3000
+pnpm dev:admin    # → http://localhost:3002
+```
+
+## Бусад скрипт
+
+```bash
+pnpm build        # бүх apps build
+pnpm type-check   # бүх apps TS шалгалт
+pnpm lint         # бүх apps lint
+pnpm clean        # build артифакт устгах
 ```
 
 ---
 
-## Бүх зүйл ажиллаж байгаа эсэх шалгах
+## Шалгах
 
 | Сервис | URL |
 |--------|-----|
 | Frontend | http://localhost:3000 |
+| Admin | http://localhost:3002 |
 | Backend API | http://localhost:3001/health |
-| Redis | `docker ps` → mnb-redis Running |
-| PostgreSQL | `docker ps` → mnb-pg Running |
+| Postgres | `docker ps` → mnb-pg Up |
+| Redis | `docker ps` → mnb-redis Up |
 
 ---
 
 ## Хурдан эхлэх (copy-paste)
 
 ```bash
-# 1. DB + Redis
-docker run -d --name mnb-pg \
-  -e POSTGRES_USER=mnb -e POSTGRES_PASSWORD=mnb123 -e POSTGRES_DB=mnb \
-  -p 5432:5432 postgres:16
+# 1. Dependency
+pnpm install
 
+# 2. Postgres + Redis
 docker-compose up -d
 
-# 2. Backend
-cd backend && npm install && cp .env.example .env
-# .env дотор JWT_SECRET, YOUTUBE_API_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET бөглөнө
-npx prisma migrate deploy && npm run dev &
+# 3. Env файлууд
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
+cp apps/admin/.env.example apps/admin/.env.local
+# → файл бүрд secret-уудаа бөглөнө
 
-# 3. Frontend
-cd ../frontend && npm install && cp .env.example .env
-# .env дотор NEXTAUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET бөглөнө
-npm run dev
+# 4. DB schema
+cd apps/api && pnpm db:migrate && cd ../..
+
+# 5. Бүгдийг зэрэг ажиллуулах
+pnpm dev
 ```
+
+---
+
+## Цаашид
+
+- **Хөгжүүлэлтийн өдөр тутмын ажиллах гарын авлага:** [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
+- **Архитектур, API reference:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- **Claude-д өгөх төслийн заавар:** [`CLAUDE.md`](CLAUDE.md)
+
+---
+
+## Deployment
+
+Дэлгэрэнгүй deployment гарын авлага: `docs/DEPLOYMENT.md` (хараахан бичигдээгүй).
+
+Товчоор:
+- App бүрд тус тусдаа `Dockerfile` үүсгэнэ (apps/api, apps/web, apps/admin).
+- Production-д `docker-compose.prod.yml` дээр postgres + redis + 3 apps-ийг хамтад нь ажиллуулна.
+- Front-д `nginx` буюу traefik-ийг TLS + routing-д ашиглана.
+- Workspace symlink-ийг тооцох тул Next.js apps-д `output: "standalone"` + `outputFileTracingRoot: "../.."` тохиргоо хэрэгтэй.

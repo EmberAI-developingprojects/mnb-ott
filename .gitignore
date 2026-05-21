@@ -13,6 +13,13 @@ node_modules/
 dist/
 .next/
 out/
+.turbo/
+**/.turbo/
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# pnpm
+.pnpm-store/
 
 # Firebase admin SDK (нууц мэдээлэл)
 *firebase-adminsdk*.json
