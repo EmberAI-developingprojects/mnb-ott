@@ -1,0 +1,44 @@
+### МҮОНРТ OTT — VOD API Tests
+@baseUrl = http://localhost:3001
+@accessToken = PASTE_ACCESS_TOKEN_HERE
+
+# ── 1. YouTube видео жагсаалт ──────────────────────────
+### Анхны хуудас (20 видео)
+GET {{baseUrl}}/api/vod/youtube?limit=20
+Content-Type: application/json
+
+###
+
+### Хуудас 2 — nextPageToken дээрх хариунаас хуул
+GET {{baseUrl}}/api/vod/youtube?limit=20&pageToken=PASTE_NEXT_TOKEN
+Content-Type: application/json
+
+###
+
+# ── 2. Видео дэлгэрэнгүй ──────────────────────────────
+### YouTube ID-оор (11 тэмдэгт)
+GET {{baseUrl}}/api/vod/wTWtsHhKRGQ
+Content-Type: application/json
+
+###
+
+GET {{baseUrl}}/api/vod/EvnEgjMciQs
+Content-Type: application/json
+
+###
+
+# ── 3. Stream URL авах (auth шаарддаг) ────────────────
+### YouTube видео → embedUrl буцаана
+GET {{baseUrl}}/api/vod/wTWtsHhKRGQ/stream
+Authorization: Bearer {{accessToken}}
+
+###
+
+# ── 4. Үзэлтийн явц хадгалах ─────────────────────────
+POST {{baseUrl}}/api/vod/wTWtsHhKRGQ/progress
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "positionSec": 120
+}

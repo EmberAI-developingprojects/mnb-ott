@@ -1,0 +1,1221 @@
+### МҮОНРТ YouTube API Tests
+### VS Code REST Client extension шаарддаг
+### Эхлээд @apiKey-г өөрийн key-гээр солино уу
+
+@apiKey = AIzaSyCWqwkxak99Qh8FaDgNruc5_EfcAjGMSRU
+@channelId = UCwtT_d7LZ8BJpiDXHV5RaAw
+@uploadsPlaylistId = UUwtT_d7LZ8BJpiDXHV5RaAw
+@baseUrl = https://www.googleapis.com/youtube/v3
+
+# ─────────────────────────────────────────────
+# 1. Channel мэдээлэл
+# ─────────────────────────────────────────────
+### Channel info — нэр, subscriber, видео тоо, uploads playlist ID
+GET {{baseUrl}}/channels
+  ?part=snippet,statistics,contentDetails
+  &id={{channelId}}
+  &key={{apiKey}}
+
+###
+
+# HTTP/1.1 200 OK
+# Content-Type: application/json; charset=UTF-8
+# Vary: Origin, X-Origin, Referer
+# Content-Encoding: gzip
+# Date: Tue, 19 May 2026 10:24:23 GMT
+# Server: scaffolding on HTTPServer2
+# X-XSS-Protection: 0
+# X-Frame-Options: SAMEORIGIN
+# X-Content-Type-Options: nosniff
+# Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+# Connection: close
+# Transfer-Encoding: chunked
+
+# {
+#   "kind": "youtube#channelListResponse",
+#   "etag": "HoNlqV0ZvfyrJe6P5hZrmTBL8IA",
+#   "pageInfo": {
+#     "totalResults": 1,
+#     "resultsPerPage": 5
+#   },
+#   "items": [
+#     {
+#       "kind": "youtube#channel",
+#       "etag": "Q5wO6J9l7ZroimDKNJu-2G6tXeM",
+#       "id": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#       "snippet": {
+#         "title": "Mongolian National Broadcaster",
+#         "description": "Mongolian National Public Radio and Television /MNB/ is the oldest broadcasting organization in Mongolia as well as the only public service broadcaster in the country. MNB’s mission is to be a leading broadcasting organization that is independent and impartial, and serves for public interests only. Additionally, MNB puts its best efforts in promoting Mongolia to the world through its external service broadcasting programs to our foreign audience. \n\nToday MNB is available in over 1.8 million households in Mongolia which is over 90 percent of the entire population. \n\nAccording to the Law on Public Radio and Television, adopted in 2005, MNB is a non-profit legal entity, which is to carry out a nationwide broadcasting service. Its highest governing body is The National Council of the MNB which consists of 15 members.  General management of the organization is run by Director-General who is appointed by the National Council.",
+#         "customUrl": "@mongoliannationalbroadcaster",
+#         "publishedAt": "2012-01-27T09:57:38Z",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://yt3.ggpht.com/ytc/AIdro_nFUbNrZcK_PPadPcLQKGSgM2BgOYjon8NM3z0JTiO2WA=s88-c-k-c0x00ffffff-no-rj",
+#             "width": 88,
+#             "height": 88
+#           },
+#           "medium": {
+#             "url": "https://yt3.ggpht.com/ytc/AIdro_nFUbNrZcK_PPadPcLQKGSgM2BgOYjon8NM3z0JTiO2WA=s240-c-k-c0x00ffffff-no-rj",
+#             "width": 240,
+#             "height": 240
+#           },
+#           "high": {
+#             "url": "https://yt3.ggpht.com/ytc/AIdro_nFUbNrZcK_PPadPcLQKGSgM2BgOYjon8NM3z0JTiO2WA=s800-c-k-c0x00ffffff-no-rj",
+#             "width": 800,
+#             "height": 800
+#           }
+#         },
+#         "localized": {
+#           "title": "Mongolian National Broadcaster",
+#           "description": "Mongolian National Public Radio and Television /MNB/ is the oldest broadcasting organization in Mongolia as well as the only public service broadcaster in the country. MNB’s mission is to be a leading broadcasting organization that is independent and impartial, and serves for public interests only. Additionally, MNB puts its best efforts in promoting Mongolia to the world through its external service broadcasting programs to our foreign audience. \n\nToday MNB is available in over 1.8 million households in Mongolia which is over 90 percent of the entire population. \n\nAccording to the Law on Public Radio and Television, adopted in 2005, MNB is a non-profit legal entity, which is to carry out a nationwide broadcasting service. Its highest governing body is The National Council of the MNB which consists of 15 members.  General management of the organization is run by Director-General who is appointed by the National Council."
+#         },
+#         "country": "MN"
+#       },
+#       "contentDetails": {
+#         "relatedPlaylists": {
+#           "likes": "",
+#           "uploads": "UUwtT_d7LZ8BJpiDXHV5RaAw"
+#         }
+#       },
+#       "statistics": {
+#         "viewCount": "68766483",
+#         "subscriberCount": "120000",
+#         "hiddenSubscriberCount": false,
+#         "videoCount": "17310"
+#       }
+#     }
+#   ]
+# }
+
+
+# ─────────────────────────────────────────────
+# 2. Сүүлийн видеонууд (playlist)
+# ─────────────────────────────────────────────
+### Сүүлийн 10 видео — title, videoId, thumbnail, publishedAt
+GET {{baseUrl}}/playlistItems
+  ?part=snippet,contentDetails
+  &playlistId={{uploadsPlaylistId}}
+  &maxResults=3
+  &key={{apiKey}}
+
+###
+
+# HTTP/1.1 200 OK
+# Content-Type: application/json; charset=UTF-8
+# Vary: Origin, X-Origin, Referer
+# Content-Encoding: gzip
+# Date: Tue, 19 May 2026 10:25:15 GMT
+# Server: scaffolding on HTTPServer2
+# X-XSS-Protection: 0
+# X-Frame-Options: SAMEORIGIN
+# X-Content-Type-Options: nosniff
+# Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+# Connection: close
+# Transfer-Encoding: chunked
+
+# {
+#   "kind": "youtube#playlistItemListResponse",
+#   "etag": "0B53oJZsV8ubS-keXN2UprrvXp8",
+#   "nextPageToken": "EAAaHlBUOkNBTWlFRU14TnpreVJVUXdSVFpDUkRBNVJEQQ",
+#   "items": [
+#     {
+#       "kind": "youtube#playlistItem",
+#       "etag": "XZLET8wPVo3S93o5ULOh7_71FTY",
+#       "id": "VVV3dFRfZDdMWjhCSnBpRFhIVjVSYUF3LndUV3RzSGhLUkdR",
+#       "snippet": {
+#         "publishedAt": "2026-05-18T13:35:03Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "Парламентийн долоо хоног /2026.05.18/ #MNB",
+#         "description": "Парламентийн долоо хоног /2026.05.18/ #MNB\n▶️Follow MNB Official Pages:\nYoutube: https://www.youtube.com/user/MNB1TV/\nHomepage: https://www.mnb.mn\nFacebook: https://www.facebook.com/MNBnationalTV/\nTwitter: https://twitter.com/MNBpublic/\nInstagram: https://www.instagram.com/mnb_public/",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           },
+#           "standard": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/sddefault.jpg",
+#             "width": 640,
+#             "height": 480
+#           },
+#           "maxres": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/maxresdefault.jpg",
+#             "width": 1280,
+#             "height": 720
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "playlistId": "UUwtT_d7LZ8BJpiDXHV5RaAw",
+#         "position": 0,
+#         "resourceId": {
+#           "kind": "youtube#video",
+#           "videoId": "wTWtsHhKRGQ"
+#         },
+#         "videoOwnerChannelTitle": "Mongolian National Broadcaster",
+#         "videoOwnerChannelId": "UCwtT_d7LZ8BJpiDXHV5RaAw"
+#       },
+#       "contentDetails": {
+#         "videoId": "wTWtsHhKRGQ",
+#         "videoPublishedAt": "2026-05-18T13:35:03Z"
+#       }
+#     },
+#     {
+#       "kind": "youtube#playlistItem",
+#       "etag": "XGg0EHX2K2fNQtUXCkJVPr7i3Cw",
+#       "id": "VVV3dFRfZDdMWjhCSnBpRFhIVjVSYUF3LkV2bkVnak1jaVFz",
+#       "snippet": {
+#         "publishedAt": "2026-05-18T13:10:36Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "“Цагийн хүрд” мэдээллийн хөтөлбөр /2026.05.18/",
+#         "description": "“Цагийн хүрд” мэдээллийн хөтөлбөр /2026.05.18/\n\n▶️Follow MNB Official Pages:\nYoutube: https://www.youtube.com/user/MNB1TV/\nHomepage: https://www.mnb.mn\nWeb: https://abu-ga2025.com/\nFacebook: https://www.facebook.com/MNBnationalTV/\nTwitter: https://twitter.com/MNBpublic/\nInstagram: https://www.instagram.com/mnb_public/",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/EvnEgjMciQs/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/EvnEgjMciQs/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/EvnEgjMciQs/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           },
+#           "standard": {
+#             "url": "https://i.ytimg.com/vi/EvnEgjMciQs/sddefault.jpg",
+#             "width": 640,
+#             "height": 480
+#           },
+#           "maxres": {
+#             "url": "https://i.ytimg.com/vi/EvnEgjMciQs/maxresdefault.jpg",
+#             "width": 1280,
+#             "height": 720
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "playlistId": "UUwtT_d7LZ8BJpiDXHV5RaAw",
+#         "position": 1,
+#         "resourceId": {
+#           "kind": "youtube#video",
+#           "videoId": "EvnEgjMciQs"
+#         },
+#         "videoOwnerChannelTitle": "Mongolian National Broadcaster",
+#         "videoOwnerChannelId": "UCwtT_d7LZ8BJpiDXHV5RaAw"
+#       },
+#       "contentDetails": {
+#         "videoId": "EvnEgjMciQs",
+#         "videoPublishedAt": "2026-05-18T13:10:36Z"
+#       }
+#     },
+#     {
+#       "kind": "youtube#playlistItem",
+#       "etag": "Z5W9ClZtc2DhaewqLcXU4pMaWmE",
+#       "id": "VVV3dFRfZDdMWjhCSnBpRFhIVjVSYUF3LmNsZ1Y0dmhzS0w0",
+#       "snippet": {
+#         "publishedAt": "2026-05-18T13:05:01Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "“Төл таван эрдэнэ” нэвтрүүлэг /2026.05.18/ Архангай, Өвөрхангай аймгуудаас бэлтгэв",
+#         "description": "“Төл таван эрдэнэ” нэвтрүүлэг /2026.05.18/ Архангай, Өвөрхангай аймгуудаас бэлтгэв\n\n▶️Follow MNB Official Pages:\nYoutube: https://www.youtube.com/user/MNB1TV/\nHomepage: https://www.mnb.mn\nFacebook: https://www.facebook.com/MNBnationalTV/\nTwitter: https://twitter.com/MNBpublic/\nInstagram: https://www.instagram.com/mnb_public/",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/clgV4vhsKL4/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/clgV4vhsKL4/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/clgV4vhsKL4/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           },
+#           "standard": {
+#             "url": "https://i.ytimg.com/vi/clgV4vhsKL4/sddefault.jpg",
+#             "width": 640,
+#             "height": 480
+#           },
+#           "maxres": {
+#             "url": "https://i.ytimg.com/vi/clgV4vhsKL4/maxresdefault.jpg",
+#             "width": 1280,
+#             "height": 720
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "playlistId": "UUwtT_d7LZ8BJpiDXHV5RaAw",
+#         "position": 2,
+#         "resourceId": {
+#           "kind": "youtube#video",
+#           "videoId": "clgV4vhsKL4"
+#         },
+#         "videoOwnerChannelTitle": "Mongolian National Broadcaster",
+#         "videoOwnerChannelId": "UCwtT_d7LZ8BJpiDXHV5RaAw"
+#       },
+#       "contentDetails": {
+#         "videoId": "clgV4vhsKL4",
+#         "videoPublishedAt": "2026-05-18T13:05:01Z"
+#       }
+#     }
+#   ],
+#   "pageInfo": {
+#     "totalResults": 17296,
+#     "resultsPerPage": 3
+#   }
+# }
+
+
+### Сүүлийн 50 видео (VOD grid-д ашиглах)
+GET {{baseUrl}}/playlistItems
+  ?part=snippet,contentDetails
+  &playlistId={{uploadsPlaylistId}}
+  &maxResults=50
+  &key={{apiKey}}
+
+###
+
+### Хуудас 2 — nextPageToken-г дээрх хариунаас хуулна
+# @pageToken = EAAaHlBUOkNBb2lFREV5TVRFMU9EUkdSRFZDUlVORVJETQ
+GET {{baseUrl}}/playlistItems
+  ?part=snippet,contentDetails
+  &playlistId={{uploadsPlaylistId}}
+  &maxResults=10
+  &pageToken=EAAaHlBUOkNBb2lFREV5TVRFMU9EUkdSRFZDUlVORVJETQ
+  &key={{apiKey}}
+
+###
+
+# ─────────────────────────────────────────────
+# 3. Видео дэлгэрэнгүй — DURATION энд байна
+# ─────────────────────────────────────────────
+### Олон видеоны duration + statistics нэгэн зэрэг (max 50 ID)
+GET {{baseUrl}}/videos
+  ?part=contentDetails,statistics,status,snippet
+  &id=wTWtsHhKRGQ,EvnEgjMciQs,clgV4vhsKL4
+  &key={{apiKey}}
+
+###
+# HTTP/1.1 200 OK
+# Content-Type: application/json; charset=UTF-8
+# Vary: Origin, X-Origin, Referer
+# Content-Encoding: gzip
+# Date: Tue, 19 May 2026 10:26:13 GMT
+# Server: scaffolding on HTTPServer2
+# X-XSS-Protection: 0
+# X-Frame-Options: SAMEORIGIN
+# X-Content-Type-Options: nosniff
+# Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+# Connection: close
+# Transfer-Encoding: chunked
+
+# {
+#   "kind": "youtube#videoListResponse",
+#   "etag": "Aa3W8IkHtMHyaLuPYUp_Fhn4z0U",
+#   "items": [
+#     {
+#       "kind": "youtube#video",
+#       "etag": "RNOCQzI7nhrcz83foaOfCNHxXzI",
+#       "id": "wTWtsHhKRGQ",
+#       "snippet": {
+#         "publishedAt": "2026-05-18T13:35:03Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "Парламентийн долоо хоног /2026.05.18/ #MNB",
+#         "description": "Парламентийн долоо хоног /2026.05.18/ #MNB\n▶️Follow MNB Official Pages:\nYoutube: https://www.youtube.com/user/MNB1TV/\nHomepage: https://www.mnb.mn\nFacebook: https://www.facebook.com/MNBnationalTV/\nTwitter: https://twitter.com/MNBpublic/\nInstagram: https://www.instagram.com/mnb_public/",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           },
+#           "standard": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/sddefault.jpg",
+#             "width": 640,
+#             "height": 480
+#           },
+#           "maxres": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/maxresdefault.jpg",
+#             "width": 1280,
+#             "height": 720
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "tags": [
+#           "монгол",
+#           "монгол хэлээр",
+#           "mongol heleer",
+#           "mongol",
+#           "MNB",
+#           "МҮОНТ",
+#           "Монголын Үндэсний Олон Нийтийн Радио Телевиз",
+#           "Монголын мэдээ",
+#           "мэдээ",
+#           "МҮОНРТ",
+#           "үндэсний телевиз",
+#           "Mongolian national broadcaster",
+#           "undesnii televiz",
+#           "mongoliin medee",
+#           "mnb news"
+#         ],
+#         "categoryId": "25",
+#         "liveBroadcastContent": "none",
+#         "defaultLanguage": "mn",
+#         "localized": {
+#           "title": "Парламентийн долоо хоног /2026.05.18/ #MNB",
+#           "description": "Парламентийн долоо хоног /2026.05.18/ #MNB\n▶️Follow MNB Official Pages:\nYoutube: https://www.youtube.com/user/MNB1TV/\nHomepage: https://www.mnb.mn\nFacebook: https://www.facebook.com/MNBnationalTV/\nTwitter: https://twitter.com/MNBpublic/\nInstagram: https://www.instagram.com/mnb_public/"
+#         },
+#         "defaultAudioLanguage": "en-US"
+#       },
+#       "contentDetails": {
+#         "duration": "PT10M5S",
+#         "dimension": "2d",
+#         "definition": "hd",
+#         "caption": "false",
+#         "licensedContent": false,
+#         "contentRating": {},
+#         "projection": "rectangular"
+#       },
+#       "status": {
+#         "uploadStatus": "processed",
+#         "privacyStatus": "public",
+#         "license": "youtube",
+#         "embeddable": true,
+#         "publicStatsViewable": true,
+#         "madeForKids": false
+#       },
+#       "statistics": {
+#         "viewCount": "142",
+#         "likeCount": "5",
+#         "favoriteCount": "0",
+#         "commentCount": "1"
+#       }
+#     },
+#     {
+#       "kind": "youtube#video",
+#       "etag": "SV0uJCf71gDzoMQ6zWhFudxZgEA",
+#       "id": "EvnEgjMciQs",
+#       "snippet": {
+#         "publishedAt": "2026-05-18T13:10:36Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "“Цагийн хүрд” мэдээллийн хөтөлбөр /2026.05.18/",
+#         "description": "“Цагийн хүрд” мэдээллийн хөтөлбөр /2026.05.18/\n\n▶️Follow MNB Official Pages:\nYoutube: https://www.youtube.com/user/MNB1TV/\nHomepage: https://www.mnb.mn\nWeb: https://abu-ga2025.com/\nFacebook: https://www.facebook.com/MNBnationalTV/\nTwitter: https://twitter.com/MNBpublic/\nInstagram: https://www.instagram.com/mnb_public/",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/EvnEgjMciQs/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/EvnEgjMciQs/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/EvnEgjMciQs/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           },
+#           "standard": {
+#             "url": "https://i.ytimg.com/vi/EvnEgjMciQs/sddefault.jpg",
+#             "width": 640,
+#             "height": 480
+#           },
+#           "maxres": {
+#             "url": "https://i.ytimg.com/vi/EvnEgjMciQs/maxresdefault.jpg",
+#             "width": 1280,
+#             "height": 720
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "categoryId": "25",
+#         "liveBroadcastContent": "none",
+#         "defaultLanguage": "mn",
+#         "localized": {
+#           "title": "“Цагийн хүрд” мэдээллийн хөтөлбөр /2026.05.18/",
+#           "description": "“Цагийн хүрд” мэдээллийн хөтөлбөр /2026.05.18/\n\n▶️Follow MNB Official Pages:\nYoutube: https://www.youtube.com/user/MNB1TV/\nHomepage: https://www.mnb.mn\nWeb: https://abu-ga2025.com/\nFacebook: https://www.facebook.com/MNBnationalTV/\nTwitter: https://twitter.com/MNBpublic/\nInstagram: https://www.instagram.com/mnb_public/"
+#         },
+#         "defaultAudioLanguage": "en-US"
+#       },
+#       "contentDetails": {
+#         "duration": "PT1H16S",
+#         "dimension": "2d",
+#         "definition": "hd",
+#         "caption": "false",
+#         "licensedContent": false,
+#         "contentRating": {},
+#         "projection": "rectangular"
+#       },
+#       "status": {
+#         "uploadStatus": "processed",
+#         "privacyStatus": "public",
+#         "license": "youtube",
+#         "embeddable": true,
+#         "publicStatsViewable": true,
+#         "madeForKids": false
+#       },
+#       "statistics": {
+#         "viewCount": "2806",
+#         "likeCount": "34",
+#         "favoriteCount": "0",
+#         "commentCount": "0"
+#       }
+#     },
+#     {
+#       "kind": "youtube#video",
+#       "etag": "lVxZE6SYisrs-VP4heS03kGFMPs",
+#       "id": "clgV4vhsKL4",
+#       "snippet": {
+#         "publishedAt": "2026-05-18T13:05:01Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "“Төл таван эрдэнэ” нэвтрүүлэг /2026.05.18/ Архангай, Өвөрхангай аймгуудаас бэлтгэв",
+#         "description": "“Төл таван эрдэнэ” нэвтрүүлэг /2026.05.18/ Архангай, Өвөрхангай аймгуудаас бэлтгэв\n\n▶️Follow MNB Official Pages:\nYoutube: https://www.youtube.com/user/MNB1TV/\nHomepage: https://www.mnb.mn\nFacebook: https://www.facebook.com/MNBnationalTV/\nTwitter: https://twitter.com/MNBpublic/\nInstagram: https://www.instagram.com/mnb_public/",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/clgV4vhsKL4/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/clgV4vhsKL4/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/clgV4vhsKL4/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           },
+#           "standard": {
+#             "url": "https://i.ytimg.com/vi/clgV4vhsKL4/sddefault.jpg",
+#             "width": 640,
+#             "height": 480
+#           },
+#           "maxres": {
+#             "url": "https://i.ytimg.com/vi/clgV4vhsKL4/maxresdefault.jpg",
+#             "width": 1280,
+#             "height": 720
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "tags": [
+#           "монгол",
+#           "монгол хэлээр",
+#           "mongol heleer",
+#           "mongol",
+#           "MNB",
+#           "МҮОНТ",
+#           "Монголын Үндэсний Олон Нийтийн Радио Телевиз",
+#           "Монголын мэдээ",
+#           "мэдээ",
+#           "МҮОНРТ",
+#           "үндэсний телевиз",
+#           "Mongolian national broadcaster",
+#           "undesnii televiz",
+#           "mongoliin medee",
+#           "mnb news"
+#         ],
+#         "categoryId": "25",
+#         "liveBroadcastContent": "none",
+#         "defaultLanguage": "mn",
+#         "localized": {
+#           "title": "“Төл таван эрдэнэ” нэвтрүүлэг /2026.05.18/ Архангай, Өвөрхангай аймгуудаас бэлтгэв",
+#           "description": "“Төл таван эрдэнэ” нэвтрүүлэг /2026.05.18/ Архангай, Өвөрхангай аймгуудаас бэлтгэв\n\n▶️Follow MNB Official Pages:\nYoutube: https://www.youtube.com/user/MNB1TV/\nHomepage: https://www.mnb.mn\nFacebook: https://www.facebook.com/MNBnationalTV/\nTwitter: https://twitter.com/MNBpublic/\nInstagram: https://www.instagram.com/mnb_public/"
+#         },
+#         "defaultAudioLanguage": "en-US"
+#       },
+#       "contentDetails": {
+#         "duration": "PT29M11S",
+#         "dimension": "2d",
+#         "definition": "hd",
+#         "caption": "false",
+#         "licensedContent": false,
+#         "contentRating": {},
+#         "projection": "rectangular"
+#       },
+#       "status": {
+#         "uploadStatus": "processed",
+#         "privacyStatus": "public",
+#         "license": "youtube",
+#         "embeddable": true,
+#         "publicStatsViewable": true,
+#         "madeForKids": false
+#       },
+#       "statistics": {
+#         "viewCount": "390",
+#         "likeCount": "12",
+#         "favoriteCount": "0",
+#         "commentCount": "1"
+#       }
+#     }
+#   ],
+#   "pageInfo": {
+#     "totalResults": 3,
+#     "resultsPerPage": 3
+#   }
+# }
+
+### Нэг видео дэлгэрэнгүй
+GET {{baseUrl}}/videos
+  ?part=contentDetails,statistics,status,snippet
+  &id=wTWtsHhKRGQ
+  &key={{apiKey}}
+
+# ###
+# HTTP/1.1 200 OK
+# Content-Type: application/json; charset=UTF-8
+# Vary: Origin, X-Origin, Referer
+# Content-Encoding: gzip
+# Date: Tue, 19 May 2026 10:26:36 GMT
+# Server: scaffolding on HTTPServer2
+# X-XSS-Protection: 0
+# X-Frame-Options: SAMEORIGIN
+# X-Content-Type-Options: nosniff
+# Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+# Connection: close
+# Transfer-Encoding: chunked
+
+# {
+#   "kind": "youtube#videoListResponse",
+#   "etag": "XQ2YVFVkcdbPFfaOs-ZioDPqM40",
+#   "items": [
+#     {
+#       "kind": "youtube#video",
+#       "etag": "RNOCQzI7nhrcz83foaOfCNHxXzI",
+#       "id": "wTWtsHhKRGQ",
+#       "snippet": {
+#         "publishedAt": "2026-05-18T13:35:03Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "Парламентийн долоо хоног /2026.05.18/ #MNB",
+#         "description": "Парламентийн долоо хоног /2026.05.18/ #MNB\n▶️Follow MNB Official Pages:\nYoutube: https://www.youtube.com/user/MNB1TV/\nHomepage: https://www.mnb.mn\nFacebook: https://www.facebook.com/MNBnationalTV/\nTwitter: https://twitter.com/MNBpublic/\nInstagram: https://www.instagram.com/mnb_public/",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           },
+#           "standard": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/sddefault.jpg",
+#             "width": 640,
+#             "height": 480
+#           },
+#           "maxres": {
+#             "url": "https://i.ytimg.com/vi/wTWtsHhKRGQ/maxresdefault.jpg",
+#             "width": 1280,
+#             "height": 720
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "tags": [
+#           "монгол",
+#           "монгол хэлээр",
+#           "mongol heleer",
+#           "mongol",
+#           "MNB",
+#           "МҮОНТ",
+#           "Монголын Үндэсний Олон Нийтийн Радио Телевиз",
+#           "Монголын мэдээ",
+#           "мэдээ",
+#           "МҮОНРТ",
+#           "үндэсний телевиз",
+#           "Mongolian national broadcaster",
+#           "undesnii televiz",
+#           "mongoliin medee",
+#           "mnb news"
+#         ],
+#         "categoryId": "25",
+#         "liveBroadcastContent": "none",
+#         "defaultLanguage": "mn",
+#         "localized": {
+#           "title": "Парламентийн долоо хоног /2026.05.18/ #MNB",
+#           "description": "Парламентийн долоо хоног /2026.05.18/ #MNB\n▶️Follow MNB Official Pages:\nYoutube: https://www.youtube.com/user/MNB1TV/\nHomepage: https://www.mnb.mn\nFacebook: https://www.facebook.com/MNBnationalTV/\nTwitter: https://twitter.com/MNBpublic/\nInstagram: https://www.instagram.com/mnb_public/"
+#         },
+#         "defaultAudioLanguage": "en-US"
+#       },
+#       "contentDetails": {
+#         "duration": "PT10M5S",
+#         "dimension": "2d",
+#         "definition": "hd",
+#         "caption": "false",
+#         "licensedContent": false,
+#         "contentRating": {},
+#         "projection": "rectangular"
+#       },
+#       "status": {
+#         "uploadStatus": "processed",
+#         "privacyStatus": "public",
+#         "license": "youtube",
+#         "embeddable": true,
+#         "publicStatsViewable": true,
+#         "madeForKids": false
+#       },
+#       "statistics": {
+#         "viewCount": "142",
+#         "likeCount": "5",
+#         "favoriteCount": "0",
+#         "commentCount": "1"
+#       }
+#     }
+#   ],
+#   "pageInfo": {
+#     "totalResults": 1,
+#     "resultsPerPage": 1
+#   }
+# }
+
+# ─────────────────────────────────────────────
+# 4. Хайлт
+# ─────────────────────────────────────────────
+### Channel дотор хайлт
+# GET {{baseUrl}}/search
+#   ?part=snippet
+#   &channelId={{channelId}}
+#   &q=мэдээ
+#   &type=video
+#   &maxResults=3
+#   &order=date
+#   &key={{apiKey}}
+
+# ###
+# HTTP/1.1 200 OK
+# Content-Type: application/json; charset=UTF-8
+# Vary: Origin, X-Origin, Referer
+# Content-Encoding: gzip
+# Date: Tue, 19 May 2026 10:27:03 GMT
+# Server: scaffolding on HTTPServer2
+# X-XSS-Protection: 0
+# X-Frame-Options: SAMEORIGIN
+# X-Content-Type-Options: nosniff
+# Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+# Connection: close
+# Transfer-Encoding: chunked
+
+# {
+#   "kind": "youtube#searchListResponse",
+#   "etag": "Q6tGvu6Vjdqlzcgi96-HMeVXSVI",
+#   "nextPageToken": "CAMQAA",
+#   "regionCode": "MN",
+#   "pageInfo": {
+#     "totalResults": 17334,
+#     "resultsPerPage": 6
+#   },
+#   "items": [
+#     {
+#       "kind": "youtube#searchResult",
+#       "etag": "2E-9kNg3WviOmNnRha0MPPKqdhw",
+#       "id": {
+#         "kind": "youtube#video",
+#         "videoId": "WCMK-9RQhNk"
+#       },
+#       "snippet": {
+#         "publishedAt": "2026-05-18T01:36:51Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "“Долоо хоногийн тойм” мэдээллийн хөтөлбөр /2026.05.17/",
+#         "description": "Долоо хоногийн тойм” мэдээллийн хөтөлбөр /2026.05.17/ ▶️Follow MNB Official Pages: Youtube: ...",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/WCMK-9RQhNk/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/WCMK-9RQhNk/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/WCMK-9RQhNk/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "liveBroadcastContent": "none",
+#         "publishTime": "2026-05-18T01:36:51Z"
+#       }
+#     },
+#     {
+#       "kind": "youtube#searchResult",
+#       "etag": "3AplGs6YsaDlHw65yVABN9x08qw",
+#       "id": {
+#         "kind": "youtube#video",
+#         "videoId": "kEogaZv1Ov4"
+#       },
+#       "snippet": {
+#         "publishedAt": "2026-05-17T15:32:26Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "Мэдээ /2026.05.17/",
+#         "description": "Мэдээ /2026.05.17/ ▶️Follow MNB Official Pages: Youtube: https://www.youtube.com/user/MNB1TV/ Homepage: ...",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/kEogaZv1Ov4/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/kEogaZv1Ov4/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/kEogaZv1Ov4/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "liveBroadcastContent": "none",
+#         "publishTime": "2026-05-17T15:32:26Z"
+#       }
+#     },
+#     {
+#       "kind": "youtube#searchResult",
+#       "etag": "9XGoIegZ0QsAEZe9idySVF9rf5Q",
+#       "id": {
+#         "kind": "youtube#video",
+#         "videoId": "v_o6myoVabw"
+#       },
+#       "snippet": {
+#         "publishedAt": "2026-05-16T17:23:53Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "Мэдээ /2026.05.16/",
+#         "description": "Мэдээ /2026.05.16/ ▶️Follow MNB Official Pages: Youtube: https://www.youtube.com/user/MNB1TV/ Homepage: ...",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/v_o6myoVabw/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/v_o6myoVabw/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/v_o6myoVabw/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "liveBroadcastContent": "none",
+#         "publishTime": "2026-05-16T17:23:53Z"
+#       }
+#     },
+#     {
+#       "kind": "youtube#searchResult",
+#       "etag": "nl8tfvt6_wcyl3TR6t3M2_lYY58",
+#       "id": {
+#         "kind": "youtube#video",
+#         "videoId": "gAKNZDZohxQ"
+#       },
+#       "snippet": {
+#         "publishedAt": "2026-03-16T17:14:11Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "“Монголын мэдээ” мэдээллийн хөтөлбөр /2026.03.16/",
+#         "description": "Монголын мэдээ” мэдээллийн хөтөлбөр /2026.03.16/ ▶️Follow MNB Official Pages: Youtube: ...",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/gAKNZDZohxQ/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/gAKNZDZohxQ/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/gAKNZDZohxQ/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "liveBroadcastContent": "none",
+#         "publishTime": "2026-03-16T17:14:11Z"
+#       }
+#     },
+#     {
+#       "kind": "youtube#searchResult",
+#       "etag": "9Pn7fSSXbsXGdyCGzKbE_s_MDNs",
+#       "id": {
+#         "kind": "youtube#video",
+#         "videoId": "V5qXxaqJBdo"
+#       },
+#       "snippet": {
+#         "publishedAt": "2026-02-17T13:36:17Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "Цагийн хүрд мэдээллийн хөтөлбөр /2026.02.17/",
+#         "description": "Цагийн хүрд мэдээллийн хөтөлбөр /2026.02.17/ ▶️Follow MNB Official Pages: Youtube: ...",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/V5qXxaqJBdo/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/V5qXxaqJBdo/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/V5qXxaqJBdo/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "liveBroadcastContent": "none",
+#         "publishTime": "2026-02-17T13:36:17Z"
+#       }
+#     },
+#     {
+#       "kind": "youtube#searchResult",
+#       "etag": "TU2OrOoAiypaq5CWDOByOviP_24",
+#       "id": {
+#         "kind": "youtube#video",
+#         "videoId": "N3Ns-27TUBA"
+#       },
+#       "snippet": {
+#         "publishedAt": "2025-12-07T01:03:44Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "Цагийн хүрд мэдээллийн хөтөлбөр /2025.12.06/",
+#         "description": "Цагийн хүрд мэдээллийн хөтөлбөр /2025.12.06/ ▶️Follow MNB Official Pages: Youtube: ...",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/N3Ns-27TUBA/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/N3Ns-27TUBA/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/N3Ns-27TUBA/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "liveBroadcastContent": "none",
+#         "publishTime": "2025-12-07T01:03:44Z"
+#       }
+#     }
+#   ]
+# }
+
+### Төрлөөр хайх (нэвтрүүлэг)
+GET {{baseUrl}}/search
+  ?part=snippet
+  &channelId={{channelId}}
+  &q=нэвтрүүлэг
+  &type=video
+  &maxResults=3
+  &order=viewCount
+  &key={{apiKey}}
+
+###
+# HTTP/1.1 200 OK
+# Content-Type: application/json; charset=UTF-8
+# Vary: Origin, X-Origin, Referer
+# Content-Encoding: gzip
+# Date: Tue, 19 May 2026 10:27:26 GMT
+# Server: scaffolding on HTTPServer2
+# X-XSS-Protection: 0
+# X-Frame-Options: SAMEORIGIN
+# X-Content-Type-Options: nosniff
+# Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+# Connection: close
+# Transfer-Encoding: chunked
+
+# {
+#   "kind": "youtube#searchListResponse",
+#   "etag": "CiLFU3VQCvt2lS2vtrhgloc65pI",
+#   "nextPageToken": "CAMQAA",
+#   "regionCode": "MN",
+#   "pageInfo": {
+#     "totalResults": 16622,
+#     "resultsPerPage": 6
+#   },
+#   "items": [
+#     {
+#       "kind": "youtube#searchResult",
+#       "etag": "covk0b7_6-dVyfILhfaR-H6vRlM",
+#       "id": {
+#         "kind": "youtube#video",
+#         "videoId": "NjrsItp-eAY"
+#       },
+#       "snippet": {
+#         "publishedAt": "2022-05-23T08:17:06Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "&quot;Дуут нуур&quot; - ТЗДБЧ-ын гоцлол дуучин, Соёлын тэргүүний ажилтан Н.Дашдэмбэрэл | MNB",
+#         "description": "\"Зүрхэнд мөнхөрсөн аялгуу\" нэвтрүүлэг /\"Дуут нуур\" - ТЗДБЧ-ын гоцлол дуучин, Соёлын тэргүүний ажилтан Н.Дашдэмбэрэл/ ...",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/NjrsItp-eAY/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/NjrsItp-eAY/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/NjrsItp-eAY/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "liveBroadcastContent": "none",
+#         "publishTime": "2022-05-23T08:17:06Z"
+#       }
+#     },
+#     {
+#       "kind": "youtube#searchResult",
+#       "etag": "k1TGA-xxXkN-7rDFfmsInnW7g9E",
+#       "id": {
+#         "kind": "youtube#video",
+#         "videoId": "ZAEpWMgL7u4"
+#       },
+#       "snippet": {
+#         "publishedAt": "2018-10-22T05:13:44Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "&quot;Жив Жив&quot; хүүхдийн нэвтрүүлэг - Хүүхдийн баяр",
+#         "description": "МҮОНРТ-ийн Үндэсний телевиз үзүүлж байна. \"Жив Жив\" хүүхдийн нэвтрүүлэг /2018.06.01/ Танин мэдэхүй: Хүүхдийн баяр ...",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/ZAEpWMgL7u4/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/ZAEpWMgL7u4/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/ZAEpWMgL7u4/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "liveBroadcastContent": "none",
+#         "publishTime": "2018-10-22T05:13:44Z"
+#       }
+#     },
+#     {
+#       "kind": "youtube#searchResult",
+#       "etag": "APM_f3a_lUKxwS7kGLZ88Kv317M",
+#       "id": {
+#         "kind": "youtube#video",
+#         "videoId": "S6j6zYypPiw"
+#       },
+#       "snippet": {
+#         "publishedAt": "2018-10-19T08:53:36Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "&quot;Жив Жив&quot; хүүхдийн нэвтрүүлэг - Өвөл",
+#         "description": "МҮОНРТ-ийн Үндэсний телевиз үзүүлж байна. \"Жив Жив\" хүүхдийн нэвтрүүлэг /2017.12.14/ Танин мэдэхүй: Өвөл Би чадна: ...",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/S6j6zYypPiw/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/S6j6zYypPiw/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/S6j6zYypPiw/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "liveBroadcastContent": "none",
+#         "publishTime": "2018-10-19T08:53:36Z"
+#       }
+#     },
+#     {
+#       "kind": "youtube#searchResult",
+#       "etag": "2NfMSbE6xD-uA2B0vpXSB8AP_Zo",
+#       "id": {
+#         "kind": "youtube#video",
+#         "videoId": "49d5iX45FNo"
+#       },
+#       "snippet": {
+#         "publishedAt": "2023-04-09T03:48:12Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "&quot;Өв түгээ&quot; нэвтрүүлэг | MNB",
+#         "description": "\"Өв түгээ\" нэвтрүүлэг /2023.04.08/ ▶️Follow MNB Official Pages: Youtube: https://www.youtube.com/user/MNB1TV/ Homepage: ...",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/49d5iX45FNo/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/49d5iX45FNo/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/49d5iX45FNo/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "liveBroadcastContent": "none",
+#         "publishTime": "2023-04-09T03:48:12Z"
+#       }
+#     },
+#     {
+#       "kind": "youtube#searchResult",
+#       "etag": "CQrtRqeQjd2RlIyvBVOJ3bS3S7c",
+#       "id": {
+#         "kind": "youtube#video",
+#         "videoId": "bvg-Qz_UDbU"
+#       },
+#       "snippet": {
+#         "publishedAt": "2022-09-08T01:15:56Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "2030 он гэхэд банкууд нийт олгодог зээлийнхээ 10 хувийг Ногоон зээл олгоно | MNB",
+#         "description": "Манай улс агаар орчны бохирдлыг бууруулах зорилтын хүрээнд 2019 онд арилжааны банкуудаар дамжуулан Ногоон зээл ...",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/bvg-Qz_UDbU/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/bvg-Qz_UDbU/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/bvg-Qz_UDbU/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "liveBroadcastContent": "none",
+#         "publishTime": "2022-09-08T01:15:56Z"
+#       }
+#     },
+#     {
+#       "kind": "youtube#searchResult",
+#       "etag": "5CDW91_R1EoXlRj0B3ACEh9CONQ",
+#       "id": {
+#         "kind": "youtube#video",
+#         "videoId": "ziHyuzNRaAA"
+#       },
+#       "snippet": {
+#         "publishedAt": "2023-07-15T14:28:28Z",
+#         "channelId": "UCwtT_d7LZ8BJpiDXHV5RaAw",
+#         "title": "&quot;Цагийн хүрд&quot; мэдээллийн хөтөлбөр /2023.07.15/",
+#         "description": "\"Цагийн хүрд\" мэдээллийн хөтөлбөр /2023.07.15/ ▶️Follow MNB Official Pages: Youtube: ...",
+#         "thumbnails": {
+#           "default": {
+#             "url": "https://i.ytimg.com/vi/ziHyuzNRaAA/default.jpg",
+#             "width": 120,
+#             "height": 90
+#           },
+#           "medium": {
+#             "url": "https://i.ytimg.com/vi/ziHyuzNRaAA/mqdefault.jpg",
+#             "width": 320,
+#             "height": 180
+#           },
+#           "high": {
+#             "url": "https://i.ytimg.com/vi/ziHyuzNRaAA/hqdefault.jpg",
+#             "width": 480,
+#             "height": 360
+#           }
+#         },
+#         "channelTitle": "Mongolian National Broadcaster",
+#         "liveBroadcastContent": "none",
+#         "publishTime": "2023-07-15T14:28:28Z"
+#       }
+#     }
+#   ]
+# }
+
+# ─────────────────────────────────────────────
+# 5. Quota шалгах (өдөрт 10,000 unit)
+# ─────────────────────────────────────────────
+### Quota зарцуулалт:
+# search.list      = 100 unit / дуудалт  ← үнэтэй!
+# playlistItems    =   1 unit / дуудалт  ← хямд
+# videos.list      =   1 unit / дуудалт  ← хямд
+# channels.list    =   1 unit / дуудалт  ← хямд
+#
+# СТРАТЕГИ: search ашиглахгүй, playlistItems + videos комбо ашиглана
+
+
+
+GET https://www.googleapis.com/youtube/v3/search
+  ?part=snippet
+  &channelId=UCwtT_d7LZ8BJpiDXHV5RaAw
+  &eventType=live
+  &type=video
+  &key={{apiKey}}
+
+###
+GET {{baseUrl}}/search
+  ?part=snippet
+  &channelId={{channelId}}
+  &eventType=completed
+  &type=video
+  &maxResults=5
+  &key={{apiKey}}
+
+###
+
+### upcoming broadcast байгаа эсэх
+GET {{baseUrl}}/search
+  ?part=snippet
+  &channelId={{channelId}}
+  &eventType=upcoming
+  &type=video
+  &maxResults=5
+  &key={{apiKey}}

@@ -1,0 +1,15 @@
+# МҮОНРТ OTT — Health check
+
+@baseUrl = http://localhost:3001
+
+### Health check
+GET {{baseUrl}}/health
+
+### Subscription plans (public)
+GET {{baseUrl}}/api/subscription/plans
+
+### Channels list (public)
+GET {{baseUrl}}/api/channels
+
+### VOD list (public)
+GET {{baseUrl}}/api/vod

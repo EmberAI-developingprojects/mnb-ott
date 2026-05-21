@@ -1,0 +1,69 @@
+### МҮОНРТ OTT — Auth API Tests
+@baseUrl = http://localhost:3001
+@phone = 99112233
+@email = test@example.com
+
+# ── 1. Бүртгүүлэх ─────────────────────────────────────
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Тест Хэрэглэгч",
+  "emailOrPhone": "{{phone}}",
+  "password": "password123"
+}
+
+###
+
+# ── 2. Нэвтрэх (нууц үгээр) ────────────────────────────
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "emailOrPhone": "{{phone}}",
+  "password": "password123"
+}
+
+###
+
+# ── 3. Нууц үг мартсан ────────────────────────────────
+POST {{baseUrl}}/api/auth/forgot-password
+Content-Type: application/json
+
+{ "emailOrPhone": "{{phone}}" }
+
+###
+
+# ── 4. Нууц үг сэргээх ────────────────────────────────
+POST {{baseUrl}}/api/auth/reset-password
+Content-Type: application/json
+
+{
+  "emailOrPhone": "{{phone}}",
+  "otp": "123456",
+  "newPassword": "newpass123"
+}
+
+###
+
+# ── 5. Миний мэдээлэл ──────────────────────────────────
+@accessToken = PASTE_TOKEN_HERE
+
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+
+###
+
+# ── 6. Token refresh ───────────────────────────────────
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "PASTE_REFRESH_TOKEN" }
+
+###
+
+# ── 7. Google OAuth ────────────────────────────────────
+POST {{baseUrl}}/api/auth/google
+Content-Type: application/json
+
+{ "idToken": "GOOGLE_ID_TOKEN" }

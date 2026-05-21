@@ -1,0 +1,89 @@
+export type Role = "USER" | "ADMIN" | "EDITOR" | "OPERATOR" | "SUPER_ADMIN";
+export type PlanType = "FREE" | "STANDARD" | "PREMIUM";
+export type VodType = "FREE" | "PREMIUM";
+export type SourceType = "YOUTUBE" | "S3";
+export type ContentType = "LIVE" | "VOD";
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+
+export interface User {
+  id: string;
+  phone?: string;
+  email?: string;
+  name?: string;
+  avatar?: string;
+  role: Role;
+  isVerified: boolean;
+  password?: string | null;
+  createdAt: string;
+  subscription?: Subscription;
+}
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  planType: PlanType;
+  startedAt: string;
+  expiresAt?: string;
+  status: "ACTIVE" | "EXPIRED" | "CANCELLED";
+}
+
+export interface Channel {
+  id: string;
+  name: string;
+  slug: string;
+  streamUrl?: string;
+  epgUrl?: string;
+  thumbnailUrl?: string;
+  isActive: boolean;
+  orderIndex: number;
+}
+
+export interface EpgProgram {
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  channel: string;
+}
+
+export interface VodContent {
+  id: string;
+  title: string;
+  description?: string;
+  thumbnailUrl?: string;
+  genre?: string;
+  type: VodType;
+  price?: number;
+  duration?: number;
+  publishedAt?: string;
+  sources: VodSource[];
+}
+
+export interface VodSource {
+  id: string;
+  sourceType: SourceType;
+  url: string;
+  youtubeId?: string;
+  quality?: string;
+}
+
+export interface ApiResponse<T> {
+  success: true;
+  data: T;
+}
+
+export interface ApiError {
+  success: false;
+  message: string;
+  code: string;
+}
+
+export interface PaginatedResponse<T> {
+  success: true;
+  data: {
+    items: T[];
+    total: number;
+    page: number;
+    limit: number;
+  };
+}

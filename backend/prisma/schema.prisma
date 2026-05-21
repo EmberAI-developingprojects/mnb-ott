@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  EDITOR
+  OPERATOR
+  SUPER_ADMIN
+}
+
+enum PlanType {
+  FREE
+  STANDARD
+  PREMIUM
+}
+
+enum SubStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum VodType {
+  FREE
+  PREMIUM
+}
+
+enum SourceType {
+  YOUTUBE
+  S3
+}
+
+enum PurchaseStatus {
+  ACTIVE
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum ContentType {
+  LIVE
+  VOD
+}
+
+model User {
+  id          String    @id @default(cuid())
+  phone       String?   @unique
+  email       String?   @unique
+  name        String?
+  avatar      String?
+  password    String?   // bcrypt hash, Google OAuth-д null
+  role        Role      @default(USER)
+  isVerified  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     UserSession[]
+  subscription Subscription?
+  purchases    Purchase[]
+  payments     Payment[]
+  watchHistory WatchHistory[]
+  otpCodes     OtpCode[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model UserSession {
+  id          String   @id @default(cuid())
+  userId      String
+  deviceId    String
+  deviceName  String
+  deviceType  String
+  refreshToken String  @unique
+  lastActive  DateTime @default(now())
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  userId    String
+  phone     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  planType  PlanType  @default(FREE)
+  startedAt DateTime  @default(now())
+  expiresAt DateTime?
+  status    SubStatus @default(ACTIVE)
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Channel {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  streamUrl    String?
+  epgUrl       String?
+  thumbnailUrl String?
+  isActive     Boolean  @default(true)
+  orderIndex   Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+}
+
+model VodContent {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  @db.Text
+  thumbnailUrl String?
+  genre        String?
+  type         VodType  @default(FREE)
+  price        Int?
+  duration     Int?
+  publishedAt  DateTime?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sources   VodSource[]
+  purchases Purchase[]
+}
+
+model VodSource {
+  id         String     @id @default(cuid())
+  vodId      String
+  sourceType SourceType
+  url        String
+  youtubeId  String?
+  drmKeyId   String?
+  quality    String?
+  createdAt  DateTime   @default(now())
+
+  vod VodContent @relation(fields: [vodId], references: [id], onDelete: Cascade)
+}
+
+model Purchase {
+  id        String         @id @default(cuid())
+  userId    String
+  vodId     String
+  amount    Int
+  expiresAt DateTime?
+  status    PurchaseStatus @default(ACTIVE)
+  createdAt DateTime       @default(now())
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vod  VodContent @relation(fields: [vodId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vodId])
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  userId         String
+  invoiceId      String        @unique @default(cuid())
+  qpayInvoiceId  String?
+  amount         Int
+  provider       String        @default("qpay")
+  status         PaymentStatus @default(PENDING)
+  metadata       Json?
+  paidAt         DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Admin-аас удирддаг системийн тохиргоо (үнэ, хязгаар г.м.)
+model SystemConfig {
+  key       String   @id
+  value     String
+  label     String   // Admin UI-д харагдах нэр
+  updatedAt DateTime @updatedAt
+}
+
+model WatchHistory {
+  id          String      @id @default(cuid())
+  userId      String
+  contentId   String
+  contentType ContentType
+  positionSec Int         @default(0)
+  updatedAt   DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId, contentType])
+}
