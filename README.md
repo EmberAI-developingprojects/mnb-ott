@@ -15,8 +15,8 @@
 ```
 mnb-ott/
 ├── apps/
-│   ├── api/     ← Express backend (port 3001)
-│   ├── web/     ← Next.js хэрэглэгчийн вэб (port 3000)
+│   ├── server/  ← Express backend (port 3001)
+│   ├── client/  ← Next.js хэрэглэгчийн вэб (port 3000)
 │   └── admin/   ← Next.js удирдлагын самбар (port 3002)
 ├── docs/        ← Архитектур, API reference
 ├── images/      ← Сувгийн logo
@@ -52,10 +52,10 @@ docker ps
 # mnb-pg, mnb-redis хоёул "Up" гэж харагдана
 ```
 
-## 4. Backend (apps/api) тохируулах
+## 4. Backend (apps/server) тохируулах
 
 ```bash
-cd apps/api
+cd apps/server
 cp .env.example .env
 ```
 
@@ -81,10 +81,10 @@ pnpm db:migrate
 pnpm db:seed
 ```
 
-## 5. Frontend (apps/web) тохируулах
+## 5. Frontend (apps/client) тохируулах
 
 ```bash
-cd ../web
+cd ../client
 cp .env.example .env.local
 ```
 
@@ -116,12 +116,12 @@ cp .env.example .env.local
 Репогийн үндэс-эс:
 
 ```bash
-# Бүгдийг зэрэг ажиллуулах (api + web + admin parallel)
+# Бүгдийг зэрэг ажиллуулах (server + client + admin parallel)
 pnpm dev
 
 # Эсвэл тус тусад нь
-pnpm dev:api      # → http://localhost:3001
-pnpm dev:web      # → http://localhost:3000
+pnpm dev:server   # → http://localhost:3001
+pnpm dev:client   # → http://localhost:3000
 pnpm dev:admin    # → http://localhost:3002
 ```
 
@@ -158,13 +158,13 @@ pnpm install
 docker-compose up -d
 
 # 3. Env файлууд
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env.local
+cp apps/server/.env.example apps/server/.env
+cp apps/client/.env.example apps/client/.env.local
 cp apps/admin/.env.example apps/admin/.env.local
 # → файл бүрд secret-уудаа бөглөнө
 
 # 4. DB schema
-cd apps/api && pnpm db:migrate && cd ../..
+cd apps/server && pnpm db:migrate && cd ../..
 
 # 5. Бүгдийг зэрэг ажиллуулах
 pnpm dev
@@ -185,7 +185,7 @@ pnpm dev
 Дэлгэрэнгүй deployment гарын авлага: `docs/DEPLOYMENT.md` (хараахан бичигдээгүй).
 
 Товчоор:
-- App бүрд тус тусдаа `Dockerfile` үүсгэнэ (apps/api, apps/web, apps/admin).
+- App бүрд тус тусдаа `Dockerfile` үүсгэнэ (apps/server, apps/client, apps/admin).
 - Production-д `docker-compose.prod.yml` дээр postgres + redis + 3 apps-ийг хамтад нь ажиллуулна.
 - Front-д `nginx` буюу traefik-ийг TLS + routing-д ашиглана.
 - Workspace symlink-ийг тооцох тул Next.js apps-д `output: "standalone"` + `outputFileTracingRoot: "../.."` тохиргоо хэрэгтэй.

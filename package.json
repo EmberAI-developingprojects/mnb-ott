@@ -5,8 +5,8 @@
   "description": "МҮОНРТ OTT платформ — monorepo root",
   "scripts": {
     "dev": "turbo run dev",
-    "dev:api": "turbo run dev --filter=@mnb-ott/api",
-    "dev:web": "turbo run dev --filter=@mnb-ott/web",
+    "dev:server": "turbo run dev --filter=@mnb-ott/server",
+    "dev:client": "turbo run dev --filter=@mnb-ott/client",
     "dev:admin": "turbo run dev --filter=@mnb-ott/admin",
     "build": "turbo run build",
     "lint": "turbo run lint",

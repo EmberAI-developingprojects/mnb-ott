@@ -1,5 +1,5 @@
 {
-  "name": "@mnb-ott/api",
+  "name": "@mnb-ott/server",
   "version": "1.0.0",
   "private": true,
   "scripts": {

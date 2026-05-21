@@ -17,8 +17,8 @@ pnpm install
 docker-compose up -d
 
 # 4. Start the apps you're working on
-pnpm dev:api           # http://localhost:3001 (Express)
-pnpm dev:web           # http://localhost:3000 (Next.js)
+pnpm dev:server           # http://localhost:3001 (Express)
+pnpm dev:client           # http://localhost:3000 (Next.js)
 pnpm dev:admin         # http://localhost:3002 (Next.js)
 
 # Or all three in parallel
@@ -33,16 +33,16 @@ All `pnpm` commands run **from the repo root**. You almost never need to `cd app
 
 | What | Where |
 |---|---|
-| New API route | `apps/api/src/routes/<feature>.routes.ts` |
-| Route handlers | `apps/api/src/controllers/<feature>.controller.ts` |
-| Business logic | `apps/api/src/services/<feature>.service.ts` |
-| DB schema | `apps/api/prisma/schema.prisma` |
-| Express middleware | `apps/api/src/middleware/` |
-| Frontend page | `apps/web/app/(main)/<route>/page.tsx` |
-| Frontend auth-gated page | `apps/web/app/(auth)/<route>/page.tsx` |
-| Reusable UI | `apps/web/components/<area>/<Component>.tsx` |
-| Frontend state | `apps/web/store/<feature>.store.ts` (Zustand) |
-| API client | `apps/web/lib/api.ts` (axios instance) |
+| New API route | `apps/server/src/routes/<feature>.routes.ts` |
+| Route handlers | `apps/server/src/controllers/<feature>.controller.ts` |
+| Business logic | `apps/server/src/services/<feature>.service.ts` |
+| DB schema | `apps/server/prisma/schema.prisma` |
+| Express middleware | `apps/server/src/middleware/` |
+| Frontend page | `apps/client/app/(main)/<route>/page.tsx` |
+| Frontend auth-gated page | `apps/client/app/(auth)/<route>/page.tsx` |
+| Reusable UI | `apps/client/components/<area>/<Component>.tsx` |
+| Frontend state | `apps/client/store/<feature>.store.ts` (Zustand) |
+| API client | `apps/client/lib/api.ts` (axios instance) |
 | `.rest` test files | `rest/<feature>.rest` (repo root) |
 | Admin pages | `apps/admin/app/<route>/page.tsx` |
 
@@ -53,13 +53,13 @@ All `pnpm` commands run **from the repo root**. You almost never need to `cd app
 For a new feature `epg`:
 
 ```
-apps/api/src/routes/epg.routes.ts         ← Express router
-apps/api/src/controllers/epg.controller.ts ← req/res handlers, Zod parsing
-apps/api/src/services/epg.service.ts      ← business logic, Prisma calls
+apps/server/src/routes/epg.routes.ts         ← Express router
+apps/server/src/controllers/epg.controller.ts ← req/res handlers, Zod parsing
+apps/server/src/services/epg.service.ts      ← business logic, Prisma calls
 rest/epg.rest                             ← test cases
 ```
 
-Mount the router in `apps/api/src/index.ts`:
+Mount the router in `apps/server/src/index.ts`:
 
 ```ts
 import { epgRouter } from "./routes/epg.routes";
@@ -88,8 +88,8 @@ All inputs go through Zod. All async handlers wrapped in try/catch.
 
 App Router conventions:
 
-- `apps/web/app/(main)/tv/page.tsx` → `/tv` (public, browse OK)
-- `apps/web/app/(auth)/login/page.tsx` → `/login` (guest-only auth flow)
+- `apps/client/app/(main)/tv/page.tsx` → `/tv` (public, browse OK)
+- `apps/client/app/(auth)/login/page.tsx` → `/login` (guest-only auth flow)
 - Server Component by default; add `"use client"` at the top only if you need hooks/events
 - Fetch API via `import { api } from "@/lib/api"` (axios)
 
@@ -100,7 +100,7 @@ Auth gate: guests can browse, but "Үзэх" (Watch) button must redirect to `/l
 ## Database changes
 
 ```bash
-cd apps/api
+cd apps/server
 
 # 1. Edit prisma/schema.prisma
 
@@ -163,15 +163,15 @@ Turbo caches results — second run is `>>> FULL TURBO` (28ms). CI will use the 
 ## Filtering turbo to one app
 
 ```bash
-pnpm turbo run build --filter=@mnb-ott/web
-pnpm turbo run type-check --filter=@mnb-ott/api
+pnpm turbo run build --filter=@mnb-ott/client
+pnpm turbo run type-check --filter=@mnb-ott/server
 ```
 
 Equivalent shortcuts:
 
 ```bash
-pnpm --filter @mnb-ott/api run dev
-pnpm --filter @mnb-ott/web run lint
+pnpm --filter @mnb-ott/server run dev
+pnpm --filter @mnb-ott/client run lint
 ```
 
 ---
@@ -180,14 +180,14 @@ pnpm --filter @mnb-ott/web run lint
 
 ```bash
 # To one app
-pnpm --filter @mnb-ott/web add lodash
-pnpm --filter @mnb-ott/api add -D @types/lodash
+pnpm --filter @mnb-ott/client add lodash
+pnpm --filter @mnb-ott/server add -D @types/lodash
 
 # To the workspace root (rare — only for dev tooling like turbo)
 pnpm add -Dw eslint
 ```
 
-**Never `cd apps/web && pnpm add ...`** — always use `--filter` from root so the workspace lockfile updates correctly.
+**Never `cd apps/client && pnpm add ...`** — always use `--filter` from root so the workspace lockfile updates correctly.
 
 ---
 
@@ -195,10 +195,10 @@ pnpm add -Dw eslint
 
 | File | Purpose | Committed? |
 |---|---|---|
-| `apps/api/.env` | Backend secrets (DB URL, JWT, OAuth) | ❌ no |
-| `apps/api/.env.example` | Template, all keys with empty values | ✅ yes |
-| `apps/web/.env.local` | Frontend secrets (NEXTAUTH_SECRET, etc.) | ❌ no |
-| `apps/web/.env.example` | Template | ✅ yes |
+| `apps/server/.env` | Backend secrets (DB URL, JWT, OAuth) | ❌ no |
+| `apps/server/.env.example` | Template, all keys with empty values | ✅ yes |
+| `apps/client/.env.local` | Frontend secrets (NEXTAUTH_SECRET, etc.) | ❌ no |
+| `apps/client/.env.example` | Template | ✅ yes |
 | `apps/admin/.env.local` | Admin frontend secrets | ❌ no |
 
 `NEXT_PUBLIC_*` vars are **baked into the JS bundle at build time** — changing them requires a rebuild, not a restart.
@@ -207,11 +207,11 @@ pnpm add -Dw eslint
 
 ## Common pitfalls
 
-1. **Running scripts from inside `apps/api/`** — works, but skips turbo cache. Always prefer `pnpm dev:api` from root.
-2. **Forgetting `db:generate` after schema edit** — TS will yell with "property does not exist on PrismaClient". Run `cd apps/api && pnpm db:generate`.
-3. **CORS errors in browser** — backend needs `cors({ origin: "http://localhost:3000", credentials: true })`. Check `apps/api/src/index.ts`.
+1. **Running scripts from inside `apps/server/`** — works, but skips turbo cache. Always prefer `pnpm dev:server` from root.
+2. **Forgetting `db:generate` after schema edit** — TS will yell with "property does not exist on PrismaClient". Run `cd apps/server && pnpm db:generate`.
+3. **CORS errors in browser** — backend needs `cors({ origin: "http://localhost:3000", credentials: true })`. Check `apps/server/src/index.ts`.
 4. **NextAuth session not persisting** — `NEXTAUTH_URL` mismatch with actual URL, or `NEXTAUTH_SECRET` missing.
-5. **Prisma client out of date in dev** — `pnpm install` doesn't regenerate it. After pulling schema changes from git, run `cd apps/api && pnpm db:generate`.
+5. **Prisma client out of date in dev** — `pnpm install` doesn't regenerate it. After pulling schema changes from git, run `cd apps/server && pnpm db:generate`.
 6. **`pnpm dev` for all three at once** — output is interleaved, hard to read. Prefer one terminal per app for active dev.
 
 ---
@@ -221,7 +221,7 @@ pnpm add -Dw eslint
 ```bash
 # Dev
 pnpm dev                           # all 3 apps
-pnpm dev:api / dev:web / dev:admin # one app
+pnpm dev:server / dev:client / dev:admin # one app
 docker-compose up -d               # pg + redis
 docker-compose down                # stop infra
 
@@ -232,16 +232,16 @@ pnpm lint                          # all
 pnpm clean                         # wipe dist + .next + .turbo
 
 # Filter to one app
-pnpm --filter @mnb-ott/web run <script>
+pnpm --filter @mnb-ott/client run <script>
 
 # DB
-cd apps/api && pnpm db:migrate     # create + apply migration
-cd apps/api && pnpm db:studio      # GUI
-cd apps/api && pnpm db:seed        # run seed
+cd apps/server && pnpm db:migrate     # create + apply migration
+cd apps/server && pnpm db:studio      # GUI
+cd apps/server && pnpm db:seed        # run seed
 
 # Deps
-pnpm --filter @mnb-ott/api add <pkg>
-pnpm --filter @mnb-ott/api add -D <pkg>
+pnpm --filter @mnb-ott/server add <pkg>
+pnpm --filter @mnb-ott/server add -D <pkg>
 pnpm add -Dw <pkg>                 # workspace root devDep
 
 # Workspace info
@@ -267,7 +267,7 @@ When asking Claude to do work, use this format (from `CLAUDE.md`):
 Example:
 
 ```
-apps/api/src/routes/epg.routes.ts + epg.controller.ts + epg.service.ts
+apps/server/src/routes/epg.routes.ts + epg.controller.ts + epg.service.ts
 + rest/epg.rest хамт бич.
 GET /api/epg/:channelId — 3 хойш / 5 урагш өдрийн program-уудыг буцаана.
 Кэш: Redis-д 15 минут.

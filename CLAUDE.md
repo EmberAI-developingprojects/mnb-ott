@@ -68,8 +68,8 @@ User.role: USER | ADMIN | EDITOR | OPERATOR | SUPER_ADMIN
 ENV / SECRETS — АНХААРАЛТАЙ
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - Бодит secret-ийг `CLAUDE.md`, `README.md`, бусад committed файлд бичихгүй
-- Backend env: `apps/api/.env.example` → `cp .env.example .env`
-- Frontend env: `apps/web/.env.example` → `cp .env.example .env.local`
+- Backend env: `apps/server/.env.example` → `cp .env.example .env`
+- Frontend env: `apps/client/.env.example` → `cp .env.example .env.local`
 - Admin env:    `apps/admin/.env.example` → `cp .env.example .env.local`
 - `.env` файлууд `.gitignore`-д орсон
 - МНБ-с авах ёстой env-үүдийн жагсаалт: `docs/ARCHITECTURE.md`
@@ -78,9 +78,9 @@ ENV / SECRETS — АНХААРАЛТАЙ
 ДОПОЛНИТЕЛЬНЫЕ REFERENCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - Folder structure, API endpoints, schema, admin roles, roadmap → `docs/ARCHITECTURE.md`
-- Prisma schema source of truth → `apps/api/prisma/schema.prisma`
-- Route source of truth → `apps/api/src/routes/*.ts`
-- Frontend pages → `apps/web/app/(main|auth)/**/page.tsx`
+- Prisma schema source of truth → `apps/server/prisma/schema.prisma`
+- Route source of truth → `apps/server/src/routes/*.ts`
+- Frontend pages → `apps/client/app/(main|auth)/**/page.tsx`
 - Admin pages → `apps/admin/app/**/page.tsx`
 - Хөгжүүлэгчийн өдөр тутмын ажиллах гарын авлага → `docs/DEVELOPMENT.md`
 
