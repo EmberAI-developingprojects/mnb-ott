@@ -13,30 +13,14 @@ import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { Channel } from "@/types";
 
-/* ─────────────────────────────────────────────────────
-   TV хуудас — бүтэц
-   1. PLAYER (дээд, том)
-   2. ОДОО / ДАРААГИЙН program info
-   3. СУВГИЙН ХАЛЬЦ (хэвтээ scroll)
-   4. ӨНӨӨДРИЙН ХӨТӨЛБӨР + EPG (tab)
-   ───────────────────────────────────────────────────── */
 
 interface EpgProgram {
   id: string; title: string; startTime: string; endTime: string; category?: string;
 }
 interface EpgChannel { id: string; name: string; slug: string; programs: EpgProgram[]; }
 
-const TEST_STREAM = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
-
-const CHANNELS: (Channel & { isRadio?: boolean; logo: string; tag?: string })[] = [
-  { id: "ch1", name: "МНБ 1",        slug: "mnb1",         orderIndex: 1, isActive: true, streamUrl: "", thumbnailUrl: "/mnbtv.png",    logo: "/mnbtv.png",    tag: "Үндсэн" },
-  { id: "ch2", name: "МНБ News",      slug: "mnb-news",     orderIndex: 2, isActive: true, streamUrl: "", thumbnailUrl: "/mnews.png",     logo: "/mnews.png",    tag: "Мэдээ"  },
-  { id: "ch3", name: "МНБ Sport",     slug: "mnb-sport",    orderIndex: 3, isActive: true, streamUrl: "", thumbnailUrl: "/mnbsport.jpg",  logo: "/mnbsport.jpg", tag: "Спорт"  },
-  { id: "ch4", name: "МНБ Family",    slug: "mnb-family",   orderIndex: 4, isActive: true, streamUrl: "", thumbnailUrl: "/mnbfamily.png", logo: "/mnbfamily.png",tag: "Гэр бүл" },
-  { id: "ch5", name: "МНБ World",     slug: "mnb-world",    orderIndex: 5, isActive: true, streamUrl: "", thumbnailUrl: "/mnbworld.jpg",  logo: "/mnbworld.jpg", tag: "Дэлхий" },
-  { id: "ch6", name: "МНБ Радио",     slug: "mnb-radio",    orderIndex: 6, isActive: true, streamUrl: "", thumbnailUrl: "/mnbtv.png",    logo: "/mnbtv.png",    isRadio: true, tag: "Радио" },
-  { id: "ch7", name: "Bluesky Radio", slug: "bluesky-radio",orderIndex: 7, isActive: true, streamUrl: "", thumbnailUrl: "/mnbtv.png",    logo: "/mnbtv.png",    isRadio: true, tag: "Радио" },
-];
+/* Fallback thumbnail зураг — channel.thumbnailUrl null үед */
+const FALLBACK_LOGO = "/mnbtv.png";
 
 type Tab = "today" | "epg";
 
@@ -47,15 +31,29 @@ function TvContent() {
   const { lang } = useSettingsStore();
   const t = useT();
 
-  const initialSlug = params.get("ch") ?? CHANNELS[0].slug;
-  const [activeSlug, setActiveSlug] = useState(initialSlug);
+  const initialSlug = params.get("ch");
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [activeSlug, setActiveSlug] = useState<string | null>(initialSlug);
   const [epgChannels, setEpgChannels] = useState<EpgChannel[]>([]);
   const [epgLoading, setEpgLoading]   = useState(true);
   const [tab, setTab] = useState<Tab>("today");
   const [canPlay, setCanPlay] = useState<boolean | null>(null);
 
-  const active = CHANNELS.find((c) => c.slug === activeSlug) ?? CHANNELS[0];
-  const streamUrl = active.streamUrl || TEST_STREAM;
+  const active = channels.find((c) => c.slug === activeSlug) ?? channels[0];
+  /* streamUrl нь backend-ээс access-тэй үед ирнэ, эс үгүй бол null */
+  const streamUrl = active?.streamUrl ?? null;
+
+  /* Сувгуудыг API-аас татаж эхний идэвхтэй суваг руу focus */
+  useEffect(() => {
+    api.get<{ success: true; data: { channels: Channel[] } }>("/api/channels")
+      .then((r) => {
+        /* LIVE төрөл нь /live хуудаст харагдана — /tv доор зөвхөн TV/RADIO */
+        const list = r.data.data.channels.filter((c) => c.kind !== "LIVE");
+        setChannels(list);
+        if (!initialSlug && list.length > 0) setActiveSlug(list[0].slug);
+      })
+      .catch(() => {});
+  }, [initialSlug]);
 
   useEffect(() => {
     api.get<{ success: true; data: { channels: EpgChannel[] } }>("/api/channels/epg")
@@ -102,14 +100,30 @@ function TvContent() {
     return Math.max(0, Math.min(100, r));
   }
 
+  /* Channels хоосон бол loading дэлгэц */
+  if (channels.length === 0 || !active) {
+    return (
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+16px)] pb-12 space-y-5">
+        <Skeleton className="aspect-video w-full rounded-xl" />
+        <div className="grid grid-cols-3 gap-2">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+        </div>
+      </div>
+    );
+  }
+
+  const activeLogo = active.thumbnailUrl || FALLBACK_LOGO;
+  const activeIsRadio = active.kind === "RADIO";
+
   return (
     <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+16px)] pb-12 space-y-5">
 
       {/* ── MOBILE: горизонталь channel chip strip ──────── */}
       <div className="lg:hidden -mx-1 px-1 overflow-x-auto">
         <div className="flex gap-2 pb-1">
-          {CHANNELS.map((ch) => {
+          {channels.map((ch) => {
             const isActive = activeSlug === ch.slug;
+            const isRadio  = ch.kind === "RADIO";
             return (
               <button key={ch.slug} onClick={() => selectChannel(ch.slug)}
                 className={cn(
@@ -118,7 +132,7 @@ function TvContent() {
                     ? "bg-accent border-accent text-white"
                     : "bg-card border-app text-sub hover:text-app",
                 )}>
-                {!ch.isRadio && (
+                {!isRadio && (
                   <span className={cn("w-1.5 h-1.5 rounded-full",
                     isActive ? "bg-white animate-pulse-soft" : "bg-[var(--danger)] animate-pulse-soft")} />
                 )}
@@ -135,23 +149,23 @@ function TvContent() {
         <div className="space-y-3">
           {canPlay === null ? (
             <Skeleton className="aspect-video w-full rounded-xl" />
-          ) : canPlay ? (
-            <LivePlayer streamUrl={streamUrl} channelName={active.name} poster={active.thumbnailUrl} />
+          ) : canPlay && streamUrl ? (
+            <LivePlayer streamUrl={streamUrl} channelName={active.name} poster={active.thumbnailUrl ?? undefined} />
           ) : (
-            <UpgradePrompt kind="live-tv" backdrop={active.thumbnailUrl} />
+            <UpgradePrompt kind="live-tv" backdrop={active.thumbnailUrl ?? undefined} />
           )}
 
           {/* Channel header */}
           <div className="flex items-center gap-3 surface-base rounded-xl p-3.5">
             <div className="relative h-10 w-16 sm:h-11 sm:w-20 rounded-md overflow-hidden bg-black shrink-0">
-              <Image src={active.logo} alt={active.name} fill sizes="80px" className="object-contain" />
+              <Image src={activeLogo} alt={active.name} fill sizes="80px" className="object-contain" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-app truncate">{active.name}</h2>
-                {active.tag && (
+                {activeIsRadio && (
                   <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-card text-muted">
-                    {active.tag}
+                    {lang === "mn" ? "Радио" : "Radio"}
                   </span>
                 )}
               </div>
@@ -164,7 +178,7 @@ function TvContent() {
                 </p>
               ) : (
                 <p className="text-sm text-muted mt-0.5">
-                  {active.isRadio ? (lang === "mn" ? "Радио" : "Radio") : t("channels")}
+                  {activeIsRadio ? (lang === "mn" ? "Радио" : "Radio") : t("channels")}
                 </p>
               )}
               {currentProgram && (
@@ -179,8 +193,10 @@ function TvContent() {
 
         {/* Channels list (DESKTOP sidebar only — mobile-аас chip ribbon ашиглана) */}
         <aside className="hidden lg:block surface-base rounded-xl p-2 max-h-[480px] overflow-y-auto">
-          {CHANNELS.map((ch) => {
+          {channels.map((ch) => {
             const isActive = activeSlug === ch.slug;
+            const isRadio  = ch.kind === "RADIO";
+            const logo     = ch.thumbnailUrl || FALLBACK_LOGO;
             const onAir = epgChannels.find((c) => c.slug === ch.slug)?.programs
               .find((p) => new Date(p.startTime) <= now && new Date(p.endTime) > now);
             return (
@@ -190,7 +206,7 @@ function TvContent() {
                   isActive ? "bg-accent-soft" : "hover:bg-card-hover",
                 )}>
                 <div className="relative h-9 w-16 rounded-md overflow-hidden bg-black shrink-0">
-                  <Image src={ch.logo} alt={ch.name} fill sizes="64px" className="object-contain" />
+                  <Image src={logo} alt={ch.name} fill sizes="64px" className="object-contain" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={cn("text-[13px] font-semibold truncate",
@@ -198,10 +214,10 @@ function TvContent() {
                     {ch.name}
                   </p>
                   <p className="text-[11px] text-muted truncate mt-0.5">
-                    {onAir ? onAir.title : (ch.isRadio ? (lang === "mn" ? "Радио" : "Radio") : "—")}
+                    {onAir ? onAir.title : (isRadio ? (lang === "mn" ? "Радио" : "Radio") : "—")}
                   </p>
                 </div>
-                {!ch.isRadio && <span className="w-1.5 h-1.5 rounded-full bg-[var(--danger)] animate-pulse-soft shrink-0" />}
+                {!isRadio && <span className="w-1.5 h-1.5 rounded-full bg-[var(--danger)] animate-pulse-soft shrink-0" />}
               </button>
             );
           })}
@@ -245,7 +261,7 @@ function TvContent() {
               {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
             </div>
           ) : (
-            <EPGGrid channels={epgChannels} activeChannelSlug={activeSlug} onChannelSelect={selectChannel} />
+            <EPGGrid channels={epgChannels} activeChannelSlug={activeSlug ?? undefined} onChannelSelect={selectChannel} />
           )
         )}
       </section>

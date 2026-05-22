@@ -59,7 +59,7 @@ export interface User {
   avatar?: string;
   role: Role;
   isVerified: boolean;
-  password?: string | null;
+  hasPassword: boolean;
   createdAt: string;
   subscription?: Subscription;
 }
@@ -73,13 +73,16 @@ export interface Subscription {
   status: "ACTIVE" | "EXPIRED" | "CANCELLED";
 }
 
+export type ChannelKind = "LIVE" | "TV" | "RADIO";
+
 export interface Channel {
   id: string;
   name: string;
   slug: string;
-  streamUrl?: string;
+  kind: ChannelKind;
+  streamUrl?: string | null;
   epgUrl?: string;
-  thumbnailUrl?: string;
+  thumbnailUrl?: string | null;
   isActive: boolean;
   orderIndex: number;
 }

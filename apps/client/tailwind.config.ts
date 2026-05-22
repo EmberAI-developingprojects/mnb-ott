@@ -19,7 +19,10 @@ const config: Config = {
         "c-muted":  "var(--muted)",
         "c-border": "var(--border)",
         primary: "#0046A5",
-        danger:  "#CF1E28",
+        /* Accent — RGB channels-аас уншиж opacity (bg-accent/90) болон theme switching дэмжинэ */
+        accent:         "rgb(var(--accent-rgb) / <alpha-value>)",
+        "accent-hover": "rgb(var(--accent-hover-rgb) / <alpha-value>)",
+        danger:         "rgb(var(--danger-rgb) / <alpha-value>)",
 
         // Legacy (аль хэдийн ашиглаж байгаа)
         "dark-bg": "var(--bg)",

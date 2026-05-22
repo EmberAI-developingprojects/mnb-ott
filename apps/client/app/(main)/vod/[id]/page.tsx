@@ -6,11 +6,13 @@ import Link from "next/link";
 import { VodPlayer } from "@/components/player/VodPlayer";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { UpgradePrompt } from "@/components/layout/UpgradePrompt";
+import { LoginPrompt } from "@/components/layout/LoginPrompt";
 import { useAuthStore } from "@/store/authStore";
 import { useT } from "@/store/settingsStore";
 import { formatDuration, formatViews } from "@/lib/utils";
 import { useWatchlistStore } from "@/store/watchlistStore";
 import api from "@/lib/api";
+import Image from "next/image";
 
 interface VideoDetail {
   youtubeId: string;
@@ -155,6 +157,9 @@ export default function VodDetailPage() {
               thumbnailUrl={video.thumbnailUrl}
               duration={video.duration}
             />
+          ) : !user ? (
+            /* Зочин — plan/худалдан авалт биш, эхлээд нэвтрэх ёстой */
+            <LoginPrompt backdrop={video.thumbnailUrl} title={video.title} />
           ) : (
             <UpgradePrompt
               kind={video.accessKind === "bundle" ? "bundle" : "library"}
@@ -219,7 +224,7 @@ export default function VodDetailPage() {
               </p>
               {descLines.length > 200 && (
                 <button onClick={() => setDescExpanded(!descExpanded)}
-                  className="text-xs text-[#0046A5] mt-2 hover:underline">
+                  className="text-xs text-accent mt-2 hover:underline">
                   {descExpanded ? t("cancel") : t("details")}
                 </button>
               )}
@@ -237,7 +242,8 @@ export default function VodDetailPage() {
                 <Link key={v.youtubeId} href={`/vod/${v.youtubeId}`}
                   className="flex gap-3 p-2 rounded-lg hover:bg-surface transition-colors group">
                   <div className="relative w-28 aspect-video rounded-md overflow-hidden shrink-0 bg-surface">
-                    <img src={v.thumbnailUrl} alt={v.title} className="w-full h-full object-cover" loading="lazy" />
+                    <Image src={v.thumbnailUrl} alt={v.title} fill sizes="112px"
+                      className="object-cover" loading="lazy" />
                     {v.duration > 0 && (
                       <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] px-1 rounded font-mono">
                         {formatDuration(v.duration)}
@@ -245,7 +251,7 @@ export default function VodDetailPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0 space-y-1 pt-0.5">
-                    <p className="text-xs text-app line-clamp-3 leading-snug group-hover:text-[#0046A5] transition-colors">
+                    <p className="text-xs text-app line-clamp-3 leading-snug group-hover:text-accent transition-colors">
                       {v.title}
                     </p>
                     <p className="text-[11px] text-muted">{d}</p>

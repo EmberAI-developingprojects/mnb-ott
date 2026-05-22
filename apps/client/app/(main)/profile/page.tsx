@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useSettingsStore, useT } from "@/store/settingsStore";
 import api from "@/lib/api";
-import { cn } from "@/lib/utils";
 
 /* /profile — iOS Settings маягийн menu list page
    Хэрэглэгчийн мэдээлэл /profile/account руу шилжсэн */
@@ -164,6 +163,3 @@ const ICON = {
     </svg>
   ),
 } as const;
-
-/* unused cn — placeholder for future */
-void cn;

@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { cn, formatDuration } from "@/lib/utils";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { useT } from "@/store/settingsStore";
 
 // ── YouTube IFrame API типүүд ─────────────────────────
 
@@ -78,6 +80,7 @@ export function VodPlayer({
   youtubeId, vodId, title, thumbnailUrl, duration, startPosition = 0,
 }: VodPlayerProps) {
   const { user } = useAuthStore();
+  const t = useT();
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YT.Player | null>(null);
@@ -232,12 +235,13 @@ export function VodPlayer({
       {/* Poster — player эхлээгүй үед */}
       {!started && (
         <div className="absolute inset-0 z-10">
-          <img src={thumbnailUrl} alt={title} className="w-full h-full object-cover" />
+          <Image src={thumbnailUrl} alt={title} fill sizes="100vw"
+            className="object-cover" priority />
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             {user ? (
               <button
                 onClick={initPlayer}
-                className="w-20 h-20 rounded-full bg-[#0046A5]/90 hover:bg-[#0046A5] flex items-center justify-center
+                className="w-20 h-20 rounded-full bg-accent/90 hover:bg-accent flex items-center justify-center
                   shadow-2xl transition-transform hover:scale-110"
               >
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="white" className="translate-x-0.5">
@@ -251,14 +255,14 @@ export function VodPlayer({
                 className="flex flex-col items-center gap-2 group"
               >
                 <div className="w-20 h-20 rounded-full bg-black/60 border-2 border-white/20 flex items-center justify-center
-                  group-hover:border-[#0046A5] transition-colors">
+                  group-hover:border-accent transition-colors">
                   <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
                     <circle cx="12" cy="8" r="4"/>
                     <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
                   </svg>
                 </div>
-                <span className="text-white/80 text-sm font-semibold bg-[#0046A5] px-4 py-1.5 rounded-full">
-                  Нэвтрэх
+                <span className="text-white/80 text-sm font-semibold bg-accent px-4 py-1.5 rounded-full">
+                  {t("login")}
                 </span>
               </button>
             )}

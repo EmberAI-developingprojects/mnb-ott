@@ -72,7 +72,7 @@ function SearchContent() {
                     </span>
                   )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                    <div className="w-9 h-9 rounded-full bg-[#0046A5]/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                    <div className="w-9 h-9 rounded-full bg-accent/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="white" className="translate-x-0.5">
                         <path d="M8 5v14l11-7z" />
                       </svg>
@@ -80,7 +80,7 @@ function SearchContent() {
                   </div>
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-sm text-app line-clamp-2 leading-snug group-hover:text-[#0046A5] transition-colors font-medium">
+                  <p className="text-sm text-app line-clamp-2 leading-snug group-hover:text-accent transition-colors font-medium">
                     {v.title}
                   </p>
                   <p className="text-xs text-muted">{formatViews(v.viewCount)} үзэлт · {date}</p>

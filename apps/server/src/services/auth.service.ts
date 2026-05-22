@@ -132,6 +132,9 @@ export async function loginWithPassword(
   if (!user) {
     throw new AppError("Бүртгэлтэй хаяг олдсонгүй", 401, "INVALID_CREDENTIALS");
   }
+  if (user.isBlocked) {
+    throw new AppError("Таны бүртгэл түр хаагдсан байна. Дэмжлэгтэй холбогдоно уу.", 403, "BLOCKED");
+  }
   if (!user.password) {
     throw new AppError("Энэ хаяг нууц үггүй бүртгэлтэй. Бүртгүүлэх хуудасруу ороод нууц үг тохируулна уу.", 401, "NO_PASSWORD");
   }
@@ -249,6 +252,6 @@ export async function logout(sessionId: string): Promise<void> {
 export async function getMe(userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId }, include: { subscription: true } });
   if (!user) throw new AppError("Хэрэглэгч олдсонгүй", 404, "NOT_FOUND");
-  const { password: _, ...safe } = user;
-  return safe;
+  const { password, ...safe } = user;
+  return { ...safe, hasPassword: !!password };
 }

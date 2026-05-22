@@ -13,24 +13,45 @@ interface EpgProgram {
   id: string; title: string; startTime: string; endTime: string;
 }
 
-const LIVE_STREAM = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
-const LIVE_LOGO   = "/mnbtv.png";
-const LIVE_NAME   = "МНБ 1";
+interface LiveChannel {
+  id: string;
+  name: string;
+  slug: string;
+  kind: "LIVE" | "TV" | "RADIO";
+  thumbnailUrl: string | null;
+  streamUrl: string | null;
+}
+
+/* Backend LIVE-төрлийн суваг олдохгүй үед ашиглах placeholder зураг */
+const FALLBACK_LOGO = "/mnbtv.png";
 
 export default function LivePage() {
   const t = useT();
   const { user } = useAuthStore();
+  const [live, setLive] = useState<LiveChannel | null>(null);
   const [programs, setPrograms] = useState<EpgProgram[]>([]);
   const [canPlay, setCanPlay]   = useState<boolean | null>(null);
 
+  /* LIVE төрөлтэй сувгийг сонгож татна (admin-аас үүсгэсэн) */
   useEffect(() => {
-    api.get<{ success: true; data: { channels: { slug: string; programs: EpgProgram[] }[] } }>("/api/channels/epg")
+    api.get<{ success: true; data: { channels: LiveChannel[] } }>("/api/channels")
       .then((r) => {
-        const ch = r.data.data.channels.find((c) => c.slug === "mnb1");
-        if (ch) setPrograms(ch.programs);
+        const liveCh = r.data.data.channels.find((c) => c.kind === "LIVE")
+          ?? r.data.data.channels[0]; /* fallback: эхний идэвхтэй */
+        setLive(liveCh ?? null);
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!live) return;
+    api.get<{ success: true; data: { channels: { slug: string; programs: EpgProgram[] }[] } }>("/api/channels/epg")
+      .then((r) => {
+        const ch = r.data.data.channels.find((c) => c.slug === live.slug);
+        if (ch) setPrograms(ch.programs);
+      })
+      .catch(() => {});
+  }, [live]);
 
   useEffect(() => {
     if (!user) { setCanPlay(false); return; }
@@ -51,22 +72,22 @@ export default function LivePage() {
     <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+24px)] pb-12 space-y-5">
 
       {/* Player */}
-      {canPlay === null ? (
+      {canPlay === null || !live ? (
         <Skeleton className="aspect-video w-full rounded-xl" />
-      ) : canPlay ? (
-        <LivePlayer streamUrl={LIVE_STREAM} channelName={LIVE_NAME} poster="/mnbtv.png" />
+      ) : canPlay && live.streamUrl ? (
+        <LivePlayer streamUrl={live.streamUrl} channelName={live.name} poster={live.thumbnailUrl ?? FALLBACK_LOGO} />
       ) : (
-        <UpgradePrompt kind="live-tv" backdrop="/mnbtv.png" />
+        <UpgradePrompt kind="live-tv" backdrop={live.thumbnailUrl ?? FALLBACK_LOGO} />
       )}
 
       {/* Суваг мэдээлэл */}
       <div className="flex items-center gap-4">
         <div className="relative h-10 aspect-[2/1] rounded-md overflow-hidden bg-black shrink-0">
-          <Image src={LIVE_LOGO} alt={LIVE_NAME} fill sizes="80px" className="object-contain" />
+          <Image src={live?.thumbnailUrl || FALLBACK_LOGO} alt={live?.name ?? ""} fill sizes="80px" className="object-contain" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-app">{LIVE_NAME}</h1>
+            <h1 className="text-lg font-bold text-app">{live?.name ?? "—"}</h1>
             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white
               bg-[#CF1E28] px-2 py-0.5 rounded-full">
               <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
@@ -112,10 +133,10 @@ export default function LivePage() {
                 return (
                   <div key={p.id}
                     className={`px-4 py-3 border-b border-[var(--border)] transition-colors flex items-start gap-3
-                      ${isCurrent ? "bg-[#0046A5]/8 border-l-2 border-l-[#0046A5]" : ""}
+                      ${isCurrent ? "bg-accent/10 border-l-2 border-l-accent" : ""}
                       ${isPast ? "opacity-45" : ""}`}>
                     <div className="shrink-0 w-20">
-                      <span className={`text-xs font-bold tabular-nums ${isCurrent ? "text-[#0046A5]" : "text-muted"}`}>
+                      <span className={`text-xs font-bold tabular-nums ${isCurrent ? "text-accent" : "text-muted"}`}>
                         {startTime}
                       </span>
                       <span className="text-[10px] text-muted block">– {endTime}</span>

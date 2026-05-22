@@ -87,7 +87,7 @@ function ForgotForm() {
         {error && <ErrBox msg={error} />}
 
         <button type="submit" disabled={loading || !identifier}
-          className="w-full py-3.5 rounded-xl bg-[#0046A5] hover:bg-[#0055c8] active:scale-[0.98]
+          className="w-full py-3.5 rounded-xl bg-accent hover:bg-accent-hover active:scale-[0.98]
             text-white font-semibold text-sm transition-all disabled:opacity-35 shadow-lg shadow-blue-900/20">
           {loading ? <Spin label={t("sending")} /> : t("otp_get")}
         </button>
@@ -115,7 +115,7 @@ function ForgotForm() {
           </p>
         ) : (
           <button onClick={(e) => handleSendOtp(e as unknown as React.FormEvent)}
-            className="text-sm text-[#0046A5] hover:text-blue-400 transition-colors font-medium">
+            className="text-sm text-accent hover:text-accent-hover transition-colors font-medium">
             {t("otp_resend")}
           </button>
         )}
@@ -155,7 +155,7 @@ function ForgotForm() {
         {error && <ErrBox msg={error} />}
 
         <button type="submit" disabled={loading}
-          className="w-full py-3.5 rounded-xl bg-[#0046A5] hover:bg-[#0055c8] active:scale-[0.98]
+          className="w-full py-3.5 rounded-xl bg-accent hover:bg-accent-hover active:scale-[0.98]
             text-white font-semibold text-sm transition-all disabled:opacity-35 shadow-lg shadow-blue-900/20">
           {loading ? <Spin label={t("saving")} /> : t("pw_update")}
         </button>
@@ -176,7 +176,7 @@ function ForgotForm() {
         <p className="text-sm text-muted mt-1.5">{t("pw_updated_sub")}</p>
       </div>
       <button onClick={() => router.push("/login")}
-        className="w-full py-3.5 rounded-xl bg-[#0046A5] hover:bg-[#0055c8] text-white font-semibold text-sm transition-all">
+        className="w-full py-3.5 rounded-xl bg-accent hover:bg-accent-hover text-white font-semibold text-sm transition-all">
         {t("login")}
       </button>
     </div>

@@ -188,8 +188,8 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
     const user = await import("../lib/prisma").then(({ prisma }) =>
       prisma.user.update({ where: { id: req.user!.userId }, data: { name }, include: { subscription: true } })
     );
-    const { password: _, ...safe } = user;
-    res.json({ success: true, data: safe });
+    const { password, ...safe } = user;
+    res.json({ success: true, data: { ...safe, hasPassword: !!password } });
   } catch (e) { next(e); }
 }
 

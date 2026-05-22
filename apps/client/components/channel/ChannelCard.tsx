@@ -16,7 +16,7 @@ export function ChannelCard({ channel, active, onClick }: ChannelCardProps) {
       className={cn(
         "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer",
         active
-          ? "border-[#0046A5]/60 bg-[#0046A5]/10"
+          ? "border-accent/60 bg-accent/10"
           : "border-app bg-surface hover:border-strong hover:bg-card"
       )}
       onClick={onClick}
@@ -26,7 +26,7 @@ export function ChannelCard({ channel, active, onClick }: ChannelCardProps) {
         {channel.thumbnailUrl ? (
           <img src={channel.thumbnailUrl} alt={channel.name} className="w-full h-full object-contain" />
         ) : (
-          <span className="text-base font-bold text-[#0046A5] flex items-center justify-center w-full h-full">
+          <span className="text-base font-bold text-accent flex items-center justify-center w-full h-full">
             {channel.orderIndex}
           </span>
         )}
@@ -51,7 +51,7 @@ export function ChannelCard({ channel, active, onClick }: ChannelCardProps) {
       </div>
 
       {active && (
-        <div className="w-2 h-2 rounded-full bg-[#0046A5] shrink-0" />
+        <div className="w-2 h-2 rounded-full bg-accent shrink-0" />
       )}
     </div>
   );

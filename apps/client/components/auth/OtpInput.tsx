@@ -76,8 +76,8 @@ export const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
               hasError
                 ? "bg-red-500/10 border-red-500/50 text-red-400 focus:border-red-400"
                 : val
-                  ? "bg-[#0046A5]/20 border-[#0046A5] text-app focus:border-[#0046A5]"
-                  : "bg-input border-strong text-app focus:border-[#0046A5]",
+                  ? "bg-accent/20 border-accent text-app focus:border-accent"
+                  : "bg-input border-strong text-app focus:border-accent",
               "disabled:opacity-40 disabled:cursor-not-allowed",
             ].filter(Boolean).join(" ")}
           />

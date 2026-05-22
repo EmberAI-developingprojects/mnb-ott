@@ -54,14 +54,14 @@ export default function WatchlistPage() {
                     </span>
                   )}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-10 h-10 rounded-full bg-[#0046A5]/90 flex items-center justify-center shadow-xl">
+                    <div className="w-10 h-10 rounded-full bg-accent/90 flex items-center justify-center shadow-xl">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="white" className="translate-x-0.5">
                         <path d="M8 5v14l11-7z"/>
                       </svg>
                     </div>
                   </div>
                 </div>
-                <p className="text-sm text-app line-clamp-2 leading-snug group-hover:text-[#0046A5] transition-colors px-0.5">
+                <p className="text-sm text-app line-clamp-2 leading-snug group-hover:text-accent transition-colors px-0.5">
                   {item.title}
                 </p>
               </Link>

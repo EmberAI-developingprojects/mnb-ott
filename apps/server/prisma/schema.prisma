@@ -3,8 +3,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // DATABASE_URL: transaction-mode pooler (port 6543) — runtime query-д
+  // DIRECT_URL:   session-mode pooler (port 5432) — `prisma migrate`-д
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -53,6 +56,7 @@ enum PaymentStatus {
   PAID
   FAILED
   CANCELLED
+  REFUNDED
 }
 
 enum ContentType {
@@ -69,6 +73,7 @@ model User {
   password    String?   // bcrypt hash, Google OAuth-д null
   role        Role      @default(USER)
   isVerified  Boolean   @default(false)
+  isBlocked   Boolean   @default(false)  // Admin ban: true бол login хийж чадахгүй
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -80,6 +85,27 @@ model User {
   watchHistory  WatchHistory[]
   otpCodes      OtpCode[]
   notifications Notification[]
+  auditLogs     AuditLog[]
+}
+
+// Admin-ийн үйлдлийн түүх — role change, refund, ban г.м.
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String
+  targetType   String   // "user" | "vod" | "channel" | "payment" | "config" | ...
+  targetId     String?
+  action       String   // "ROLE_CHANGE" | "BAN" | "REFUND" | "CREATE" | "UPDATE" | "DELETE"
+  before       Json?
+  after        Json?
+  reason       String?
+  ip           String?
+  createdAt    DateTime @default(now())
+
+  actor User @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([actorUserId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
 }
 
 model Account {
@@ -194,18 +220,24 @@ model Notification {
   @@index([userId, isRead])
 }
 
+enum ChannelKind {
+  LIVE   // МНБ-ийн үндсэн live broadcast (нэг бичлэг — тайлбар + URL)
+  TV     // 5 TV суваг — thumbnail-тэй
+  RADIO  // 2 радио суваг — thumbnail-тэй
+}
+
 model Channel {
-  id           String   @id @default(cuid())
+  id           String      @id @default(cuid())
   name         String
-  slug         String   @unique
+  slug         String      @unique
+  kind         ChannelKind @default(TV)
   streamUrl    String?
   epgUrl       String?
   thumbnailUrl String?
-  isActive     Boolean  @default(true)
-  orderIndex   Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
+  isActive     Boolean     @default(true)
+  orderIndex   Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 model VodContent {

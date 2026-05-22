@@ -67,7 +67,14 @@ api.interceptors.response.use(
       | (NonNullable<AxiosError["config"]> & { _retry?: boolean })
       | undefined;
 
-    if (error.response?.status === 401 && original && !original._retry) {
+    /* Token-гүй endpoint-ууд (login, refresh, register, forgot/reset) дээр
+       401 ирэх нь "credential буруу" гэсэн утгатай — refresh оролдох ёсгүй.
+       Эс бөгөөс нэг login оролдлогод 2 запрос явдаг. */
+    const isAuthEndpoint = original?.url
+      ? /\/api\/auth\/(login|refresh|register|forgot-password|reset-password|send-otp|verify-otp|google)/.test(original.url)
+      : false;
+
+    if (error.response?.status === 401 && original && !original._retry && !isAuthEndpoint) {
       original._retry = true;
       const newToken = await refresh();
       if (newToken) {

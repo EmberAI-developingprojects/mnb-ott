@@ -104,7 +104,7 @@ export function LoginForm() {
 
         <Field label={t("password")}
           right={
-            <Link href="/forgot-password" className="text-xs text-[#0046A5] hover:text-blue-400 transition-colors">
+            <Link href="/forgot-password" className="text-xs text-accent hover:text-accent-hover transition-colors">
               {t("forgot_link")}
             </Link>
           }>
@@ -126,7 +126,7 @@ export function LoginForm() {
         {error && <ErrBox msg={error} onDismiss={() => setError("")} />}
 
         <button type="submit" disabled={loading || !identifier || !password}
-          className="w-full py-3.5 rounded-xl bg-[#0046A5] hover:bg-[#0055c8] active:scale-[0.98]
+          className="w-full py-3.5 rounded-xl bg-accent hover:bg-accent-hover active:scale-[0.98]
             text-white font-semibold text-sm transition-all
             disabled:opacity-35 disabled:cursor-not-allowed shadow-lg shadow-blue-900/20">
           {loading ? <Spin label={t("login_loading")} /> : t("login")}
@@ -140,7 +140,7 @@ export function LoginForm() {
 
 export const inputCls = [
   "w-full px-4 py-3.5 rounded-xl border input-base",
-  "text-sm focus:ring-2 focus:ring-[#0046A5]/15 transition-all",
+  "text-sm focus:ring-2 focus:ring-accent/15 transition-all",
 ].join(" ");
 
 export function Field({ label, right, children }: {

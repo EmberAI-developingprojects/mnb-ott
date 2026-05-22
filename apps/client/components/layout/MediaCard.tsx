@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { formatDuration } from "@/lib/utils";
 
 interface Props {
@@ -21,8 +22,9 @@ export function MediaCard({ href, title, thumbnailUrl, duration }: Props) {
     <Link href={href} className="group block">
       <div className="relative aspect-video rounded-xl overflow-hidden bg-card
         ring-1 ring-transparent group-hover:ring-2 group-hover:ring-accent ring-inset transition-all duration-200">
-        <img src={thumbnailUrl} alt={title}
-          className="w-full h-full object-cover" loading="lazy" />
+        <Image src={thumbnailUrl} alt={title} fill
+          sizes="(max-width: 640px) 70vw, (max-width: 1024px) 35vw, 280px"
+          className="object-cover" loading="lazy" />
 
         {duration && duration > 0 ? (
           <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/85 text-white text-[10px] font-mono tabular-nums">

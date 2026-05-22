@@ -104,14 +104,14 @@ export default function AdminSettingsPage() {
                         value={currentVal}
                         onChange={(e) => setEditing((prev) => ({ ...prev, [cfg.key]: e.target.value }))}
                         className="w-24 text-right px-3 py-1.5 rounded-lg border input-base
-                          text-sm focus:ring-2 focus:ring-[#0046A5]/15 transition-colors"
+                          text-sm focus:ring-2 focus:ring-accent/15 transition-colors"
                       />
                       {isEdited && (
                         <button
                           onClick={() => handleSave(cfg.key)}
                           disabled={isSaving}
-                          className="px-3 py-1.5 bg-[#0046A5] text-white text-xs font-semibold rounded-lg
-                            hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                          className="px-3 py-1.5 bg-accent text-white text-xs font-semibold rounded-lg
+                            hover:bg-accent-hover disabled:opacity-50 transition-colors"
                         >
                           {isSaving ? "..." : "Хадгалах"}
                         </button>

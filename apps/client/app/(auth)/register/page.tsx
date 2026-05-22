@@ -120,7 +120,7 @@ function RegisterForm() {
           </p>
         ) : (
           <button onClick={resendOtp} disabled={loading}
-            className="text-sm text-[#0046A5] hover:text-blue-400 transition-colors font-medium">
+            className="text-sm text-accent hover:text-accent-hover transition-colors font-medium">
             {t("otp_resend")}
           </button>
         )}
@@ -201,7 +201,7 @@ function RegisterForm() {
         {error && <ErrBox msg={error} onDismiss={() => setError("")} />}
 
         <button type="submit" disabled={loading}
-          className="w-full py-3.5 rounded-xl bg-[#0046A5] hover:bg-[#0055c8] active:scale-[0.98]
+          className="w-full py-3.5 rounded-xl bg-accent hover:bg-accent-hover active:scale-[0.98]
             text-white font-semibold text-sm transition-all
             disabled:opacity-35 disabled:cursor-not-allowed shadow-lg shadow-blue-900/20">
           {loading ? <Spin label={t("validating")} /> : `${t("continue_btn")} →`}

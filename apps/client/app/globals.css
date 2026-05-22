@@ -29,17 +29,21 @@
   --border:       rgba(255,255,255,0.06);
   --border-strong:rgba(255,255,255,0.12);
 
-  /* Brand */
-  --primary:      #0046A5;
-  --primary-hover:#1f5fc0;
-  --primary-soft: rgba(0,70,165,0.12);
-  --accent:       #0046A5;      /* МНБ brand blue — Watch CTA, highlight */
-  --accent-hover: #1f5fc0;
-  --accent-soft:  rgba(0,70,165,0.15);
-  --danger:       #CF1E28;
-  --danger-soft:  rgba(207,30,40,0.12);
-  --success:      #16a34a;
-  --warning:      #d97706;
+  /* Brand — hex format CSS-д, RGB channels Tailwind opacity-д хэрэгтэй.
+     Dark theme: hover-ийг ТОД болгож visual feedback өгнө (хуучин #0055c8). */
+  --primary:        #0046A5;
+  --primary-hover:  #0055c8;
+  --primary-soft:   rgba(0,70,165,0.12);
+  --accent:         #0046A5;      /* МНБ brand blue — Watch CTA, highlight */
+  --accent-hover:   #0055c8;      /* Bright hover for dark theme */
+  --accent-soft:    rgba(0,70,165,0.15);
+  --accent-rgb:        0 70 165;
+  --accent-hover-rgb:  0 85 200;
+  --danger:         #CF1E28;
+  --danger-soft:    rgba(207,30,40,0.12);
+  --danger-rgb:        207 30 40;
+  --success:        #16a34a;
+  --warning:        #d97706;
 
   /* Layers */
   --overlay:      rgba(0,0,0,0.65);
@@ -83,16 +87,19 @@ html.light {
   --border:       rgba(21,22,28,0.08);
   --border-strong:rgba(21,22,28,0.15);
 
-  --primary:      #0046A5;
-  --primary-hover:#003a8c;
-  --primary-soft: rgba(0,70,165,0.08);
-  --accent:       #0046A5;
-  --accent-hover: #003a8c;
-  --accent-soft:  rgba(0,70,165,0.10);
-  --danger:       #CF1E28;
-  --danger-soft:  rgba(207,30,40,0.08);
-  --success:      #15803d;
-  --warning:      #b45309;
+  --primary:        #0046A5;
+  --primary-hover:  #003a8c;
+  --primary-soft:   rgba(0,70,165,0.08);
+  --accent:         #0046A5;
+  --accent-hover:   #003a8c;
+  --accent-soft:    rgba(0,70,165,0.10);
+  --accent-rgb:        0 70 165;
+  --accent-hover-rgb:  0 58 140;
+  --danger:         #CF1E28;
+  --danger-soft:    rgba(207,30,40,0.08);
+  --danger-rgb:        207 30 40;
+  --success:        #15803d;
+  --warning:        #b45309;
 
   --overlay:      rgba(20,21,28,0.45);
   --shadow-sm:    0 1px 2px rgba(21,22,28,0.04);
@@ -137,13 +144,10 @@ html.light {
   .hover\:bg-brand-hover:hover { background-color: var(--primary-hover); }
   .ring-brand      { --tw-ring-color: var(--primary); }
 
-  .bg-accent        { background-color: var(--accent); }
-  .bg-accent-hover  { background-color: var(--accent-hover); }
-  .hover\:bg-accent-hover:hover { background-color: var(--accent-hover); }
-  .text-accent      { color: var(--accent); }
-  .border-accent    { border-color: var(--accent); }
+  /* accent / accent-hover Tailwind theme.colors дээр rgb()-аар тодорхойлогдсон —
+     opacity modifier (bg-accent/15) болон hover variant автоматаар ажиллана.
+     bg-accent-soft нь bg-accent/15 шиг, dual-theme дэмждэг. */
   .bg-accent-soft   { background-color: var(--accent-soft); }
-  .ring-accent      { --tw-ring-color: var(--accent); }
 
   .bg-grad-amber  { background-image: var(--grad-amber); }
   .bg-grad-brand  { background-image: var(--grad-brand); }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useWatchlistStore } from "@/store/watchlistStore";
 import { formatDuration } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -35,8 +36,9 @@ export function PosterCard({ href, id, title, thumbnailUrl, duration, genre }: P
     <Link href={href} className="group block">
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-card
         ring-1 ring-transparent group-hover:ring-2 group-hover:ring-accent ring-inset transition-all duration-200">
-        <img src={thumbnailUrl} alt={title}
-          className="w-full h-full object-cover" loading="lazy" />
+        <Image src={thumbnailUrl} alt={title} fill
+          sizes="(max-width: 640px) 45vw, (max-width: 1024px) 25vw, 200px"
+          className="object-cover" loading="lazy" />
 
         {/* Hover overlay */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">

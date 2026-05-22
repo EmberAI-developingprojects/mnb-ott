@@ -1,28 +1,34 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.middleware";
+import {
+  otpSendLimiter,
+  otpVerifyLimiter,
+  loginLimiter,
+  passwordChangeLimiter,
+} from "../middleware/rate-limit.middleware";
 import * as ctrl from "../controllers/auth.controller";
 
 export const authRouter = Router();
 
-// Бүртгэх (2 алхам)
-authRouter.post("/register",        ctrl.registerInit);
-authRouter.post("/register/verify", ctrl.registerVerify);
-authRouter.post("/login",           ctrl.login);
+// Бүртгэх (2 алхам) — OTP илгээх дээр rate limit, verify дээр илүү уян
+authRouter.post("/register",        otpSendLimiter,   ctrl.registerInit);
+authRouter.post("/register/verify", otpVerifyLimiter, ctrl.registerVerify);
+authRouter.post("/login",           loginLimiter,     ctrl.login);
 authRouter.post("/google",          ctrl.googleAuth);
 authRouter.get("/google/url",       ctrl.googleAuthUrl);
 authRouter.get("/google/callback",  ctrl.googleCallback);
 
 // Нууц үг сэргээх
-authRouter.post("/forgot-password", ctrl.forgotPassword);
-authRouter.post("/reset-password",  ctrl.resetPassword);
+authRouter.post("/forgot-password", otpSendLimiter,   ctrl.forgotPassword);
+authRouter.post("/reset-password",  otpVerifyLimiter, ctrl.resetPassword);
 
 // OTP (утас)
-authRouter.post("/send-otp",        ctrl.sendOtp);
-authRouter.post("/verify-otp",      ctrl.verifyOtp);
+authRouter.post("/send-otp",        otpSendLimiter,   ctrl.sendOtp);
+authRouter.post("/verify-otp",      otpVerifyLimiter, ctrl.verifyOtp);
 
 // Profile
 authRouter.patch("/profile",         requireAuth, ctrl.updateProfile);
-authRouter.post("/change-password",  requireAuth, ctrl.changePassword);
+authRouter.post("/change-password",  requireAuth, passwordChangeLimiter, ctrl.changePassword);
 
 // Sessions (devices)
 authRouter.get("/sessions",             requireAuth, ctrl.getSessions);

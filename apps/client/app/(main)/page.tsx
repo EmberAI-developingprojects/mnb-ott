@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ScrollRow } from "@/components/layout/ScrollRow";
 import { useSettingsStore, useT } from "@/store/settingsStore";
@@ -18,15 +19,14 @@ import api from "@/lib/api";
    4. CONTENT ROWS — bundles, library (poster), archive (landscape)
    ═══════════════════════════════════════════════════════════════ */
 
-const CHANNELS: { slug: string; label: string; isRadio?: boolean }[] = [
-  { slug: "mnb1",         label: "main"    },
-  { slug: "mnb-news",     label: "NEWS"    },
-  { slug: "mnb-sport",    label: "SPORT"   },
-  { slug: "mnb-family",   label: "FAMILY"  },
-  { slug: "mnb-world",    label: "WORLD"   },
-  { slug: "mnb-radio",    label: "RADIO",   isRadio: true },
-  { slug: "bluesky-radio",label: "BLUESKY", isRadio: true },
-];
+interface ApiChannel {
+  id: string;
+  name: string;
+  slug: string;
+  kind: "LIVE" | "TV" | "RADIO";
+  thumbnailUrl: string | null;
+  orderIndex: number;
+}
 
 interface Video {
   youtubeId: string; title: string; thumbnailUrl: string;
@@ -45,6 +45,7 @@ export default function HomePage() {
   const [archive,  setArchive] = useState<Video[]>([]);
   const [library,  setLibrary] = useState<Video[]>([]);
   const [bundles,  setBundles] = useState<Bundle[]>([]);
+  const [channels, setChannels] = useState<ApiChannel[]>([]);
   const [hero,     setHero]    = useState<Video[]>([]);
   const [loading,  setLoading] = useState(true);
   const [heroIdx,  setHeroIdx] = useState(0);
@@ -55,7 +56,9 @@ export default function HomePage() {
       api.get<{ success: true; data: { videos: Video[] } }>("/api/vod/archive", { params: { limit: 8 } }),
       api.get<{ success: true; data: { videos: Video[] } }>("/api/vod/library", { params: { limit: 8 } }),
       api.get<{ success: true; data: { bundles: Bundle[] } }>("/api/vod/bundles"),
-    ]).then(([a, l, b]) => {
+      api.get<{ success: true; data: { channels: ApiChannel[] } }>("/api/channels"),
+    ]).then(([a, l, b, c]) => {
+      setChannels(c.data.data.channels);
       setArchive(a.data.data.videos);
       setLibrary(l.data.data.videos);
       setBundles(b.data.data.bundles);
@@ -107,8 +110,9 @@ export default function HomePage() {
                 )}
                 style={{ transform: `translateX(${offset * 102}%) scale(${isActive ? 1 : 0.95})` }}>
                 {/* Image */}
-                <img src={`https://i.ytimg.com/vi/${v.youtubeId}/maxresdefault.jpg`}
-                  alt={v.title} className="absolute inset-0 w-full h-full object-cover" />
+                <Image src={`https://i.ytimg.com/vi/${v.youtubeId}/maxresdefault.jpg`}
+                  alt={v.title} fill sizes="100vw"
+                  className="object-cover" priority={isActive} />
 
                 {/* Gradient — текст уншихад */}
                 <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
@@ -152,7 +156,7 @@ export default function HomePage() {
                         }}
                         className={cn(
                           "flex items-center gap-1.5 sm:gap-2 px-3 xs:px-4 sm:px-4 py-1.5 xs:py-2 sm:py-2.5 rounded-full backdrop-blur-md border text-[11px] xs:text-xs sm:text-sm font-semibold transition-all",
-                          saved ? "bg-accent border-accent text-white" : "bg-white/10 border-white/25 text-white hover:bg-white/20",
+                          saved ? "bg-white/10 border-accent text-white" : "bg-white/10 border-white/25 text-white hover:bg-white/20",
                         )}>
                         {saved ? (
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="sm:w-3.5 sm:h-3.5">
@@ -211,29 +215,39 @@ export default function HomePage() {
           2. CHANNEL STRIP — голд байрлуулсан + scroll arrows
           ═══════════════════════════════════════════════════════ */}
       <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-8">
-        <ScrollRow center step={320}>
-          {CHANNELS.map((ch) => (
-            <Link key={ch.slug} href={`/tv?ch=${ch.slug}`}
-              className="group relative shrink-0 w-[140px] sm:w-[160px] aspect-[16/9] rounded-xl
-                bg-card border border-app flex flex-col items-center justify-center
-                ring-1 ring-transparent hover:ring-2 hover:ring-accent ring-inset transition-all duration-200">
-              <span className="text-app text-[22px] sm:text-[24px] font-black tracking-tight leading-none">
-                MNB
-              </span>
-              <span className="text-accent text-[13px] font-semibold mt-1.5 uppercase tracking-wider">
-                {ch.label}
-              </span>
-              {!ch.isRadio && (
-                <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-[var(--danger)] animate-pulse-soft" />
-              )}
-              {ch.isRadio && (
-                <svg className="absolute top-2.5 right-2.5 text-muted" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3.24 6.15A2.99 2.99 0 0 0 2 8.66V20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8c0-1.1-.9-2-2-2H8.3l8.26-3.34L15.88 1zM7 20c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/>
-                </svg>
-              )}
-            </Link>
-          ))}
-        </ScrollRow>
+        {channels.length === 0 && !loading ? null : (
+          <ScrollRow center step={320}>
+            {channels.map((ch) => {
+              const isRadio = ch.kind === "RADIO";
+              /* Label — суваг нэрнээс "МНБ " префиксийг авч үлдсэн хэсгийг ашиглана */
+              const label = ch.name.replace(/^МНБ\s*/i, "").trim() || ch.name;
+              return (
+                <Link key={ch.slug} href={ch.kind === "LIVE" ? "/live" : `/tv?ch=${ch.slug}`}
+                  className="group relative shrink-0 w-[140px] sm:w-[160px] aspect-[16/9] rounded-xl
+                    bg-card border border-app flex flex-col items-center justify-center
+                    ring-1 ring-transparent hover:ring-2 hover:ring-accent ring-inset transition-all duration-200 overflow-hidden">
+
+                  <div className="relative z-10 flex flex-col items-center">
+                    <span className="text-app text-[22px] sm:text-[24px] font-black tracking-tight leading-none drop-shadow">
+                      MNB
+                    </span>
+                    <span className="text-accent text-[13px] font-semibold mt-1.5 uppercase tracking-wider drop-shadow">
+                      {label}
+                    </span>
+                  </div>
+                  {!isRadio && (
+                    <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-[var(--danger)] animate-pulse-soft z-10" />
+                  )}
+                  {isRadio && (
+                    <svg className="absolute top-2.5 right-2.5 text-muted z-10" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3.24 6.15A2.99 2.99 0 0 0 2 8.66V20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8c0-1.1-.9-2-2-2H8.3l8.26-3.34L15.88 1zM7 20c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/>
+                    </svg>
+                  )}
+                </Link>
+              );
+            })}
+          </ScrollRow>
+        )}
       </div>
 
       {/* ═══════════════════════════════════════════════════════
@@ -313,8 +327,9 @@ function VideoCard({ v }: { v: Video }) {
     <Link href={`/vod/${v.youtubeId}`}
       className="group shrink-0 w-[220px] sm:w-[250px] md:w-[280px] block">
       <div className="relative aspect-video rounded-xl overflow-hidden bg-card ring-1 ring-transparent group-hover:ring-2 group-hover:ring-accent ring-inset transition-all duration-200">
-        <img src={v.thumbnailUrl} alt={v.title}
-          className="w-full h-full object-cover" loading="lazy" />
+        <Image src={v.thumbnailUrl} alt={v.title} fill
+          sizes="(max-width: 640px) 70vw, (max-width: 1024px) 35vw, 280px"
+          className="object-cover" loading="lazy" />
 
         {/* Duration */}
         {v.duration > 0 && (
@@ -368,8 +383,9 @@ function PosterCard({ v }: { v: Video }) {
     <Link href={`/vod/${v.youtubeId}`}
       className="group shrink-0 w-[150px] sm:w-[170px] md:w-[200px] block">
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-card ring-1 ring-transparent group-hover:ring-2 group-hover:ring-accent ring-inset transition-all duration-200">
-        <img src={v.thumbnailUrl} alt={v.title}
-          className="w-full h-full object-cover" loading="lazy" />
+        <Image src={v.thumbnailUrl} alt={v.title} fill
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 200px"
+          className="object-cover" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
         <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-accent text-white text-[10px] font-bold uppercase tracking-wider">VOD</span>
 
@@ -402,8 +418,9 @@ function BundleCard({ bundle }: { bundle: Bundle }) {
     <Link href={`/bundles/${bundle.id}`}
       className="group shrink-0 w-[320px] sm:w-[360px] block">
       <div className="relative aspect-[16/10] rounded-xl overflow-hidden bg-card ring-1 ring-transparent group-hover:ring-2 group-hover:ring-accent ring-inset transition-all duration-200">
-        <img src={bundle.thumbnailUrl} alt={bundle.title}
-          className="w-full h-full object-cover transition-transform duration-[700ms] group-hover:scale-[1.04]" loading="lazy" />
+        <Image src={bundle.thumbnailUrl} alt={bundle.title} fill
+          sizes="(max-width: 640px) 90vw, 360px"
+          className="object-cover transition-transform duration-[700ms] group-hover:scale-[1.04]" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent" />
         {bundle.category && (
           <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-accent text-white text-[10px] font-bold uppercase tracking-wider">

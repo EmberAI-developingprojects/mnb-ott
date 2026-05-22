@@ -45,6 +45,11 @@ export default function ProfilePage() {
     finally { setSaving(false); }
   }
 
+  /* Шинэ нууц үг & давтсан утга live харьцуулна. Backend дуудахаас өмнө гүйцэтгэдэг.
+     mismatch → confirm талбарын доор inline алдаа,
+     curPw буруу → backend "INVALID_PASSWORD" → ErrorBox дотор "Одоогийн нууц үг буруу байна". */
+  const mismatch = newPw.length > 0 && confPw.length > 0 && newPw !== confPw;
+
   async function handleChangePw(e: React.FormEvent) {
     e.preventDefault();
     if (newPw.length < 8) { setPwError(t("pw_min_8")); return; }
@@ -104,7 +109,7 @@ export default function ProfilePage() {
       <section className="space-y-4 pt-2 border-t border-app">
         <h2 className="text-base font-bold text-app">{t("security")}</h2>
 
-        {!user.password ? (
+        {!user.hasPassword ? (
           <div className="px-4 py-3 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-sm text-yellow-500">
             {t("pw_no_set")}
           </div>
@@ -114,24 +119,37 @@ export default function ProfilePage() {
               { key: "current_pw", val: curPw, set: setCurPw },
               { key: "new_pw",     val: newPw, set: setNewPw },
               { key: "confirm_pw", val: confPw,set: setConfPw },
-            ] as const).map(({ key, val, set }) => (
-              <Field key={key} label={t(key)}>
-                <div className="relative">
-                  <input type={showPw ? "text" : "password"} value={val}
-                    onChange={(e) => set(e.target.value as string)} placeholder="••••••••"
-                    className="w-full px-4 py-3 pr-10 rounded-xl bg-input border border-app text-app
-                      placeholder:text-muted text-sm focus:outline-none focus:border-brand transition-all" />
-                  <button type="button" onClick={() => setShowPw(!showPw)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-app transition-colors">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      {showPw
-                        ? <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>
-                        : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>}
-                    </svg>
-                  </button>
-                </div>
-              </Field>
-            ))}
+            ] as const).map(({ key, val, set }) => {
+              const showMismatch = key === "confirm_pw" && mismatch;
+              return (
+                <Field
+                  key={key}
+                  label={t(key)}
+                  right={showMismatch && (
+                    <span className="text-[11px] text-[var(--danger)] font-medium">{t("pw_mismatch")}</span>
+                  )}>
+                  <div className="relative">
+                    <input type={showPw ? "text" : "password"} value={val}
+                      onChange={(e) => set(e.target.value as string)} placeholder="••••••••"
+                      className={cn(
+                        "w-full px-4 py-3 pr-10 rounded-xl bg-input border text-app",
+                        "placeholder:text-muted text-sm focus:outline-none transition-all",
+                        showMismatch
+                          ? "border-[var(--danger)]/50 focus:border-[var(--danger)]"
+                          : "border-app focus:border-brand",
+                      )} />
+                    <button type="button" onClick={() => setShowPw(!showPw)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-app transition-colors">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        {showPw
+                          ? <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>
+                          : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>}
+                      </svg>
+                    </button>
+                  </div>
+                </Field>
+              );
+            })}
 
             {/* Strength */}
             {newPw.length > 0 && (
@@ -166,10 +184,17 @@ export default function ProfilePage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, right, children }: {
+  label: string;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-semibold text-muted uppercase tracking-wider">{label}</label>
+      <div className="flex items-center justify-between gap-2">
+        <label className="text-xs font-semibold text-muted uppercase tracking-wider">{label}</label>
+        {right}
+      </div>
       {children}
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useSettingsStore } from "@/store/settingsStore";
 import api, { getApiError } from "@/lib/api";
@@ -85,7 +86,8 @@ export function UpgradePrompt({ kind, vodId, price, title, backdrop }: Props) {
     <>
       <div className="relative aspect-video rounded-2xl overflow-hidden bg-card">
         {backdrop && (
-          <img src={backdrop} alt="" className="absolute inset-0 w-full h-full object-cover opacity-25" />
+          <Image src={backdrop} alt="" fill sizes="100vw"
+            className="object-cover opacity-25" priority />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/40" />
 
