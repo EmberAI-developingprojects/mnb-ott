@@ -2,31 +2,35 @@
 
 import Link from "next/link";
 import { useWatchlistStore } from "@/store/watchlistStore";
-import { useT } from "@/store/settingsStore";
+import { useSettingsStore, useT } from "@/store/settingsStore";
 import { formatDuration } from "@/lib/utils";
 
 export default function WatchlistPage() {
   const { items, remove } = useWatchlistStore();
+  const { lang } = useSettingsStore();
   const t = useT();
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-8 space-y-6">
-
-      <h1 className="text-2xl font-bold text-app">{t("watchlist")}</h1>
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+24px)] pb-16">
 
       {items.length === 0 ? (
         <div className="py-24 flex flex-col items-center gap-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-surface flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-card flex items-center justify-center">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="m9 12 2 2 4-4"/>
             </svg>
           </div>
           <div>
             <p className="text-sub font-medium">{t("watchlist_empty")}</p>
-            <p className="text-sm text-muted mt-1">{t("watchlist_hint")}</p>
+            <p className="text-sm text-muted mt-1">
+              {lang === "mn"
+                ? "Бичлэгийн дэлгэрэнгүй дээрх \"Хадгалах\" товчийг ашиглана уу"
+                : "Use the \"Save\" button on a video page to add it here"}
+            </p>
           </div>
           <Link href="/"
-            className="mt-2 px-6 py-2.5 bg-[#0046A5] text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+            className="mt-2 px-6 py-2.5 bg-brand hover:bg-brand-hover text-white text-sm font-semibold rounded-lg transition-colors">
             {t("browse")}
           </Link>
         </div>
@@ -64,20 +68,12 @@ export default function WatchlistPage() {
 
               <button
                 onClick={() => remove(item.id)}
-                className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/70 flex items-center justify-center
-                  opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#CF1E28]/80"
+                className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-black/70 text-white text-[11px] font-semibold
+                  opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--danger)]"
                 title={t("cancel")}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
+                {lang === "mn" ? "Хасах" : "Remove"}
               </button>
-
-              <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="#CF1E28" stroke="#CF1E28" strokeWidth="1.5">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-              </div>
             </div>
           ))}
         </div>

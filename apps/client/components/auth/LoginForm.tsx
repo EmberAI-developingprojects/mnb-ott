@@ -58,17 +58,24 @@ export function LoginForm() {
     }
   }
 
+  const registerHref = `/register${callbackUrl !== "/" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`;
+
   return (
     <div className="space-y-5">
-      <div className="space-y-1 pb-1">
-        <h1 className="text-[26px] font-bold text-app tracking-tight">{t("login")}</h1>
-        <p className="text-muted text-sm">
-          {t("new_user")}{" "}
-          <Link href={`/register${callbackUrl !== "/" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`}
-            className="text-[#0046A5] hover:text-blue-400 transition-colors font-medium">
-            {t("register")}
-          </Link>
-        </p>
+      {/* TAB SWITCHER — Нэвтрэх / Бүртгүүлэх тод харагдана */}
+      <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-card border border-app">
+        <button type="button"
+          className="py-2.5 rounded-lg text-sm font-bold bg-accent text-white shadow-sm">
+          {t("login")}
+        </button>
+        <Link href={registerHref}
+          className="py-2.5 rounded-lg text-sm font-bold text-center text-sub hover:text-app transition-colors">
+          {t("register")}
+        </Link>
+      </div>
+
+      <div>
+        <h1 className="text-[24px] md:text-[28px] font-bold text-app tracking-tight">{t("login")}</h1>
       </div>
 
       {/* Google */}

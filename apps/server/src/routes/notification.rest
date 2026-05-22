@@ -1,0 +1,23 @@
+### Notifications API
+@host = http://localhost:3001
+@token = REPLACE_WITH_ACCESS_TOKEN
+
+### List my notifications
+GET {{host}}/api/notifications?limit=20
+Authorization: Bearer {{token}}
+
+### Unread count (header bell-д ашиглана)
+GET {{host}}/api/notifications/unread-count
+Authorization: Bearer {{token}}
+
+### Read нэг
+PATCH {{host}}/api/notifications/clx_test/read
+Authorization: Bearer {{token}}
+
+### Бүгдийг уншсан болгох
+POST {{host}}/api/notifications/mark-all-read
+Authorization: Bearer {{token}}
+
+### Устгах
+DELETE {{host}}/api/notifications/clx_test
+Authorization: Bearer {{token}}

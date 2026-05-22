@@ -1,0 +1,43 @@
+### Subscription API
+@host = http://localhost:3001
+@token = REPLACE_WITH_ACCESS_TOKEN
+
+### 4 plan жагсаалт (public)
+GET {{host}}/api/subscription/plans
+
+### Миний subscription
+GET {{host}}/api/subscription/me
+Authorization: Bearer {{token}}
+
+### Plan-ыг шууд идэвхжүүлэх (DEV / TEST)
+POST {{host}}/api/subscription/activate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "planType": "COMBO",
+  "period":   "monthly"
+}
+
+### Захиалга цуцлах (BASIC руу буцаах)
+POST {{host}}/api/subscription/cancel
+Authorization: Bearer {{token}}
+
+### Контент үзэх эрх шалгах — Live TV
+POST {{host}}/api/subscription/access
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "kind": "live-tv"
+}
+
+### Контент үзэх эрх шалгах — Premium VOD
+POST {{host}}/api/subscription/access
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "kind": "library",
+  "vodId": "vod_test_id"
+}

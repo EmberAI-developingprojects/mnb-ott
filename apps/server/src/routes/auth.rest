@@ -1,0 +1,70 @@
+### Auth API
+@host = http://localhost:3001
+@token = REPLACE_WITH_ACCESS_TOKEN
+
+### Бүртгүүлэх (init)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "phone": "99112233",
+  "name": "Тест Хэрэглэгч"
+}
+
+### Бүртгүүлэх (verify)
+POST {{host}}/api/auth/register/verify
+Content-Type: application/json
+
+{
+  "phone": "99112233",
+  "code": "123456"
+}
+
+### Нэвтрэх
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "99112233",
+  "password": "Pass1234"
+}
+
+### Профайл өөрчлөх
+PATCH {{host}}/api/auth/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Шинэ нэр"
+}
+
+### Нууц үг солих
+POST {{host}}/api/auth/change-password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "currentPassword": "Pass1234",
+  "newPassword": "NewPass5678"
+}
+
+### Идэвхтэй sessions
+GET {{host}}/api/auth/sessions
+Authorization: Bearer {{token}}
+
+### Session устгах
+DELETE {{host}}/api/auth/sessions/clx_session_id
+Authorization: Bearer {{token}}
+
+### Гарах
+POST {{host}}/api/auth/logout
+Authorization: Bearer {{token}}
+
+### БҮРТГЭЛ УСТГАХ — Аюултай!
+DELETE {{host}}/api/auth/account
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "confirm": "DELETE"
+}

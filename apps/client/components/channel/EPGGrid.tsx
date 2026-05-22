@@ -191,17 +191,26 @@ export function EPGGrid({ channels, onChannelSelect, activeChannelSlug }: EPGGri
                       <div
                         key={p.id}
                         className={cn(
-                          "absolute top-1 bottom-1 rounded overflow-hidden px-2 flex items-center gap-1.5 border",
+                          "absolute top-1 bottom-1 rounded overflow-hidden px-2 py-1 flex flex-col justify-center border",
                           isNow
-                            ? "bg-[#0046A5]/15 border-[#0046A5]/40"
-                            : "bg-card border-app hover:bg-[var(--border-strong)] hover:border-strong",
+                            ? "bg-accent-soft border-accent/40"
+                            : "bg-card border-app hover:bg-card-hover hover:border-strong",
                           isPast && "opacity-35"
                         )}
                         style={{ left: x + 1, width: w }}
                         title={`${p.title} — ${pStart.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })}–${pEnd.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })}`}
                       >
-                        {isNow && <span className="w-1 h-1 rounded-full bg-[#CF1E28] animate-pulse shrink-0" />}
-                        <span className={cn("text-xs truncate", isNow ? "text-app font-medium" : "text-muted")}>
+                        {/* Цаг */}
+                        <div className="flex items-center gap-1 text-[10px] tabular-nums font-mono">
+                          {isNow && <span className="w-1 h-1 rounded-full bg-[var(--danger)] animate-pulse shrink-0" />}
+                          <span className={cn(isNow ? "text-accent font-bold" : "text-muted")}>
+                            {pStart.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })}
+                            <span className="mx-0.5">–</span>
+                            {pEnd.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        {/* Title */}
+                        <span className={cn("text-[11px] truncate mt-0.5", isNow ? "text-app font-semibold" : "text-sub")}>
                           {p.title}
                         </span>
                       </div>

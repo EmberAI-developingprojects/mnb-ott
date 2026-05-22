@@ -10,6 +10,11 @@ interface AuthState {
   clearAuth: () => void;
 }
 
+/**
+ * Хэрэглэгчийн нэвтрэлтийг localStorage-д хадгална.
+ * Refresh хийгээд буцаж ачаалахад accessToken-г axios-д буцаан setAccessToken хийнэ
+ * (onRehydrateStorage). Тиймээс хэрэглэгч нэвтэрсэн төлөвт үлдэнэ.
+ */
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -26,7 +31,13 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "mnb-auth",
-      partialize: (state) => ({ user: state.user }),
-    }
-  )
+      /* user + accessToken хоёуланг хадгална — refresh-д session дуусахгүй */
+      partialize: (state) => ({ user: state.user, accessToken: state.accessToken }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.accessToken) {
+          setAccessToken(state.accessToken);
+        }
+      },
+    },
+  ),
 );

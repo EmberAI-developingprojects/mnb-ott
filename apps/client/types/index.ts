@@ -1,9 +1,55 @@
 export type Role = "USER" | "ADMIN" | "EDITOR" | "OPERATOR" | "SUPER_ADMIN";
-export type PlanType = "FREE" | "STANDARD" | "PREMIUM";
+export type PlanType = "BASIC" | "TV" | "VOD" | "COMBO";
 export type VodType = "FREE" | "PREMIUM";
 export type SourceType = "YOUTUBE" | "S3";
 export type ContentType = "LIVE" | "VOD";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+export type NotificationType = "SYSTEM" | "SUBSCRIPTION" | "PAYMENT" | "CONTENT" | "PROMO";
+
+export interface PlanCapability {
+  youtubeArchive: boolean;
+  liveTv: boolean;
+  premiumVod: boolean;
+}
+
+export interface PlanDefinition {
+  type: PlanType;
+  label: string;
+  tagline: string;
+  priceMonthly: number;
+  priceWeekly: number;
+  deviceLimit: number;
+  features: string[];
+  capabilities: PlanCapability;
+}
+
+export interface VodBundle {
+  id: string;
+  title: string;
+  description?: string;
+  thumbnailUrl?: string;
+  isActive: boolean;
+  items: BundleItem[];
+}
+
+export interface BundleItem {
+  youtubeId: string;
+  title: string;
+  thumbnailUrl: string;
+  duration: number;
+  publishedAt: string;
+  price: number;
+}
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  link?: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export interface User {
   id: string;

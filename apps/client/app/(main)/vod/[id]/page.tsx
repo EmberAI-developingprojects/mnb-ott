@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { VodPlayer } from "@/components/player/VodPlayer";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { UpgradePrompt } from "@/components/layout/UpgradePrompt";
+import { useAuthStore } from "@/store/authStore";
 import { useT } from "@/store/settingsStore";
 import { formatDuration, formatViews } from "@/lib/utils";
 import { useWatchlistStore } from "@/store/watchlistStore";
@@ -19,6 +21,15 @@ interface VideoDetail {
   viewCount: number;
   publishedAt: string;
   channelTitle: string;
+  accessKind?: "archive" | "library" | "bundle";
+  price?: number;
+  bundleId?: string;
+}
+
+interface AccessDecision {
+  allowed: boolean;
+  reason?: "PLAN_REQUIRED" | "PURCHASE_REQUIRED" | "EXPIRED";
+  requiredPlans?: string[];
 }
 
 interface RelatedVideo {
@@ -33,12 +44,14 @@ export default function VodDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const t = useT();
+  const { user } = useAuthStore();
   const { add, remove, has } = useWatchlistStore();
   const saved = has(id);
 
   const [video, setVideo] = useState<VideoDetail | null>(null);
   const [related, setRelated] = useState<RelatedVideo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [access, setAccess] = useState<AccessDecision | null>(null);
   const [descExpanded, setDescExpanded] = useState(false);
 
   useEffect(() => {
@@ -51,6 +64,21 @@ export default function VodDetailPage() {
         ]);
         setVideo(vRes.data.data);
         setRelated(rRes.data.data.videos.filter((v) => v.youtubeId !== id));
+
+        // Access check (зөвхөн нэвтэрсэн хэрэглэгчид)
+        if (user && vRes.data.data.accessKind) {
+          try {
+            const a = await api.post<{ success: true; data: AccessDecision }>(
+              "/api/subscription/access",
+              { kind: vRes.data.data.accessKind, vodId: id },
+            );
+            setAccess(a.data.data);
+          } catch {
+            setAccess({ allowed: false, reason: "PLAN_REQUIRED" });
+          }
+        } else {
+          setAccess({ allowed: !!user });
+        }
       } catch {
         router.push("/vod");
       } finally {
@@ -58,7 +86,7 @@ export default function VodDetailPage() {
       }
     }
     load();
-  }, [id, router]);
+  }, [id, router, user]);
 
   function toggleWatchlist() {
     if (!video) return;
@@ -68,7 +96,7 @@ export default function VodDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-6">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-12 pt-[calc(var(--header-h)+16px)] pb-12">
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="flex-1 space-y-4">
             <Skeleton className="aspect-video w-full rounded-xl" />
@@ -103,7 +131,7 @@ export default function VodDetailPage() {
     .trim();
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-6 space-y-5">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-12 pt-[calc(var(--header-h)+16px)] pb-12 space-y-5">
 
       {/* Breadcrumb / back */}
       <div className="flex items-center gap-2 text-sm text-muted">
@@ -113,8 +141,6 @@ export default function VodDetailPage() {
           </svg>
           {t("back")}
         </button>
-        <span>/</span>
-        <Link href="/vod" className="hover:text-app transition-colors">{t("see_archive")}</Link>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
@@ -122,13 +148,23 @@ export default function VodDetailPage() {
         {/* Left — player + info */}
         <div className="flex-1 min-w-0 space-y-5">
 
-          <VodPlayer
-            youtubeId={video.youtubeId}
-            vodId={id}
-            title={video.title}
-            thumbnailUrl={video.thumbnailUrl}
-            duration={video.duration}
-          />
+          {access?.allowed ? (
+            <VodPlayer
+              youtubeId={video.youtubeId}
+              vodId={id}
+              title={video.title}
+              thumbnailUrl={video.thumbnailUrl}
+              duration={video.duration}
+            />
+          ) : (
+            <UpgradePrompt
+              kind={video.accessKind === "bundle" ? "bundle" : "library"}
+              vodId={id}
+              price={video.price}
+              title={video.title}
+              backdrop={video.thumbnailUrl}
+            />
+          )}
 
           <h1 className="text-xl md:text-2xl font-bold text-app leading-snug">
             {video.title}

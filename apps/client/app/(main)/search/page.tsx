@@ -34,7 +34,7 @@ function SearchContent() {
   }, [q]);
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-8 space-y-6">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-12 pt-[calc(var(--header-h)+24px)] pb-12 space-y-6">
 
       {/* Query title */}
       {q && (
@@ -95,7 +95,6 @@ function SearchContent() {
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
           <p className="text-muted text-sm">&ldquo;{q}&rdquo; {t("search_none")}</p>
-          <Link href="/vod" className="inline-block text-sm text-[#0046A5] hover:underline">{t("see_archive")}</Link>
         </div>
       ) : null}
     </div>

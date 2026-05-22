@@ -12,7 +12,7 @@ export interface YtVideo {
   description: string;
   thumbnailUrl: string;
   publishedAt: string;
-  duration: number;       // секунд
+  duration: number;      
   viewCount: number;
   channelTitle: string;
 }

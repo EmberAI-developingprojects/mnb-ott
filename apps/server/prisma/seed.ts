@@ -3,16 +3,21 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 const DEFAULT_CONFIGS = [
-  // ── Subscription үнэ ──────────────────────────────
-  { key: "plan.standard.price_monthly", value: "9900",  label: "Standard сарын үнэ (₮)" },
-  { key: "plan.standard.price_weekly",  value: "3500",  label: "Standard 7 хоногийн үнэ (₮)" },
-  { key: "plan.premium.price_monthly",  value: "19900", label: "Premium сарын үнэ (₮)" },
-  { key: "plan.premium.price_weekly",   value: "6900",  label: "Premium 7 хоногийн үнэ (₮)" },
+  // ── 4 plan үнэ ────────────────────────────────────
+  // BASIC үнэгүй учраас зөвхөн device_limit-тэй
+  { key: "plan.basic.device_limit",     value: "1",     label: "BASIC: нэгэн зэрэг device" },
 
-  // ── Device хязгаар ───────────────────────────────
-  { key: "plan.free.device_limit",      value: "1",  label: "Free: нэгэн зэрэг device тоо" },
-  { key: "plan.standard.device_limit",  value: "2",  label: "Standard: нэгэн зэрэг device тоо" },
-  { key: "plan.premium.device_limit",   value: "5",  label: "Premium: нэгэн зэрэг device тоо" },
+  { key: "plan.tv.price_monthly",       value: "9900",  label: "TV сарын үнэ (₮)" },
+  { key: "plan.tv.price_weekly",        value: "3500",  label: "TV 7 хоногийн үнэ (₮)" },
+  { key: "plan.tv.device_limit",        value: "2",     label: "TV: нэгэн зэрэг device" },
+
+  { key: "plan.vod.price_monthly",      value: "12900", label: "VOD сарын үнэ (₮)" },
+  { key: "plan.vod.price_weekly",       value: "4500",  label: "VOD 7 хоногийн үнэ (₮)" },
+  { key: "plan.vod.device_limit",       value: "2",     label: "VOD: нэгэн зэрэг device" },
+
+  { key: "plan.combo.price_monthly",    value: "19900", label: "COMBO сарын үнэ (₮)" },
+  { key: "plan.combo.price_weekly",     value: "6900",  label: "COMBO 7 хоногийн үнэ (₮)" },
+  { key: "plan.combo.device_limit",     value: "4",     label: "COMBO: нэгэн зэрэг device" },
 
   // ── TVOD ─────────────────────────────────────────
   { key: "tvod.rental_hours",           value: "72", label: "TVOD түрээсийн хугацаа (цаг)" },

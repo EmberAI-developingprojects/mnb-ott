@@ -1,192 +1,362 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
-import { useT } from "@/store/settingsStore";
+import { useSettingsStore, useT } from "@/store/settingsStore";
 import api, { getApiError } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import type { PlanDefinition, PlanType } from "@/types";
 
-interface Plan {
-  type: string; label: string;
-  priceMonthly: number; priceWeekly: number;
-  deviceLimit: number; features: string[];
+interface MySubscription {
+  subscription: { planType: PlanType; status: string; expiresAt?: string };
+  plan: PlanDefinition;
+  isActive: boolean;
+  plans: PlanDefinition[];
 }
-interface SubDetail {
-  subscription: { planType: string; status: string; expiresAt?: string };
-  plan: Plan; isActive: boolean; plans: Plan[];
-}
-interface QPayData {
-  paymentId: string; invoiceId: string;
-  qrImage: string; deeplinks: { name: string; link: string; logo: string }[]; amount: number;
-}
+
+const PURCHASABLE: PlanType[] = ["TV", "VOD", "COMBO"];
 
 export default function ProfileSubscriptionPage() {
   const { user } = useAuthStore();
+  const router = useRouter();
+  const { lang } = useSettingsStore();
   const t = useT();
-  const [data, setData]       = useState<SubDetail | null>(null);
+
+  const [data, setData]       = useState<MySubscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod]   = useState<"monthly" | "weekly">("monthly");
-  const [qpay, setQpay]       = useState<QPayData | null>(null);
-  const [paying, setPaying]   = useState(false);
+  const [pending, setPending] = useState<PlanType | null>(null);    // plan-аар тэмдэглэв
+  const [confirm, setConfirm] = useState<PlanDefinition | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [error, setError]     = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    api.get<{ success: true; data: SubDetail }>("/api/subscription/me")
-      .then((r) => setData(r.data.data))
-      .finally(() => setLoading(false));
-  }, [user]);
+    if (!user) { router.push("/login?callbackUrl=/profile/subscription"); return; }
+    refresh();
+  }, [user, router]);
 
-  useEffect(() => {
-    if (!qpay) return;
-    const iv = setInterval(async () => {
-      try {
-        const r = await api.post<{ success: true; data: { paid: boolean } }>("/api/payment/check", { invoiceId: qpay.invoiceId });
-        if (r.data.data.paid) {
-          clearInterval(iv); setQpay(null);
-          const r2 = await api.get<{ success: true; data: SubDetail }>("/api/subscription/me");
-          setData(r2.data.data);
-        }
-      } catch { /* silent */ }
-    }, 3000);
-    return () => clearInterval(iv);
-  }, [qpay?.invoiceId]);
-
-  async function handleSubscribe(planType: string) {
-    if (planType === "FREE") return;
-    setPaying(true);
+  async function refresh() {
+    setLoading(true);
     try {
-      const r = await api.post<{ success: true; data: QPayData }>("/api/payment/invoice", { planType, period });
-      setQpay(r.data.data);
-    } catch (e) { alert(getApiError(e).message); }
-    finally { setPaying(false); }
+      const r = await api.get<{ success: true; data: MySubscription }>("/api/subscription/me");
+      setData(r.data.data);
+    } catch { /* silent */ }
+    finally { setLoading(false); }
   }
 
-  if (loading) return <div className="h-48 bg-surface rounded-2xl animate-pulse" />;
+  async function activate(plan: PlanDefinition) {
+    setPending(plan.type);
+    setError(null);
+    try {
+      const r = await api.post<{ success: true; data: MySubscription }>("/api/subscription/activate", {
+        planType: plan.type, period,
+      });
+      setData(r.data.data);
+      setSuccess(plan.label);
+      setConfirm(null);
+      setTimeout(() => setSuccess(null), 4000);
+    } catch (e) {
+      setError(getApiError(e).message);
+    } finally {
+      setPending(null);
+    }
+  }
 
-  const plans = data?.plans ?? [];
+  async function cancelSubscription() {
+    setPending("BASIC");
+    setError(null);
+    try {
+      const r = await api.post<{ success: true; data: MySubscription }>("/api/subscription/cancel");
+      setData(r.data.data);
+      setCancelConfirm(false);
+    } catch (e) {
+      setError(getApiError(e).message);
+    } finally {
+      setPending(null);
+    }
+  }
+
+  if (loading) return (
+    <div className="py-16 flex justify-center">
+      <div className="w-8 h-8 border-2 border-strong border-t-[var(--primary)] rounded-full animate-spin" />
+    </div>
+  );
+
+  const plans   = data?.plans ?? [];
   const current = data?.subscription;
+  const myPlan  = data?.plan;
+  const expiry  = current?.expiresAt ? new Date(current.expiresAt) : null;
+  const daysLeft = expiry ? Math.max(0, Math.ceil((expiry.getTime() - Date.now()) / 86_400_000)) : null;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-app">{t("sub_title")}</h1>
-        {current && (
-          <p className="text-sm text-muted mt-1">
-            {t("sub_current")}: <span className="text-sub font-medium">{current.planType}</span>
-            {current.expiresAt && (
-              <> · {new Date(current.expiresAt).toLocaleDateString("mn-MN", { year: "numeric", month: "long", day: "numeric" })} {t("sub_until")}</>
+    <div className="space-y-8 max-w-5xl">
+
+      {/* Success toast */}
+      {success && (
+        <div className="fixed top-20 right-6 z-50 surface-base rounded-xl px-4 py-3 shadow-pop animate-fade-in flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-app">
+              {lang === "mn" ? "Идэвхжлээ" : "Activated"}
+            </p>
+            <p className="text-xs text-muted">{success}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Одоогийн төлөв */}
+      {myPlan && (
+        <div className={cn(
+          "rounded-2xl border p-6 flex items-start justify-between gap-4 flex-wrap",
+          data?.isActive && myPlan.type !== "BASIC"
+            ? "border-accent/40 bg-accent-soft"
+            : "border-app bg-card",
+        )}>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted mb-1">
+              {t("sub_current_plan")}
+            </p>
+            <h2 className="text-2xl font-bold text-app">{myPlan.label}</h2>
+            {expiry && daysLeft !== null && myPlan.type !== "BASIC" && (
+              <p className="text-xs text-muted mt-2.5">
+                {lang === "mn"
+                  ? <>Дуусах: <span className="text-app font-medium">
+                      {expiry.toLocaleDateString("mn-MN", { year: "numeric", month: "long", day: "numeric" })}
+                    </span> · {daysLeft} өдөр үлдсэн</>
+                  : <>Renews: <span className="text-app font-medium">
+                      {expiry.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                    </span> · {daysLeft} days left</>}
+              </p>
             )}
-          </p>
-        )}
-      </div>
+          </div>
+
+          {/* Cancel button (only if user has paid plan) */}
+          {myPlan.type !== "BASIC" && data?.isActive && (
+            <button onClick={() => setCancelConfirm(true)}
+              className="text-xs font-medium text-muted hover:text-[var(--danger)] transition-colors">
+              {lang === "mn" ? "Цуцлах" : "Cancel"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-xl border border-[var(--danger)]/30 bg-danger-soft px-4 py-3 text-sm text-[var(--danger)]">
+          {error}
+        </div>
+      )}
 
       {/* Period toggle */}
-      <div className="flex gap-1 bg-surface p-1 rounded-xl w-fit border border-app">
-        {(["monthly", "weekly"] as const).map((p) => (
-          <button key={p} onClick={() => setPeriod(p)}
-            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-              period === p ? "bg-[#0046A5] text-white" : "text-muted hover:text-app"
-            }`}>
-            {p === "monthly" ? t("sub_monthly") : t("sub_weekly")}
-          </button>
-        ))}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex gap-1 bg-card p-1 rounded-xl border border-app">
+          {(["monthly", "weekly"] as const).map((p) => (
+            <button key={p} onClick={() => setPeriod(p)}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                period === p ? "bg-accent text-white" : "text-sub hover:text-app",
+              )}>
+              {p === "monthly" ? t("sub_monthly") : t("sub_weekly")}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Plan cards */}
-      <div className="grid sm:grid-cols-3 gap-4">
+      {/* 4 plan grid */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {plans.map((plan) => {
-          const price = period === "monthly" ? plan.priceMonthly : plan.priceWeekly;
+          const price     = period === "monthly" ? plan.priceMonthly : plan.priceWeekly;
           const isCurrent = current?.planType === plan.type;
-          const isPremium = plan.type === "PREMIUM";
+          const isBasic   = plan.type === "BASIC";
+          const isCombo   = plan.type === "COMBO";
+          const isPending = pending === plan.type;
+
           return (
             <div key={plan.type}
-              className={`relative rounded-2xl border p-5 space-y-4 flex flex-col ${
-                isPremium ? "border-[#0046A5]/40 bg-[#0046A5]/6" : "border-app bg-surface"
-              }`}>
-              {isPremium && (
+              className={cn(
+                "relative rounded-2xl border p-5 flex flex-col gap-4 transition-all",
+                isCurrent
+                  ? "border-accent bg-accent-soft"
+                  : isCombo
+                    ? "border-accent/40 bg-card"
+                    : "border-app bg-card",
+              )}>
+              {isCombo && !isCurrent && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-[#0046A5] text-white text-xs font-bold px-3 py-1 rounded-full">
-                    {t("sub_featured")}
+                  <span className="bg-accent text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
+                    {lang === "mn" ? "Хамгийн зөв" : "Best value"}
                   </span>
                 </div>
               )}
+
               <div>
-                <p className="text-xs text-muted uppercase tracking-wider">{plan.label}</p>
-                <div className="flex items-end gap-1 mt-1.5">
-                  {price === 0
-                    ? <span className="text-2xl font-bold text-app">{t("sub_free_label")}</span>
-                    : <>
-                        <span className="text-2xl font-bold text-app">{price.toLocaleString()}</span>
-                        <span className="text-muted text-sm mb-0.5">
-                          ₮/{period === "monthly" ? t("sub_per_month") : t("sub_per_week")}
-                        </span>
-                      </>
-                  }
-                </div>
-                <p className="text-xs text-muted mt-0.5">{plan.deviceLimit} {t("sub_devices_at")}</p>
+                <p className="text-[11px] font-bold text-muted uppercase tracking-[0.15em]">{plan.label}</p>
+                <p className="text-xs text-sub mt-1.5 min-h-[32px] leading-snug">{plan.tagline}</p>
               </div>
-              <ul className="space-y-1.5 flex-1">
+
+              <div>
+                {price === 0 ? (
+                  <p className="text-3xl font-bold text-app">{t("sub_free_label")}</p>
+                ) : (
+                  <p className="text-3xl font-bold text-app">
+                    {price.toLocaleString(lang === "mn" ? "mn-MN" : "en-US")}
+                    <span className="text-muted text-sm font-medium ml-1">
+                      ₮/{period === "monthly" ? t("sub_per_month") : t("sub_per_week")}
+                    </span>
+                  </p>
+                )}
+                <p className="text-xs text-muted mt-1">
+                  {plan.deviceLimit} {t("sub_devices_at")}
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <CapRow on={plan.capabilities.youtubeArchive}
+                  label={lang === "mn" ? "YouTube архив" : "YouTube archive"} />
+                <CapRow on={plan.capabilities.liveTv}
+                  label={lang === "mn" ? "Live TV + DVR" : "Live TV + DVR"} />
+                <CapRow on={plan.capabilities.premiumVod}
+                  label={lang === "mn" ? "Премиум VOD сан" : "Premium VOD library"} />
+              </div>
+
+              <ul className="space-y-1.5 flex-1 pt-3 border-t border-app">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-xs text-muted">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0046A5" strokeWidth="2.5" className="shrink-0 mt-0.5">
+                  <li key={f} className="flex items-start gap-2 text-xs text-sub">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0 mt-0.5 text-accent">
                       <polyline points="20 6 9 17 4 12"/>
                     </svg>
                     {f}
                   </li>
                 ))}
               </ul>
-              <button onClick={() => handleSubscribe(plan.type)}
-                disabled={isCurrent || plan.type === "FREE" || paying}
-                className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 ${
+
+              <button
+                onClick={() => {
+                  if (isCurrent || isBasic) return;
+                  setConfirm(plan);
+                }}
+                disabled={isCurrent || isBasic || isPending}
+                className={cn(
+                  "w-full py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50",
                   isCurrent
-                    ? "bg-[var(--border-strong)] text-muted cursor-default"
-                    : isPremium
-                      ? "bg-[#0046A5] hover:bg-blue-600 text-white"
-                      : "bg-[var(--card)] hover:bg-[var(--border-strong)] text-app border border-app"
-                }`}>
-                {isCurrent ? t("sub_current_plan")
-                  : plan.type === "FREE" ? t("sub_active")
-                  : paying ? t("sub_waiting")
-                  : t("sub_subscribe")}
+                    ? "bg-card border border-app text-muted cursor-default"
+                    : isCombo
+                      ? "bg-accent hover:bg-accent-hover text-white"
+                      : isBasic
+                        ? "bg-card border border-app text-muted cursor-default"
+                        : "bg-card border border-app text-app hover:border-accent",
+                )}>
+                {isPending ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    {t("sub_waiting")}
+                  </span>
+                ) : isCurrent
+                  ? t("sub_current_plan")
+                  : isBasic
+                    ? t("sub_free_label")
+                    : t("sub_subscribe")}
               </button>
             </div>
           );
         })}
       </div>
 
-      {/* QPay modal */}
-      {qpay && (
-        <div className="fixed inset-0 overlay-bg backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="surface-base rounded-2xl p-6 w-full max-w-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-app">{t("qpay_title")}</h2>
-              <button onClick={() => setQpay(null)} className="text-muted hover:text-app transition-colors">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-            <div className="bg-white rounded-xl p-3 flex items-center justify-center">
-              <img src={`data:image/png;base64,${qpay.qrImage}`} alt="QPay QR" className="w-44 h-44" />
-            </div>
-            <p className="text-center text-sm text-muted">
-              {t("qpay_scan")} <span className="text-app font-semibold">{qpay.amount.toLocaleString()}₮</span> {t("sub_subscribe").toLowerCase()}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {qpay.deeplinks.slice(0, 4).map((dl) => (
-                <a key={dl.name} href={dl.link}
-                  className="flex items-center gap-2 px-3 py-2 bg-[var(--card)] hover:bg-[var(--border-strong)] rounded-lg text-xs text-muted truncate transition-colors">
-                  {dl.logo && <img src={dl.logo} alt="" className="w-4 h-4 rounded shrink-0" />}
-                  {dl.name}
-                </a>
-              ))}
-            </div>
-            <div className="flex items-center gap-2 justify-center text-xs text-muted">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              {t("qpay_waiting")}
-            </div>
-          </div>
-        </div>
+      {/* Confirm modal */}
+      {confirm && (
+        <ConfirmDialog
+          title={lang === "mn" ? `${confirm.label} багц` : `${confirm.label} plan`}
+          body={lang === "mn"
+            ? `${(period === "monthly" ? confirm.priceMonthly : confirm.priceWeekly).toLocaleString("mn-MN")}₮ үнэтэй ${period === "monthly" ? "сарын" : "7 хоногийн"} захиалга идэвхжих гэж байна. Үргэлжлүүлэх үү?`
+            : `You are about to activate the ${period} plan for ₮${(period === "monthly" ? confirm.priceMonthly : confirm.priceWeekly).toLocaleString()}. Continue?`}
+          confirmLabel={lang === "mn" ? "Идэвхжүүлэх" : "Activate"}
+          cancelLabel={lang === "mn" ? "Болих" : "Cancel"}
+          confirmDanger={false}
+          loading={pending === confirm.type}
+          onConfirm={() => activate(confirm)}
+          onCancel={() => setConfirm(null)}
+        />
       )}
+
+      {/* Cancel confirm */}
+      {cancelConfirm && (
+        <ConfirmDialog
+          title={lang === "mn" ? "Захиалга цуцлах" : "Cancel subscription"}
+          body={lang === "mn"
+            ? "Та одоогийн идэвхтэй захиалгаа цуцлах гэж байна. Та BASIC буюу үнэгүй plan руу буцна. Үргэлжлүүлэх үү?"
+            : "You are about to cancel your active subscription. You will be downgraded to BASIC. Continue?"}
+          confirmLabel={lang === "mn" ? "Цуцлах" : "Cancel plan"}
+          cancelLabel={lang === "mn" ? "Болих" : "Keep"}
+          confirmDanger
+          loading={pending === "BASIC"}
+          onConfirm={cancelSubscription}
+          onCancel={() => setCancelConfirm(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ───────────────────────────────────────── helpers ───────────────────────────────────────── */
+function CapRow({ on, label }: { on: boolean; label: string }) {
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      {on ? (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-accent shrink-0">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      ) : (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted-strong shrink-0">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      )}
+      <span className={cn("font-medium", on ? "text-app" : "text-muted line-through")}>{label}</span>
+    </div>
+  );
+}
+
+function ConfirmDialog({
+  title, body, confirmLabel, cancelLabel, confirmDanger, loading, onConfirm, onCancel,
+}: {
+  title: string; body: string;
+  confirmLabel: string; cancelLabel: string;
+  confirmDanger?: boolean;
+  loading?: boolean;
+  onConfirm: () => void; onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 overlay-bg backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+      onClick={onCancel}>
+      <div className="surface-base rounded-2xl p-6 w-full max-w-sm space-y-4 shadow-pop animate-scale-in"
+        onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-bold text-app">{title}</h2>
+        <p className="text-sm text-sub leading-relaxed">{body}</p>
+        <div className="flex gap-2 pt-1">
+          <button onClick={onCancel} disabled={loading}
+            className="flex-1 py-2.5 rounded-xl bg-card border border-app text-sm font-semibold text-app hover:bg-card-hover transition-colors disabled:opacity-50">
+            {cancelLabel}
+          </button>
+          <button onClick={onConfirm} disabled={loading}
+            className={cn(
+              "flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50",
+              confirmDanger
+                ? "bg-[var(--danger)] hover:opacity-90"
+                : "bg-accent hover:bg-accent-hover",
+            )}>
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ...
+              </span>
+            ) : confirmLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import type { OtpInputRef } from "@/components/auth/OtpInput";
 import api, { getApiError } from "@/lib/api";
 import type { ApiResponse, User } from "@/types";
 import { inputCls, Field, ErrBox, Spin } from "@/components/auth/LoginForm";
+import { LegalLinks } from "@/components/auth/LegalLinks";
 
 type Step = "form" | "otp" | "done";
 
@@ -130,17 +131,24 @@ function RegisterForm() {
   );
 
   // ── Бүртгэлийн форм ────────────────────────────────
+  const loginHref = `/login${callbackUrl !== "/" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`;
+
   return (
     <div className="space-y-5">
-      <div className="space-y-1 pb-1">
-        <h1 className="text-[26px] font-bold text-app tracking-tight">{t("register")}</h1>
-        <p className="text-muted text-sm">
-          {t("has_account")}{" "}
-          <Link href={`/login${callbackUrl !== "/" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`}
-            className="text-[#0046A5] hover:text-blue-400 transition-colors font-medium">
-            {t("login")}
-          </Link>
-        </p>
+      {/* TAB SWITCHER */}
+      <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-card border border-app">
+        <Link href={loginHref}
+          className="py-2.5 rounded-lg text-sm font-bold text-center text-sub hover:text-app transition-colors">
+          {t("login")}
+        </Link>
+        <button type="button"
+          className="py-2.5 rounded-lg text-sm font-bold bg-accent text-white shadow-sm">
+          {t("register")}
+        </button>
+      </div>
+
+      <div>
+        <h1 className="text-[24px] md:text-[28px] font-bold text-app tracking-tight">{t("register")}</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -200,7 +208,7 @@ function RegisterForm() {
         </button>
       </form>
 
-      <p className="text-[11px] text-muted text-center leading-relaxed">{t("agree_terms")}</p>
+      <LegalLinks />
     </div>
   );
 }

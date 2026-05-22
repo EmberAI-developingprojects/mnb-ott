@@ -12,6 +12,7 @@ import { paymentRouter } from "./routes/payment.routes";
 import { subscriptionRouter } from "./routes/subscription.routes";
 import { searchRouter } from "./routes/search.routes";
 import { adminRouter } from "./routes/admin.routes";
+import { notificationRouter } from "./routes/notification.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
 
 const app = express();
@@ -38,6 +39,7 @@ app.use("/api/payment", paymentRouter);
 app.use("/api/subscription", subscriptionRouter);
 app.use("/api/search", searchRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/notifications", notificationRouter);
 
 app.use(errorMiddleware);
 

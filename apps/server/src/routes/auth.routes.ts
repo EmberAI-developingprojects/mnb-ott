@@ -32,3 +32,6 @@ authRouter.delete("/sessions/:id",      requireAuth, ctrl.removeSession);
 authRouter.post("/refresh",         ctrl.refresh);
 authRouter.post("/logout",  requireAuth, ctrl.logout);
 authRouter.get("/me",       requireAuth, ctrl.me);
+
+// Account deletion — Cascade-аар хамаатай бүх record устгана
+authRouter.delete("/account", requireAuth, ctrl.deleteAccount);

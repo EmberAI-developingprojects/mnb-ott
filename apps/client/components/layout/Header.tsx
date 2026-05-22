@@ -1,57 +1,73 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { useSettingsStore, useT } from "@/store/settingsStore";
+import { useT } from "@/store/settingsStore";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
+
+const NAV_KEYS = [
+  { label: "home",      href: "/",         live: false },
+  { label: "tv",        href: "/tv",       live: false },
+  { label: "live",      href: "/live",     live: true  },
+];
 
 export function Header() {
   const pathname = usePathname();
   const router   = useRouter();
   const { user, clearAuth } = useAuthStore();
-  const { lang, setLang, theme, toggleTheme } = useSettingsStore();
   const t = useT();
 
-  const [scrolled,     setScrolled]     = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [mobileOpen,   setMobileOpen]   = useState(false);
-  const [q, setQ] = useState("");
+  const [searchOpen,  setSearchOpen]  = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
+  const [q, setQ]       = useState("");
+  const [unread, setUnread] = useState(0);
 
-  const NAV = [
-    { label: t("home"), href: "/",     live: false },
-    { label: t("tv"),   href: "/tv",   live: false },
-    { label: t("live"), href: "/live", live: true  },
-  ];
+  const searchRef = useRef<HTMLInputElement>(null);
+  const isSearchPage = pathname === "/search";
 
+  /* Sync search query when on /search */
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", fn, { passive: true });
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
+    if (isSearchPage) {
+      setQ(new URLSearchParams(window.location.search).get("q") ?? "");
+    } else setQ("");
+  }, [pathname, isSearchPage]);
 
-  // /search хуудас руу орох үед header input-ийг URL-ийн q-тэй синхрончлох
-  useEffect(() => {
-    if (pathname === "/search") {
-      const urlQ = new URLSearchParams(window.location.search).get("q") ?? "";
-      setQ(urlQ);
-    } else {
-      setQ("");
-    }
-  }, [pathname]);
-
-  // Бичиж байхад хайлт хийх (350ms debounce, 2+ тэмдэгт)
   useEffect(() => {
     const v = q.trim();
     if (v.length < 2) return;
-    const timer = setTimeout(() => {
-      router.push(`/search?q=${encodeURIComponent(v)}`);
+    /* /search дотор query өөрчлөгдөхөд replace ашиглана — history-д олон entry үүсэхгүй */
+    const id = setTimeout(() => {
+      if (isSearchPage) router.replace(`/search?q=${encodeURIComponent(v)}`);
+      else              router.push(`/search?q=${encodeURIComponent(v)}`);
     }, 350);
-    return () => clearTimeout(timer);
-  }, [q]);
+    return () => clearTimeout(id);
+  }, [q, isSearchPage, router]);
+
+  useEffect(() => {
+    if (!user) { setUnread(0); return; }
+    let stop = false;
+    const load = async () => {
+      try {
+        const r = await api.get<{ success: true; data: { unread: number } }>("/api/notifications/unread-count");
+        if (!stop) setUnread(r.data.data.unread);
+      } catch {}
+    };
+    load();
+    const iv = setInterval(load, 60_000);
+    return () => { stop = true; clearInterval(iv); };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (searchOpen) setTimeout(() => searchRef.current?.focus(), 50);
+  }, [searchOpen]);
+
+  useEffect(() => {
+    setMobileOpen(false);
+    setSearchOpen(false);
+  }, [pathname]);
 
   async function handleLogout() {
     try { await api.post("/api/auth/logout"); } finally {
@@ -59,248 +75,284 @@ export function Header() {
     }
   }
 
-  function handleSearch(e: React.FormEvent) {
+  function submitSearch(e: React.FormEvent) {
     e.preventDefault();
     const v = q.trim();
-    if (v) { router.push(`/search?q=${encodeURIComponent(v)}`); setMobileOpen(false); }
+    if (v) {
+      if (isSearchPage) router.replace(`/search?q=${encodeURIComponent(v)}`);
+      else              router.push(`/search?q=${encodeURIComponent(v)}`);
+      setSearchOpen(false); setMobileOpen(false);
+    }
   }
 
-  const isLight = theme === "light";
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  /* ─────────────────────────────────────────────
+     /search хуудас + mobile → back + search UX
+     (Facebook жишгээр)
+     ───────────────────────────────────────────── */
+  if (isSearchPage) {
+    return (
+      <header className="fixed top-0 left-0 right-0 z-50 bg-elevated border-b border-app">
+        <div className="max-w-[1440px] mx-auto px-3 md:px-8 h-[var(--header-h)] flex items-center gap-2">
+          <button onClick={() => router.back()} aria-label="Back"
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-card-hover text-app shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+              <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+          </button>
+
+          <form onSubmit={submitSearch} className="flex-1">
+            <div className="relative">
+              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted"
+                width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                autoFocus
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder={t("search_ph")}
+                className="w-full pl-10 pr-4 py-2.5 rounded-full text-[15px] input-base focus:outline-none"
+              />
+              {q && (
+                <button type="button" onClick={() => setQ("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-muted hover:text-app hover:bg-card-hover">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+      </header>
+    );
+  }
 
   return (
-    <header
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        scrolled
-          ? isLight
-            ? "bg-white/95 backdrop-blur-xl shadow-sm border-b border-black/8"
-            : "bg-[#08080F]/96 backdrop-blur-xl shadow-lg shadow-black/20 border-b border-white/[0.05]"
-          : "bg-gradient-to-b from-black/60 to-transparent"
-      )}
-    >
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-[72px] flex items-center gap-4">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-elevated border-b border-app">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-[var(--header-h)] flex items-center gap-3">
 
-        {/* Logo — текстгүй, зөвхөн дүрс */}
-        <Link href="/" className="shrink-0 mr-1">
-          <div className="relative w-10 h-10">
-            <Image src="/mnb.png" alt="МНБ" fill className="object-contain" />
-          </div>
+        {/* Hamburger (mobile only) */}
+        <button onClick={() => setMobileOpen(!mobileOpen)} aria-label="Menu"
+          className="lg:hidden w-10 h-10 -ml-1 flex items-center justify-center rounded-full hover:bg-card-hover transition-colors text-app">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+
+        {/* Brand text logo */}
+        <Link href="/" className="shrink-0 flex items-center mr-4">
+          <span
+            className="text-[22px] md:text-[24px] font-black tracking-[0.02em] leading-none"
+            style={{ color: "#CF1E28" }}>
+            M<span style={{ color: "#0046A5" }}>N</span>B
+          </span>
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-0.5">
-          {NAV.map((n) => {
-            const active = pathname === n.href ||
-              (n.href === "/tv"   && pathname.startsWith("/tv")) ||
-              (n.href === "/live" && pathname === "/live");
-            return (
-              <Link key={n.href} href={n.href}
-                className={cn(
-                  "relative flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition-all rounded-lg",
-                  active
-                    ? isLight ? "text-[#0046A5]" : "text-white"
-                    : isLight ? "text-black/65 hover:text-black hover:bg-black/5"
-                               : "text-white/80 hover:text-white hover:bg-white/8"
-                )}>
-                {n.live && <span className="w-1.5 h-1.5 rounded-full bg-[#CF1E28] animate-pulse shrink-0" />}
-                {n.label}
-                {active && (
-                  <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-[#0046A5] rounded-full" />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+        <nav className="hidden lg:flex items-center gap-1">
+          {NAV_KEYS.map((n) => (
+            <Link key={n.href} href={n.href}
+              className={cn(
+                "relative px-4 py-2.5 text-[15px] font-semibold rounded-lg transition-colors",
+                isActive(n.href) ? "text-app" : "text-sub hover:text-app",
+              )}>
+              <span className="flex items-center gap-1.5">
+                {n.live && <span className="w-1.5 h-1.5 rounded-full bg-[var(--danger)] animate-pulse-soft" />}
+                {t(n.label)}
+              </span>
+              {isActive(n.href) && (
+                <span className="absolute left-4 right-4 -bottom-1 h-[2px] rounded-full bg-accent" />
+              )}
+            </Link>
+          ))}
 
-        {/* Search — CSS var ашигласан, ямарч дэвсгэр дээр харагдана */}
-        <form onSubmit={handleSearch} className="relative hidden md:flex flex-1 max-w-xs ml-1">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted"
-            width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t("search_ph")}
-            className="w-full pl-9 pr-4 py-2 rounded-full text-sm transition-all duration-200
-              focus:outline-none focus:ring-2 focus:ring-[#0046A5]/30
-              border input-base"
-          />
-        </form>
+          {user && (
+            <Link href="/watchlist"
+              className={cn(
+                "relative px-4 py-2.5 text-[15px] font-semibold rounded-lg transition-colors",
+                isActive("/watchlist") ? "text-app" : "text-sub hover:text-app",
+              )}>
+              {t("watchlist")}
+              {isActive("/watchlist") && (
+                <span className="absolute left-4 right-4 -bottom-1 h-[2px] rounded-full bg-accent" />
+              )}
+            </Link>
+          )}
+        </nav>
 
         <div className="flex-1" />
 
         {/* Right controls */}
         <div className="flex items-center gap-1">
 
-          {/* Lang toggle */}
-          <button
-            onClick={() => setLang(lang === "mn" ? "en" : "mn")}
-            className={cn(
-              "hidden md:flex items-center px-2.5 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all",
-              isLight
-                ? "text-black/60 hover:text-black hover:bg-black/6"
-                : "text-white/75 hover:text-white hover:bg-white/8"
-            )}
-          >
-            {lang === "mn" ? "EN" : "MN"}
-          </button>
-
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            className={cn(
-              "hidden md:flex w-9 h-9 items-center justify-center rounded-full transition-all",
-              isLight
-                ? "text-black/60 hover:text-black hover:bg-black/6"
-                : "text-white/75 hover:text-white hover:bg-white/8"
-            )}
-            title={isLight ? "Dark mode" : "Light mode"}
-          >
-            {isLight ? (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="5"/>
-                <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-              </svg>
-            )}
-          </button>
-
-          {/* Watchlist */}
-          <Link href="/watchlist"
-            className={cn(
-              "hidden md:flex w-9 h-9 items-center justify-center rounded-full transition-all",
-              isLight ? "text-black/60 hover:text-black hover:bg-black/6" : "text-white/75 hover:text-white hover:bg-white/8"
-            )}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </Link>
-
-          {/* User / Login */}
-          {user ? (
-            <div className="relative ml-1">
-              <button onClick={() => setDropdownOpen(!dropdownOpen)}
-                className={cn("flex items-center gap-2 px-1.5 py-1 rounded-full transition-all",
-                  isLight ? "hover:bg-black/6" : "hover:bg-white/6")}>
-                {user.avatar ? (
-                  <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover ring-2 ring-[var(--border-strong)]" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0046A5] to-blue-700 flex items-center justify-center text-white text-xs font-bold">
-                    {(user.name ?? user.phone ?? "U")[0].toUpperCase()}
-                  </div>
-                )}
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                  className={cn("hidden sm:block transition-transform", dropdownOpen && "rotate-180",
-                    isLight ? "text-black/55" : "text-white/65")}>
-                  <path d="M6 9l6 6 6-6"/>
+          {/* Desktop search (inline expandable) */}
+          <div className="hidden lg:block">
+            {!searchOpen ? (
+              <button onClick={() => setSearchOpen(true)} aria-label="Search"
+                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-card-hover transition-colors text-sub hover:text-app">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
               </button>
+            ) : (
+              <form onSubmit={submitSearch} className="flex items-center w-80">
+                <div className="relative w-full">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted"
+                    width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                  </svg>
+                  <input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)}
+                    onBlur={() => !q && setSearchOpen(false)}
+                    placeholder={t("search_ph")}
+                    className="w-full pl-10 pr-3 py-2.5 rounded-full text-[15px] input-base focus:outline-none" />
+                </div>
+              </form>
+            )}
+          </div>
 
-              {dropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-                  <div className={cn(
-                    "absolute right-0 top-full mt-2 w-52 rounded-2xl overflow-hidden z-50 shadow-2xl border",
-                    isLight ? "bg-white border-black/8 shadow-black/10" : "bg-[#111118] border-white/8 shadow-black/50"
-                  )}>
-                    <div className={cn("px-4 py-3 border-b", isLight ? "border-black/6" : "border-white/6")}>
-                      <p className={cn("text-xs font-semibold mb-0.5", isLight ? "text-black/80" : "text-white/90")}>
-                        {user.name ?? "Хэрэглэгч"}
-                      </p>
-                      <p className={cn("text-xs truncate", isLight ? "text-black/50" : "text-white/55")}>
-                        {user.phone ?? user.email}
-                      </p>
-                    </div>
-                    {[
-                      { href: "/profile",              label: t("profile") },
-                      { href: "/profile/subscription", label: t("subscription") },
-                      { href: "/watchlist",             label: t("watchlist") },
-                      ...(["ADMIN","SUPER_ADMIN"].includes(user.role ?? "")
-                        ? [{ href: "/admin/settings", label: t("settings") }] : []),
-                    ].map(({ href, label }) => (
-                      <Link key={href} href={href} onClick={() => setDropdownOpen(false)}
-                        className={cn(
-                          "block px-4 py-2.5 text-sm transition-colors",
-                          isLight ? "text-black/75 hover:text-black hover:bg-black/5" : "text-white/85 hover:text-white hover:bg-white/8"
-                        )}>
-                        {label}
-                      </Link>
-                    ))}
-                    <div className={cn("border-t", isLight ? "border-black/6" : "border-white/6")}>
-                      <button onClick={handleLogout}
-                        className="w-full text-left px-4 py-2.5 text-sm text-[#CF1E28]/80 hover:text-[#CF1E28] transition-colors">
-                        {t("logout")}
-                      </button>
-                    </div>
-                  </div>
-                </>
+          {/* Notifications — desktop + mobile (bottom nav-д үгүй учраас үлдээнэ) */}
+          {user && (
+            <Link href="/notifications" aria-label="Notifications"
+              className={cn(
+                "relative w-10 h-10 flex items-center justify-center rounded-full transition-colors",
+                isActive("/notifications")
+                  ? "bg-card-hover text-app"
+                  : "text-sub hover:text-app hover:bg-card-hover",
+              )}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              {unread > 0 && (
+                <span className="absolute top-1.5 right-1.5 min-w-[16px] h-[16px] px-1 rounded-full bg-[var(--danger)]
+                  text-white text-[9.5px] font-bold flex items-center justify-center ring-2 ring-[var(--bg-elevated)]">
+                  {unread > 9 ? "9+" : unread}
+                </span>
               )}
-            </div>
-          ) : (
-            <Link href={`/login?callbackUrl=${encodeURIComponent(pathname)}`}
-              className="ml-1 px-4 py-2 bg-[#0046A5] text-white text-sm font-semibold rounded-full hover:bg-blue-600 active:scale-95 transition-all">
-              {t("login")}
             </Link>
           )}
 
-          {/* Mobile hamburger */}
-          <button onClick={() => setMobileOpen(!mobileOpen)}
-            className={cn("md:hidden ml-1 w-9 h-9 flex items-center justify-center rounded-full transition-all",
-              isLight ? "text-black/75 hover:bg-black/6" : "text-white/85 hover:bg-white/8")}>
-            {mobileOpen
-              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="13" x2="21" y2="13"/></svg>
-            }
-          </button>
+          {/* Profile — DESKTOP ONLY (mobile-д bottom nav-д бий) */}
+          {user ? (
+            <div className="hidden lg:block">
+              <UserMenu user={user} t={t} onLogout={handleLogout} />
+            </div>
+          ) : (
+            <Link href={`/login?callbackUrl=${encodeURIComponent(pathname)}`}
+              className="hidden lg:inline-flex ml-1 px-4 py-2.5 bg-brand hover:bg-brand-hover text-white text-[14px] font-semibold rounded-full active:scale-95 transition-all">
+              {t("login")}
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* Mobile panel */}
-      {mobileOpen && (
-        <div className={cn(
-          "md:hidden border-t px-4 py-4 space-y-1",
-          isLight ? "bg-white/98 border-black/8" : "bg-[#08080F]/98 border-white/6 backdrop-blur-xl"
-        )}>
-          <form onSubmit={handleSearch} className="flex gap-2 mb-3">
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("search_ph")}
-              className="flex-1 px-4 py-2 rounded-full text-sm focus:outline-none border input-base" />
-            <button type="submit" className="px-4 py-2 bg-[#0046A5] text-white text-sm font-semibold rounded-full">
-              {t("search_btn")}
-            </button>
-          </form>
-          {NAV.map((n) => (
-            <Link key={n.href} href={n.href} onClick={() => setMobileOpen(false)}
-              className={cn("flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors",
-                pathname === n.href
-                  ? isLight ? "text-[#0046A5] bg-[#0046A5]/8" : "text-white bg-white/10"
-                  : isLight ? "text-black/70" : "text-white/85")}>
-              {n.live && <span className="w-1.5 h-1.5 rounded-full bg-[#CF1E28] animate-pulse shrink-0" />}
-              {n.label}
-            </Link>
-          ))}
-          <div className={cn("flex items-center gap-2 pt-3 border-t", isLight ? "border-black/6" : "border-white/6")}>
-            <button onClick={() => setLang(lang === "mn" ? "en" : "mn")}
-              className={cn("px-3 py-1.5 rounded-lg text-xs font-bold",
-                isLight ? "bg-black/6 text-black/75" : "bg-white/12 text-white/90")}>
-              {lang === "mn" ? "EN" : "MN"}
-            </button>
-            <button onClick={toggleTheme}
-              className={cn("p-1.5 rounded-lg", isLight ? "bg-black/6 text-black/75" : "bg-white/12 text-white/90")}>
-              {isLight
-                ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
-              }
+      {mobileOpen && <MobileDrawer onClose={() => setMobileOpen(false)} t={t} user={user} />}
+    </header>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   User profile dropdown
+───────────────────────────────────────────────────────── */
+function UserMenu({ user, t, onLogout }: {
+  user: { id: string; name?: string; email?: string; phone?: string; avatar?: string; role?: string };
+  t: (k: string) => string;
+  onLogout: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative ml-1">
+      <button onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full hover:bg-card-hover transition-colors">
+        {user.avatar ? (
+          <img src={user.avatar} alt="" className="w-9 h-9 rounded-full object-cover ring-1 ring-[var(--border-strong)]" />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-brand flex items-center justify-center text-white text-[13px] font-bold">
+            {(user.name ?? user.phone ?? user.email ?? "U")[0].toUpperCase()}
+          </div>
+        )}
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          className={cn("hidden sm:block transition-transform text-muted", open && "rotate-180")}>
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-60 rounded-xl overflow-hidden z-50 surface-base shadow-pop animate-fade-in">
+          <div className="px-4 py-3 border-b border-app">
+            <p className="text-sm font-semibold text-app truncate">{user.name ?? "Хэрэглэгч"}</p>
+            <p className="text-xs text-muted truncate mt-0.5">{user.phone ?? user.email}</p>
+          </div>
+          <div className="py-1">
+            {[
+              { href: "/profile/account",      label: t("account_info") },
+              { href: "/profile/subscription", label: t("subscription") },
+              { href: "/profile/devices",      label: t("devices") },
+              { href: "/profile/settings",     label: t("settings") },
+              ...(["ADMIN", "SUPER_ADMIN"].includes(user.role ?? "")
+                ? [{ href: "/admin", label: "Admin" }] : []),
+            ].map(({ href, label }) => (
+              <Link key={href} href={href} onClick={() => setOpen(false)}
+                className="flex items-center px-4 py-2 text-[13px] text-sub hover:text-app hover:bg-card-hover transition-colors">
+                {label}
+              </Link>
+            ))}
+          </div>
+          <div className="border-t border-app">
+            <button onClick={onLogout}
+              className="w-full text-left px-4 py-2.5 text-[13px] font-medium text-danger hover:bg-danger-soft transition-colors">
+              {t("logout")}
             </button>
           </div>
         </div>
       )}
-    </header>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   Mobile drawer
+───────────────────────────────────────────────────────── */
+interface NavItem { label: string; href: string; live?: boolean }
+
+function MobileDrawer({ onClose, t, user }: {
+  onClose: () => void; t: (k: string) => string;
+  user: { id: string } | null;
+}) {
+  const all: NavItem[] = [
+    ...NAV_KEYS,
+    { label: "library",  href: "/library" },
+    { label: "bundles",  href: "/bundles" },
+    { label: "archive",  href: "/archive" },
+    ...(user ? [{ label: "watchlist", href: "/watchlist" }] : []),
+  ];
+  return (
+    <>
+      <div className="lg:hidden fixed inset-0 top-[var(--header-h)] bg-app/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="lg:hidden absolute top-full inset-x-0 bg-elevated border-b border-app shadow-pop animate-fade-in p-4 space-y-1">
+        {all.map((n) => (
+          <Link key={n.href} href={n.href} onClick={onClose}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-[15px] font-medium text-sub hover:text-app hover:bg-card-hover transition-colors">
+            {n.live && <span className="w-1.5 h-1.5 rounded-full bg-[var(--danger)] animate-pulse-soft" />}
+            {t(n.label)}
+          </Link>
+        ))}
+      </div>
+    </>
   );
 }

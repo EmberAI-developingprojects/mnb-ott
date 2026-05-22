@@ -32,33 +32,100 @@ export async function updateConfig(key: string, value: string): Promise<void> {
   await redis.del(CACHE_KEY); // cache цэвэрлэнэ
 }
 
-// Subscription plans-д ашиглах helper
-export async function getSubscriptionPlans() {
+export type PlanCapability = {
+  /** YouTube архив (үнэгүй VOD) үзэх боломж */
+  youtubeArchive: boolean;
+  /** Live TV (5 суваг) + DVR catch-up */
+  liveTv: boolean;
+  /** Премиум VOD сан (DRM хамгаалалттай) */
+  premiumVod: boolean;
+};
+
+export interface PlanDefinition {
+  type: "BASIC" | "TV" | "VOD" | "COMBO";
+  label: string;
+  tagline: string;
+  priceMonthly: number;
+  priceWeekly: number;
+  deviceLimit: number;
+  features: string[];
+  capabilities: PlanCapability;
+}
+
+// 4 plan + ердийн TVOD (тусдаа видео багц) — capabilities нь access control-д ашиглагдана
+export async function getSubscriptionPlans(): Promise<PlanDefinition[]> {
   const cfg = await getAllConfigs();
+  const n = (k: string, fb: number) => Number(cfg[k]?.value ?? fb);
+
   return [
     {
-      type: "FREE",
-      label: "Үнэгүй",
+      type: "BASIC",
+      label: "Энгийн",
+      tagline: "Нэвтэрсэн бол YouTube архив үнэгүй",
       priceMonthly: 0,
       priceWeekly: 0,
-      deviceLimit: Number(cfg["plan.free.device_limit"]?.value ?? 1),
-      features: ["YouTube VOD архив", "Мэдээний суваг"],
+      deviceLimit: n("plan.basic.device_limit", 1),
+      features: [
+        "YouTube архив бүх видео",
+        "Мэдээний клип, шоунууд",
+        "1 төхөөрөмж зэрэг",
+        "Багц доторх видеог тус бүрчлэн түрээслэх боломжтой",
+      ],
+      capabilities: { youtubeArchive: true, liveTv: false, premiumVod: false },
     },
     {
-      type: "STANDARD",
-      label: "Стандарт",
-      priceMonthly: Number(cfg["plan.standard.price_monthly"]?.value ?? 9900),
-      priceWeekly: Number(cfg["plan.standard.price_weekly"]?.value ?? 3500),
-      deviceLimit: Number(cfg["plan.standard.device_limit"]?.value ?? 2),
-      features: ["Бүх суваг LIVE", "DVR 7 хоног", "HD чанар", "2 device"],
+      type: "TV",
+      label: "ТВ",
+      tagline: "5 суваг шууд + DVR catch-up",
+      priceMonthly: n("plan.tv.price_monthly", 9900),
+      priceWeekly:  n("plan.tv.price_weekly",  3500),
+      deviceLimit:  n("plan.tv.device_limit",  2),
+      features: [
+        "5 суваг шууд (LIVE)",
+        "DVR 2 цаг catch-up",
+        "EPG хөтөлбөр (3 хойш / 5 урагш өдөр)",
+        "YouTube архив",
+      ],
+      capabilities: { youtubeArchive: true, liveTv: true, premiumVod: false },
     },
     {
-      type: "PREMIUM",
-      label: "Премиум",
-      priceMonthly: Number(cfg["plan.premium.price_monthly"]?.value ?? 19900),
-      priceWeekly: Number(cfg["plan.premium.price_weekly"]?.value ?? 6900),
-      deviceLimit: Number(cfg["plan.premium.device_limit"]?.value ?? 5),
-      features: ["Бүх суваг LIVE", "DVR 7 хоног", "4K чанар", "Premium VOD", "5 device", "DRM хамгаалалт"],
+      type: "VOD",
+      label: "Видео сан",
+      tagline: "Санг бүхэлд нь сараар захиалаад хязгааргүй үзнэ",
+      priceMonthly: n("plan.vod.price_monthly", 12900),
+      priceWeekly:  n("plan.vod.price_weekly",  4500),
+      deviceLimit:  n("plan.vod.device_limit",  2),
+      features: [
+        "Видео сан дотор хязгааргүй үзэх",
+        "HD/4K чанар",
+        "DRM хамгаалалт",
+        "YouTube архив",
+      ],
+      capabilities: { youtubeArchive: true, liveTv: false, premiumVod: true },
+    },
+    {
+      type: "COMBO",
+      label: "Бүгд",
+      tagline: "ТВ + Видео сан хосолсон бүх багц",
+      priceMonthly: n("plan.combo.price_monthly", 19900),
+      priceWeekly:  n("plan.combo.price_weekly",  6900),
+      deviceLimit:  n("plan.combo.device_limit",  4),
+      features: [
+        "Бүх суваг шууд (LIVE) + DVR",
+        "Видео сан хязгааргүй",
+        "HD/4K, DRM",
+        "4 төхөөрөмж зэрэг",
+        "EPG хөтөлбөр",
+      ],
+      capabilities: { youtubeArchive: true, liveTv: true, premiumVod: true },
     },
   ];
+}
+
+export async function getPlanCapabilities(
+  planType: "BASIC" | "TV" | "VOD" | "COMBO",
+): Promise<PlanCapability> {
+  const plans = await getSubscriptionPlans();
+  const plan  = plans.find((p) => p.type === planType) ?? plans[0];
+  return plan.capabilities;
 }

@@ -1,0 +1,41 @@
+### Payment API
+@host = http://localhost:3001
+@token = REPLACE_WITH_ACCESS_TOKEN
+
+### Plan-н QPay invoice үүсгэх
+POST {{host}}/api/payment/invoice
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "planType": "COMBO",
+  "period": "monthly"
+}
+
+### Нэг видеог 72 цагаар түрээслэх invoice
+POST {{host}}/api/payment/vod-invoice
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "vodId": "youtubeId_or_dbId",
+  "price": 2900,
+  "title": "Test video"
+}
+
+### Төлбөр шалгах
+POST {{host}}/api/payment/check
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "invoiceId": "clx_test"
+}
+
+### Invoice цуцлах
+DELETE {{host}}/api/payment/invoice/clx_test
+Authorization: Bearer {{token}}
+
+### Худалдан авалтын түүх
+GET {{host}}/api/payment/history
+Authorization: Bearer {{token}}

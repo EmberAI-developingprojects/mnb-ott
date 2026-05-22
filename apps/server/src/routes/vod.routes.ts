@@ -4,6 +4,12 @@ import * as ctrl from "../controllers/vod.controller";
 
 export const vodRouter = Router();
 
+// Нүүр хуудасны 3 мөр
+vodRouter.get("/archive",     ctrl.listArchive);
+vodRouter.get("/library",     ctrl.listLibrary);
+vodRouter.get("/bundles",     ctrl.listBundles);
+vodRouter.get("/bundles/:id", ctrl.getBundle);
+
 // Shows
 vodRouter.get("/shows", ctrl.listShows);
 vodRouter.get("/shows/:slug", ctrl.getShow);

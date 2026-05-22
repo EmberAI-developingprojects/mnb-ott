@@ -38,6 +38,7 @@ declare namespace YT {
     videoId: string;
     width?: string;
     height?: string;
+    host?: string;
     playerVars?: Record<string, number | string>;
     events?: {
       onReady?: (e: { target: Player }) => void;
@@ -87,6 +88,7 @@ export function VodPlayer({
   const [started, setStarted] = useState(false);
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [ended, setEnded] = useState(false);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(100);
   const [current, setCurrent] = useState(startPosition);
@@ -121,10 +123,11 @@ export function VodPlayer({
       videoId: youtubeId,
       width: "100%",
       height: "100%",
+      host: "https://www.youtube-nocookie.com",  // privacy-enhanced — branding багасна
       playerVars: {
         autoplay: 1,
         controls: 0,          // YouTube controls бүрэн нуух
-        rel: 0,               // санал болгох видео нуух
+        rel: 0,               // санал болгох видео нуух (rel ажиллахгүй болсон — overlay-д найдна)
         modestbranding: 1,    // YouTube лого хамгийн бага
         iv_load_policy: 3,    // annotation, card нуух
         disablekb: 1,         // YouTube keyboard shortcuts унтраах
@@ -146,6 +149,7 @@ export function VodPlayer({
         onStateChange: ({ data }) => {
           const PLAYING = 1, ENDED = 0;
           setPlaying(data === PLAYING);
+          setEnded(data === ENDED);
           if (data === PLAYING) {
             progressTimer.current = setInterval(() => {
               const t = playerRef.current?.getCurrentTime() ?? 0;
@@ -268,8 +272,20 @@ export function VodPlayer({
         </div>
       )}
 
-      {/* YouTube iframe — бүтэн, zoom хийхгүй */}
-      <div id={`yt-${youtubeId}`} className="w-full h-full" />
+      {/* YouTube iframe — pointer-events: none → YouTube hover event-ийг авахгүй
+          → playback үед YouTube controls bar, watermark, "More videos" гарахгүй.
+          Бүх mouse interaction-ийг доорх z-22 overlay шийднэ.
+          Inline style нь YT.Player iframe-ээр солихоос ч хойш хүчинтэй (inherit). */}
+      <div
+        className="absolute inset-0 w-full h-full"
+        style={{ pointerEvents: "none" }}
+      >
+        <div
+          id={`yt-${youtubeId}`}
+          className="w-full h-full"
+          style={{ pointerEvents: "none" }}
+        />
+      </div>
 
       {/* Loading */}
       {started && !ready && (
@@ -289,14 +305,24 @@ export function VodPlayer({
       */}
       {started && ready && (
         <div
-          className={cn(
-            "absolute inset-0 z-[22] cursor-pointer transition-colors duration-200",
-            !playing ? "bg-black/55" : "bg-transparent"
-          )}
+          className="absolute inset-0 z-[22] cursor-pointer"
           onClick={togglePlay}
           onMouseMove={revealControls}
           onMouseLeave={() => playing && setShowControls(false)}
         >
+          {/* End-screen: дууссан үед "Дахин үзэх" товч */}
+          {ended && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center"
+              onClick={(e) => { e.stopPropagation(); }}>
+              <button
+                onClick={() => { playerRef.current?.seekTo(0, true); playerRef.current?.playVideo(); setEnded(false); }}
+                className="w-16 h-16 rounded-full bg-[var(--primary)]/90 hover:bg-[var(--primary)] flex items-center justify-center transition-all">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+                  <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                </svg>
+              </button>
+            </div>
+          )}
           {/* Controls UI — pause үед үргэлж харагдана, play үед fade */}
           <div
             className={cn(

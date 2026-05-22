@@ -8,8 +8,8 @@ export async function getMySubscription(userId: string) {
     where: { userId },
   });
   if (!sub) {
-    // Байхгүй бол FREE үүсгэж буцаана
-    return prisma.subscription.create({ data: { userId, planType: "FREE" } });
+    // Анхдагч plan: BASIC — нэвтэрсэн хэрэглэгчид YouTube архив үнэгүй
+    return prisma.subscription.create({ data: { userId, planType: "BASIC" } });
   }
   return sub;
 }
@@ -18,7 +18,8 @@ export async function checkDeviceLimit(userId: string, deviceId: string): Promis
   const sub = await getMySubscription(userId);
 
   const limitKey = `plan.${sub.planType.toLowerCase()}.device_limit`;
-  const limit = await getConfigNumber(limitKey, 1);
+  const fallback = sub.planType === "BASIC" ? 1 : sub.planType === "COMBO" ? 4 : 2;
+  const limit = await getConfigNumber(limitKey, fallback);
 
   // Одоогийн идэвхтэй session тоо
   const activeSessions = await prisma.userSession.count({
@@ -55,9 +56,10 @@ export async function getMySubscriptionDetail(userId: string) {
 }
 
 // Subscription шинэчлэх (QPay төлбөр хийгдсэний дараа дуудагдана)
+// BASIC үнэгүй учраас энд активлахгүй
 export async function activateSubscription(
   userId: string,
-  planType: "STANDARD" | "PREMIUM",
+  planType: "TV" | "VOD" | "COMBO",
   period: "monthly" | "weekly",
   paymentId: string
 ) {
@@ -78,4 +80,65 @@ export async function activateSubscription(
   await redis.del(`sub:${userId}`);
 
   return sub;
+}
+
+// ─────────────────────────────────────────────────────
+// Access control — plan + TVOD purchase-ийг харгалзан үздэг
+// ─────────────────────────────────────────────────────
+
+/* Frontend-ээс ирэх access kind утга:
+   archive   = YouTube архив (нэвтэрсэн бүхэнд үнэгүй)
+   library   = Премиум VOD сан (VOD/COMBO plan-тай үнэгүй)
+   bundle    = Багц доторх видео (VOD/COMBO эсвэл тус видеог түрээслэх)
+   live-tv   = Шууд цацалт + DVR (TV/COMBO plan)
+*/
+export type ContentAccessKind = "archive" | "library" | "bundle" | "live-tv";
+
+export interface AccessDecision {
+  allowed: boolean;
+  reason?: "PLAN_REQUIRED" | "PURCHASE_REQUIRED" | "EXPIRED";
+  requiredPlans?: string[];
+}
+
+/**
+ * Plan + субюнкрэйшний хүчинтэй эсэх + purchase-ийг шалгаад нэвтрэх
+ * боломжийг буцаана. VOD дотор purchase эсвэл bundle худалдаж авсан бол
+ * plan-аас үл хамаараад зөвшөөрнө.
+ */
+export async function checkContentAccess(
+  userId: string | null,
+  kind: ContentAccessKind,
+  vodId?: string,
+): Promise<AccessDecision> {
+  // Нэвтрээгүй — бүх контент хаалттай
+  if (!userId) return { allowed: false, reason: "PLAN_REQUIRED" };
+
+  const sub = await getMySubscription(userId);
+  const isExpired = sub.expiresAt ? sub.expiresAt < new Date() : false;
+  const effectivePlan = isExpired ? "BASIC" : sub.planType;
+  const caps = (await getSubscriptionPlans()).find((p) => p.type === effectivePlan)?.capabilities;
+
+  if (kind === "archive" && caps?.youtubeArchive)  return { allowed: true };
+  if (kind === "live-tv" && caps?.liveTv)          return { allowed: true };
+  if (kind === "library" && caps?.premiumVod)      return { allowed: true };
+
+  // Багц доторх видео — plan хамаагүй, ЗӨВХӨН нэг бүрчлэн TVOD-аар авна
+  if (kind === "bundle" && vodId) {
+    const direct = await prisma.purchase.findUnique({
+      where: { userId_vodId: { userId, vodId } },
+    });
+    if (direct && direct.status === "ACTIVE" &&
+        (!direct.expiresAt || direct.expiresAt > new Date())) {
+      return { allowed: true };
+    }
+    return { allowed: false, reason: "PURCHASE_REQUIRED" };
+  }
+
+  if (kind === "live-tv") {
+    return { allowed: false, reason: "PLAN_REQUIRED", requiredPlans: ["TV", "COMBO"] };
+  }
+  if (kind === "library") {
+    return { allowed: false, reason: "PLAN_REQUIRED", requiredPlans: ["VOD", "COMBO"] };
+  }
+  return { allowed: false, reason: "PLAN_REQUIRED", requiredPlans: ["BASIC", "TV", "VOD", "COMBO"] };
 }

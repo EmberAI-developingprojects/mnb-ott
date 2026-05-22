@@ -15,10 +15,16 @@ enum Role {
   SUPER_ADMIN
 }
 
+// 4 төрлийн plan:
+//  BASIC : YouTube архив (үнэгүй) — анхдагч
+//  TV    : Live TV + DVR + EPG
+//  VOD   : Премиум видео сан
+//  COMBO : TV + VOD аль аль
 enum PlanType {
-  FREE
-  STANDARD
-  PREMIUM
+  BASIC
+  TV
+  VOD
+  COMBO
 }
 
 enum SubStatus {
@@ -66,13 +72,14 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  accounts     Account[]
-  sessions     UserSession[]
-  subscription Subscription?
-  purchases    Purchase[]
-  payments     Payment[]
-  watchHistory WatchHistory[]
-  otpCodes     OtpCode[]
+  accounts      Account[]
+  sessions      UserSession[]
+  subscription  Subscription?
+  purchases     Purchase[]
+  payments      Payment[]
+  watchHistory  WatchHistory[]
+  otpCodes      OtpCode[]
+  notifications Notification[]
 }
 
 model Account {
@@ -125,13 +132,66 @@ model OtpCode {
 model Subscription {
   id        String    @id @default(cuid())
   userId    String    @unique
-  planType  PlanType  @default(FREE)
+  planType  PlanType  @default(BASIC)
   startedAt DateTime  @default(now())
   expiresAt DateTime?
   status    SubStatus @default(ACTIVE)
   updatedAt DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Видео багц — энэ нь зүгээр л группчлэл (тематик цуглуулга).
+// Дотор нь байгаа видео бүрийг ХЭРЭГЛЭГЧ НЭГ НЭГЭЭР НЬ түрээслэнэ (Purchase).
+// Тогтсон үнэгүй "багц худалдаж авах" гэсэн ойлголт байхгүй.
+model VodBundle {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  @db.Text
+  thumbnailUrl String?
+  isActive     Boolean  @default(true)
+  orderIndex   Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  items VodBundleItem[]
+}
+
+model VodBundleItem {
+  id         String @id @default(cuid())
+  bundleId   String
+  vodId      String
+  orderIndex Int    @default(0)
+
+  bundle VodBundle  @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  vod    VodContent @relation(fields: [vodId], references: [id], onDelete: Cascade)
+
+  @@unique([bundleId, vodId])
+}
+
+// Хэрэглэгчид зориулсан мэдэгдэл (notifications)
+enum NotificationType {
+  SYSTEM
+  SUBSCRIPTION
+  PAYMENT
+  CONTENT
+  PROMO
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType @default(SYSTEM)
+  title     String
+  body      String           @db.Text
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
 }
 
 model Channel {
@@ -162,8 +222,9 @@ model VodContent {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  sources   VodSource[]
-  purchases Purchase[]
+  sources      VodSource[]
+  purchases    Purchase[]
+  bundleItems  VodBundleItem[]
 }
 
 model VodSource {

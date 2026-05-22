@@ -56,10 +56,24 @@ const dict: Record<string, [string, string]> = {
   // Profile
   profile:           ["Профайл",                 "Profile"],
   account_info:      ["Хэрэглэгчийн мэдээлэл",   "Account Info"],
-  security:          ["Нууц үг & Аюулгүй байдал", "Security"],
+  security:          ["Нууц үг & Аюулгүй байдал", "Password & Security"],
   subscription:      ["Захиалга & Багц",          "Subscription"],
   devices:           ["Төхөөрөмжүүд",             "Devices"],
-  settings:          ["Тохиргоо",                 "Settings"],
+  purchases:         ["Худалдан авалт",            "Purchases"],
+  delete_account:    ["Бүртгэл устгах",            "Delete account"],
+  settings:          ["Тохиргоо",                 "Preferences"],
+  notifications:     ["Мэдэгдэл",                 "Notifications"],
+  notif_empty:       ["Мэдэгдэл байхгүй",         "No notifications"],
+  notif_mark_all:    ["Бүгдийг уншсан болгох",    "Mark all as read"],
+  notif_new:         ["Шинэ",                     "New"],
+  prefs_title:       ["Тохиргоо",                 "Preferences"],
+  prefs_language:    ["Хэл",                      "Language"],
+  prefs_theme:       ["Дэлгэцийн горим",          "Theme"],
+  prefs_theme_dark:  ["Бараан",                   "Dark"],
+  prefs_theme_light: ["Цайвар",                   "Light"],
+  prefs_autoplay:    ["Дараагийн анги автомат",   "Autoplay next episode"],
+  prefs_notify_email:["И-мэйл мэдэгдэл",         "Email notifications"],
+  prefs_notify_promo:["Урамшуулал, шинэ контент", "Promotions & new content"],
   name:              ["Нэр",                      "Name"],
   email:             ["И-мэйл",                   "Email"],
   phone:             ["Утасны дугаар",             "Phone number"],
@@ -78,7 +92,7 @@ const dict: Record<string, [string, string]> = {
   no_devices:    ["Төхөөрөмж олдсонгүй",    "No devices found"],
 
   // Subscription
-  sub_title:     ["Захиалга & Багц",        "Subscription & Plan"],
+  sub_title:     ["Захиалга & Багц",        "Subscription & Plans"],
   sub_current:   ["Одоогийн",               "Current"],
   sub_monthly:   ["Сарын",                  "Monthly"],
   sub_weekly:    ["7 хоногийн",             "Weekly"],
@@ -93,6 +107,12 @@ const dict: Record<string, [string, string]> = {
   sub_device_limit:["device нэгэн зэрэг",  "devices at once"],
   sub_per_month: ["сар",                    "mo"],
   sub_per_week:  ["7 хоног",               "wk"],
+  sub_tab_plans: ["Гишүүнчлэлийн багц",     "Membership plans"],
+  sub_tab_bundles:["Видео багц",             "Video bundles"],
+  sub_bundles_hint:["Тусдаа худалдан авч үзэх багцууд", "One-time bundles you can purchase"],
+  sub_includes_n:["видео",                  "videos"],
+  sub_buy_now:   ["Худалдаж авах",          "Buy now"],
+  sub_purchased: ["Худалдан авсан",          "Purchased"],
 
   // QPay
   qpay_title:    ["QPay төлбөр",            "QPay Payment"],
@@ -100,9 +120,9 @@ const dict: Record<string, [string, string]> = {
   qpay_waiting:  ["Төлбөр хүлээж байна...", "Waiting for payment..."],
 
   // Watchlist
-  watchlist:     ["Дуртай бичлэгүүд",      "Watchlist"],
+  watchlist:     ["Үзэх жагсаалт",                "Watchlist"],
   watchlist_empty:["Хадгалсан бичлэг байхгүй", "No saved videos"],
-  watchlist_hint:["Бичлэгийн дэлгэрэнгүй дээрх ♡ товчийг дарж хадгална", "Tap ♡ on a video to save it"],
+  watchlist_hint:["Бичлэгийн дэлгэрэнгүй дээрх \"Хадгалах\" товчийг ашигла", "Use \"Save\" on a video to add it here"],
 
   // Common
   save:          ["Хадгалах",              "Save"],
@@ -132,7 +152,10 @@ const dict: Record<string, [string, string]> = {
   search_page_ph: ["Нэвтрүүлэг хайх...",       "Search programs..."],
   search_none:    ["илэрц олдсонгүй",          "no results found for"],
   see_archive:    ["Архив харах",              "Browse archive"],
-  browse:         ["Нэвтрүүлэг үзэх",          "Browse content"],
+  browse:         ["Үзэх",                     "Browse"],
+  library:        ["Видео сан",                "Library"],
+  bundles:        ["Видео багц",               "Bundles"],
+  archive:        ["Архив",                    "Archive"],
 
   // Auth field labels & messages
   phone_or_email: ["Утас эсвэл имэйл",         "Phone or email"],

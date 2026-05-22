@@ -1,9 +1,55 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import * as ytService from "../services/youtube.service";
+import * as library from "../services/library.service";
 import type { YtShow } from "../services/youtube.service";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/error.middleware";
+
+// GET /api/vod/archive   — Архив (limit заавал, нүүрэнд 5, иначе бүгд)
+export async function listArchive(req: Request, res: Response, next: NextFunction) {
+  try {
+    const all = req.query.all === "1";
+    if (all) {
+      const videos = await library.getArchiveAll();
+      return res.json({ success: true, data: { videos } });
+    }
+    const limit = Math.min(20, Math.max(1, Number(req.query.limit) || 5));
+    const videos = await library.getArchiveLatest(limit);
+    res.json({ success: true, data: { videos } });
+  } catch (e) { next(e); }
+}
+
+// GET /api/vod/library   — Видео сан
+export async function listLibrary(req: Request, res: Response, next: NextFunction) {
+  try {
+    const all = req.query.all === "1";
+    if (all) {
+      const videos = await library.getLibraryAll();
+      return res.json({ success: true, data: { videos } });
+    }
+    const limit = Math.min(20, Math.max(1, Number(req.query.limit) || 5));
+    const videos = await library.getLibraryLatest(limit);
+    res.json({ success: true, data: { videos } });
+  } catch (e) { next(e); }
+}
+
+// GET /api/vod/bundles   — багцууд (тус бүр дотроо видеотой)
+export async function listBundles(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const bundles = await library.getBundles();
+    res.json({ success: true, data: { bundles } });
+  } catch (e) { next(e); }
+}
+
+// GET /api/vod/bundles/:id
+export async function getBundle(req: Request, res: Response, next: NextFunction) {
+  try {
+    const b = await library.getBundleById(req.params.id);
+    if (!b) throw new AppError("Багц олдсонгүй", 404, "NOT_FOUND");
+    res.json({ success: true, data: b });
+  } catch (e) { next(e); }
+}
 
 // GET /api/vod/shows
 export async function listShows(req: Request, res: Response, next: NextFunction) {
@@ -42,24 +88,37 @@ export async function listYoutube(req: Request, res: Response, next: NextFunctio
 }
 
 // GET /api/vod/:id  (youtubeId эсвэл DB id)
+// Хариунд `accessKind` нэмж буцаана — frontend үүгээр plan-ийн хязгаарлалт шалгана:
+//   archive : нэвтэрсэн бүхэнд үнэгүй
+//   library : VOD / COMBO багц шаарддаг
+//   bundle  : VOD / COMBO эсвэл тус видеог түрээслэх (TVOD)
 export async function getVod(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
 
-    // YouTube ID шиг харагдаж байвал (11 тэмдэгт) YouTube-с авна
     if (/^[a-zA-Z0-9_-]{11}$/.test(id)) {
       const video = await ytService.getYoutubeVideo(id);
       if (!video) throw new AppError("Видео олдсонгүй", 404, "NOT_FOUND");
-      return res.json({ success: true, data: { type: "youtube", ...video } });
+
+      const cls = await library.classifyContent(id);
+      return res.json({
+        success: true,
+        data: {
+          type: "youtube",
+          accessKind: cls.kind,
+          price:      cls.price,
+          bundleId:   cls.bundleId,
+          ...video,
+        },
+      });
     }
 
-    // DB-с авна (Premium VOD)
     const vod = await prisma.vodContent.findUnique({
       where: { id },
       include: { sources: true },
     });
     if (!vod) throw new AppError("Видео олдсонгүй", 404, "NOT_FOUND");
-    res.json({ success: true, data: { ...vod, type: "premium" } });
+    res.json({ success: true, data: { ...vod, type: "premium", accessKind: "library" } });
   } catch (e) { next(e); }
 }
 
@@ -88,18 +147,9 @@ export async function getStream(req: Request, res: Response, next: NextFunction)
     if (!vod) throw new AppError("Видео олдсонгүй", 404, "NOT_FOUND");
 
     if (vod.type === "PREMIUM" && req.user) {
-      const hasPurchase = await prisma.purchase.findFirst({
-        where: {
-          userId: req.user.userId,
-          vodId: id,
-          status: "ACTIVE",
-          expiresAt: { gt: new Date() },
-        },
-      });
-      const hasSub = await prisma.subscription.findFirst({
-        where: { userId: req.user.userId, planType: { in: ["STANDARD", "PREMIUM"] }, status: "ACTIVE" },
-      });
-      if (!hasPurchase && !hasSub) {
+      const { checkContentAccess } = await import("../services/subscription.service");
+      const decision = await checkContentAccess(req.user.userId, "library", id);
+      if (!decision.allowed) {
         throw new AppError("Эрх хүрэлцэхгүй", 403, "SUBSCRIPTION_REQUIRED");
       }
     }

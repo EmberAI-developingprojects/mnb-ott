@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { LivePlayer } from "@/components/player/LivePlayer";
+import { UpgradePrompt } from "@/components/layout/UpgradePrompt";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { useAuthStore } from "@/store/authStore";
 import { useT } from "@/store/settingsStore";
 import api from "@/lib/api";
 
@@ -16,7 +19,9 @@ const LIVE_NAME   = "МНБ 1";
 
 export default function LivePage() {
   const t = useT();
+  const { user } = useAuthStore();
   const [programs, setPrograms] = useState<EpgProgram[]>([]);
+  const [canPlay, setCanPlay]   = useState<boolean | null>(null);
 
   useEffect(() => {
     api.get<{ success: true; data: { channels: { slug: string; programs: EpgProgram[] }[] } }>("/api/channels/epg")
@@ -27,6 +32,15 @@ export default function LivePage() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!user) { setCanPlay(false); return; }
+    api.post<{ success: true; data: { allowed: boolean } }>(
+      "/api/subscription/access",
+      { kind: "live-tv" },
+    ).then((r) => setCanPlay(r.data.data.allowed))
+     .catch(() => setCanPlay(false));
+  }, [user?.id]);
+
   const now = new Date();
   const current = programs.find(
     (p) => new Date(p.startTime) <= now && new Date(p.endTime) > now
@@ -34,15 +48,21 @@ export default function LivePage() {
   const next = programs.find((p) => new Date(p.startTime) > now);
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-6 space-y-5">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+24px)] pb-12 space-y-5">
 
       {/* Player */}
-      <LivePlayer streamUrl={LIVE_STREAM} channelName={LIVE_NAME} poster="/mnbtv.png" />
+      {canPlay === null ? (
+        <Skeleton className="aspect-video w-full rounded-xl" />
+      ) : canPlay ? (
+        <LivePlayer streamUrl={LIVE_STREAM} channelName={LIVE_NAME} poster="/mnbtv.png" />
+      ) : (
+        <UpgradePrompt kind="live-tv" backdrop="/mnbtv.png" />
+      )}
 
       {/* Суваг мэдээлэл */}
       <div className="flex items-center gap-4">
         <div className="relative h-10 aspect-[2/1] rounded-md overflow-hidden bg-black shrink-0">
-          <Image src={LIVE_LOGO} alt={LIVE_NAME} fill className="object-contain" />
+          <Image src={LIVE_LOGO} alt={LIVE_NAME} fill sizes="80px" className="object-contain" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">

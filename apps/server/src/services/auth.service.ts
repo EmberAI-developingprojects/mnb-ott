@@ -76,7 +76,7 @@ export async function registerInit(data: {
     });
     await prisma.subscription.upsert({
       where: { userId: user.id },
-      create: { userId: user.id, planType: "FREE" },
+      create: { userId: user.id, planType: "BASIC" },
       update: {},
     });
   }
@@ -133,7 +133,7 @@ export async function loginWithPassword(
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) throw new AppError("Нэвтрэх мэдээлэл буруу байна", 401, "INVALID_CREDENTIALS");
 
-  await prisma.subscription.upsert({ where: { userId: user.id }, create: { userId: user.id, planType: "FREE" }, update: {} });
+  await prisma.subscription.upsert({ where: { userId: user.id }, create: { userId: user.id, planType: "BASIC" }, update: {} });
   return createSession(user.id, user.role, device);
 }
 
@@ -189,7 +189,7 @@ export async function verifyOtp(phone: string, code: string, device: { deviceId:
   await prisma.user.update({ where: { id: user.id }, data: { isVerified: true } });
   await prisma.otpCode.updateMany({ where: { phone, used: false }, data: { used: true } });
   await redis.del(`otp:${phone}`);
-  await prisma.subscription.upsert({ where: { userId: user.id }, create: { userId: user.id, planType: "FREE" }, update: {} });
+  await prisma.subscription.upsert({ where: { userId: user.id }, create: { userId: user.id, planType: "BASIC" }, update: {} });
   return createSession(user.id, user.role, device);
 }
 
@@ -203,7 +203,7 @@ export async function googleAuth(idToken: string, device: { deviceId: string; de
   let user = await prisma.user.findUnique({ where: { email: payload.email } });
   if (!user) {
     user = await prisma.user.create({ data: { email: payload.email, name: payload.name, avatar: payload.picture, isVerified: true, role: "USER" } });
-    await prisma.subscription.create({ data: { userId: user.id, planType: "FREE" } });
+    await prisma.subscription.create({ data: { userId: user.id, planType: "BASIC" } });
   } else {
     await prisma.user.update({ where: { id: user.id }, data: { name: user.name ?? payload.name, avatar: user.avatar ?? payload.picture } });
   }

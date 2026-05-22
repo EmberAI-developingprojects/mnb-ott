@@ -1,36 +1,49 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
-import { useT } from "@/store/settingsStore";
+import { useSettingsStore, useT } from "@/store/settingsStore";
 import { cn } from "@/lib/utils";
+
+interface MenuItem { href: string; label: string; }
 
 export default function ProfileLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router   = useRouter();
   const { user } = useAuthStore();
+  const { lang } = useSettingsStore();
   const t = useT();
 
-  const MENU = [
-    { href: "/profile",              key: "account_info" },
-    { href: "/profile/security",     key: "security"     },
-    { href: "/profile/subscription", key: "subscription" },
-    { href: "/profile/devices",      key: "devices"      },
+  const ACCOUNT_MENU: MenuItem[] = [
+    { href: "/profile/account",      label: t("account_info") },
+    { href: "/profile/subscription", label: t("subscription") },
+    { href: "/profile/purchases",    label: t("purchases")    },
+    { href: "/profile/devices",      label: t("devices")      },
+    { href: "/profile/settings",     label: t("settings")     },
   ];
 
-  return (
-    <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
-      <div className="flex gap-8">
+  const SUPPORT_MENU: MenuItem[] = [
+    { href: "/profile/help",    label: lang === "mn" ? "Түгээмэл асуулт"     : "Help & FAQ" },
+    { href: "/profile/terms",   label: lang === "mn" ? "Үйлчилгээний нөхцөл" : "Terms of Service" },
+    { href: "/profile/privacy", label: lang === "mn" ? "Нууцлалын бодлого"   : "Privacy Policy" },
+  ];
 
-        {/* Sidebar */}
-        <aside className="hidden lg:flex flex-col w-56 shrink-0">
-          {/* Avatar */}
+  const ALL = [...ACCOUNT_MENU, ...SUPPORT_MENU];
+  const current = ALL.find((m) => m.href === pathname);
+  const isMenuPage = pathname === "/profile";
+
+  return (
+    <div className="max-w-[1440px] mx-auto px-4 md:px-12 pt-[calc(var(--header-h)+24px)] pb-16">
+      <div className="flex gap-10">
+
+        {/* Sidebar (desktop only) */}
+        <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-[calc(var(--header-h)+24px)] self-start">
           <div className="flex items-center gap-3 mb-6 pb-6 border-b border-app">
             {user?.avatar ? (
-              <img src={user.avatar} alt="" className="w-11 h-11 rounded-full object-cover" />
+              <img src={user.avatar} alt="" className="w-12 h-12 rounded-full object-cover" />
             ) : (
-              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#0046A5] to-blue-700
-                flex items-center justify-center text-white font-bold text-lg">
+              <div className="w-12 h-12 rounded-full bg-grad-brand flex items-center justify-center text-white font-bold text-lg">
                 {(user?.name ?? user?.phone ?? "U")[0]?.toUpperCase()}
               </div>
             )}
@@ -40,44 +53,58 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
             </div>
           </div>
 
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted mb-2 px-3">
+            {lang === "mn" ? "Бүртгэл" : "Account"}
+          </p>
+          <nav className="space-y-0.5 mb-6">
+            {ACCOUNT_MENU.map((m) => (
+              <SidebarLink key={m.href} href={m.href} label={m.label} active={pathname === m.href} />
+            ))}
+          </nav>
+
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted mb-2 px-3">
+            {lang === "mn" ? "Тусламж" : "Support"}
+          </p>
           <nav className="space-y-0.5">
-            {MENU.map(({ href, key }) => {
-              const active = pathname === href;
-              return (
-                <Link key={href} href={href}
-                  className={cn(
-                    "flex items-center px-3 py-2.5 rounded-xl text-sm transition-all font-medium",
-                    active
-                      ? "text-[#0046A5] bg-[#0046A5]/10"
-                      : "text-muted hover:text-app hover:bg-app"
-                  )}>
-                  {t(key)}
-                </Link>
-              );
-            })}
+            {SUPPORT_MENU.map((m) => (
+              <SidebarLink key={m.href} href={m.href} label={m.label} active={pathname === m.href} />
+            ))}
           </nav>
         </aside>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Mobile tabs */}
-          <div className="lg:hidden flex overflow-x-auto gap-1 mb-6">
-            {MENU.map(({ href, key }) => (
-              <Link key={href} href={href}
-                className={cn(
-                  "shrink-0 px-4 py-2 rounded-full text-xs font-medium transition-all border border-app",
-                  pathname === href
-                    ? "bg-[#0046A5] text-white border-transparent"
-                    : "text-muted hover:text-app"
-                )}>
-                {t(key)}
-              </Link>
-            ))}
-          </div>
+          {/* Mobile sub-page header: back to /profile + section title */}
+          {!isMenuPage && (
+            <div className="lg:hidden mb-6 flex items-center gap-3">
+              <button onClick={() => router.push("/profile")} aria-label="Profile menu"
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-card border border-app text-app shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <path d="M19 12H5M12 5l-7 7 7 7"/>
+                </svg>
+              </button>
+              <h2 className="flex-1 text-[15px] font-bold text-app truncate">
+                {current?.label ?? t("profile")}
+              </h2>
+            </div>
+          )}
 
           {children}
         </div>
       </div>
     </div>
+  );
+}
+
+function SidebarLink({ href, label, active }: { href: string; label: string; active: boolean }) {
+  return (
+    <Link href={href}
+      className={cn(
+        "relative flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+        active ? "text-app bg-card" : "text-sub hover:text-app hover:bg-card-hover",
+      )}>
+      {active && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-accent" />}
+      <span className={cn(active && "ml-2")}>{label}</span>
+    </Link>
   );
 }
