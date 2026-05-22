@@ -151,7 +151,7 @@ export function EPGGrid({ channels, onChannelSelect, activeChannelSlug }: EPGGri
                 return (
                   <div
                     key={i}
-                    className="shrink-0 flex items-center pl-2 border-r border-app text-xs text-muted"
+                    className="shrink-0 flex items-center pl-2 text-xs text-muted"
                     style={{ width: CELL_WIDTH }}
                   >
                     {String(h).padStart(2, "0")}:00
@@ -169,15 +169,6 @@ export function EPGGrid({ channels, onChannelSelect, activeChannelSlug }: EPGGri
                   className="relative h-14 border-b border-app"
                   style={{ width: gridWidth }}
                 >
-                  {/* Цагийн grid шугамууд */}
-                  {Array.from({ length: totalHours }, (_, i) => (
-                    <div
-                      key={i}
-                      className="absolute top-0 bottom-0 border-r border-app"
-                      style={{ left: i * CELL_WIDTH }}
-                    />
-                  ))}
-
                   {/* Програмууд — өнгөгүй, цэвэр */}
                   {progs.map((p) => {
                     const pStart = new Date(p.startTime);

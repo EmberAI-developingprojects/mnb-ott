@@ -4,6 +4,7 @@ import { OAuth2Client } from "google-auth-library";
 import { prisma } from "../lib/prisma";
 import { redis } from "../lib/redis";
 import { sendSms, generateOtp } from "./sms.service";
+import { sendOtpEmail } from "./email.service";
 import { AppError } from "../middleware/error.middleware";
 import type { Role } from "@prisma/client";
 
@@ -81,11 +82,16 @@ export async function registerInit(data: {
     });
   }
 
-  // OTP илгээнэ
+  // OTP илгээнэ — phone → SMS, email → Gmail SMTP
   const otp = generateOtp();
   await prisma.otpCode.create({ data: { userId: user.id, phone: data.emailOrPhone, code: otp, expiresAt: new Date(Date.now() + OTP_TTL * 1000) } });
   await redis.set(`otp:reg:${data.emailOrPhone}`, otp, "EX", OTP_TTL);
-  await sendSms(data.emailOrPhone, `МҮОНРТ OTT бүртгэлийн баталгаажуулах код: ${otp}`);
+
+  if (isPhone) {
+    await sendSms(data.emailOrPhone, `МҮОНРТ OTT бүртгэлийн баталгаажуулах код: ${otp}`);
+  } else {
+    await sendOtpEmail(data.emailOrPhone, otp, "register");
+  }
 
   return isPhone ? { phone: data.emailOrPhone } : { email: data.emailOrPhone };
 }
@@ -149,7 +155,12 @@ export async function forgotPassword(emailOrPhone: string): Promise<void> {
   const otp = generateOtp();
   await prisma.otpCode.create({ data: { userId: user.id, phone: emailOrPhone, code: otp, expiresAt: new Date(Date.now() + OTP_TTL * 1000) } });
   await redis.set(`otp:reset:${emailOrPhone}`, otp, "EX", OTP_TTL);
-  await sendSms(emailOrPhone, `МҮОНРТ OTT нууц үг сэргээх код: ${otp}`);
+
+  if (isPhone) {
+    await sendSms(emailOrPhone, `МҮОНРТ OTT нууц үг сэргээх код: ${otp}`);
+  } else {
+    await sendOtpEmail(emailOrPhone, otp, "reset");
+  }
 }
 
 // ── RESET PASSWORD ────────────────────────────────────

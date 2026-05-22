@@ -87,8 +87,8 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════
           1. HERO — wrap-around carousel, content slides WITH banner
           ═══════════════════════════════════════════════════════ */}
-      <section className="max-w-[1440px] mx-auto pt-4 md:pt-6 overflow-hidden">
-        <div className="relative max-w-[1240px] mx-auto aspect-[16/10] sm:aspect-[16/9] md:aspect-[21/9] min-h-[260px] md:min-h-[360px] lg:min-h-[420px]">
+      <section className="max-w-[1440px] mx-auto pt-3 md:pt-6 overflow-hidden">
+        <div className="relative max-w-[1240px] mx-auto aspect-[4/3] xs:aspect-[16/10] sm:aspect-[16/9] md:aspect-[21/9] min-h-[200px] xs:min-h-[240px] sm:min-h-[300px] md:min-h-[360px] lg:min-h-[420px]">
 
           {/* Slides — image + content нэг блок болж шилждэг */}
           {hero.map((v, i) => {
@@ -115,15 +115,15 @@ export default function HomePage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
                 {/* Content — slide-тайгаа шилждэг */}
-                <div className="relative h-full flex flex-col justify-end p-4 sm:p-6 md:p-10 lg:p-14">
+                <div className="relative h-full flex flex-col justify-end p-3 xs:p-4 sm:p-6 md:p-10 lg:p-14">
                   <div className="max-w-xl">
-                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-white/15 backdrop-blur-sm mb-3 md:mb-5">
+                    <div className="hidden xs:inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-white/15 backdrop-blur-sm mb-2 sm:mb-3 md:mb-5">
                       <span className="text-[10px] font-bold tracking-wider uppercase text-white">
                         {lang === "mn" ? "Онцлох" : "Featured"}
                       </span>
                     </div>
 
-                    <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.05] mb-2 md:mb-4 line-clamp-2 sm:line-clamp-3 drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
+                    <h1 className="text-[15px] xs:text-xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.1] mb-2 md:mb-4 line-clamp-2 sm:line-clamp-3 drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
                       {v.title}
                     </h1>
 
@@ -138,10 +138,10 @@ export default function HomePage() {
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-bold border border-white/40">МНБ</span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       <Link href={`/vod/${v.youtubeId}`}
-                        className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-grad-amber text-white text-xs sm:text-sm font-bold hover:shadow-glow active:scale-95 transition-all">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="sm:w-3.5 sm:h-3.5"><path d="M8 5v14l11-7z"/></svg>
+                        className="flex items-center gap-1.5 sm:gap-2 px-3 xs:px-4 sm:px-5 py-1.5 xs:py-2 sm:py-2.5 rounded-full bg-grad-amber text-white text-[11px] xs:text-xs sm:text-sm font-bold hover:shadow-glow active:scale-95 transition-all">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="sm:w-3.5 sm:h-3.5"><path d="M8 5v14l11-7z"/></svg>
                         {t("watch")}
                       </Link>
                       <button
@@ -151,19 +151,21 @@ export default function HomePage() {
                           else add({ id: v.youtubeId, title: v.title, thumbnailUrl: v.thumbnailUrl, duration: v.duration });
                         }}
                         className={cn(
-                          "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold transition-all",
+                          "flex items-center gap-1.5 sm:gap-2 px-3 xs:px-4 sm:px-4 py-1.5 xs:py-2 sm:py-2.5 rounded-full backdrop-blur-md border text-[11px] xs:text-xs sm:text-sm font-semibold transition-all",
                           saved ? "bg-accent border-accent text-white" : "bg-white/10 border-white/25 text-white hover:bg-white/20",
                         )}>
                         {saved ? (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="sm:w-3.5 sm:h-3.5">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="sm:w-3.5 sm:h-3.5">
                             <polyline points="20 6 9 17 4 12"/>
                           </svg>
                         ) : (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="sm:w-3.5 sm:h-3.5">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="sm:w-3.5 sm:h-3.5">
                             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                           </svg>
                         )}
-                        {saved ? (lang === "mn" ? "Хадгалсан" : "Saved") : (lang === "mn" ? "Хадгалах" : "Save")}
+                        <span className="hidden xs:inline">
+                          {saved ? (lang === "mn" ? "Хадгалсан" : "Saved") : (lang === "mn" ? "Хадгалах" : "Save")}
+                        </span>
                       </button>
                     </div>
                   </div>
