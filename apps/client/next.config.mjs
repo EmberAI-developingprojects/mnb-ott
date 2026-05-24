@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  /* Docker production-д minimal runtime image-д шаардлагатай */
+  output: "standalone",
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "i.ytimg.com" },

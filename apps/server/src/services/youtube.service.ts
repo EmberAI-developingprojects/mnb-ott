@@ -3,8 +3,23 @@ import { redis } from "../lib/redis";
 
 const YT = "https://www.googleapis.com/youtube/v3";
 const KEY = process.env.YOUTUBE_API_KEY!;
-const PLAYLIST_ID = process.env.MNB_YOUTUBE_CHANNEL_ID!.replace("UC", "UU");
 const CACHE_TTL = 30 * 60; // 30 минут
+
+/* Олон YouTube channel дэмжих:
+   - `YOUTUBE_CHANNEL_IDS=UCxxx,UCyyy` (шинэ, олон channel)
+   - `MNB_YOUTUBE_CHANNEL_ID=UCxxx` (хуучин, нэг channel — backward compat)
+   Эхнийх давамгайлна; хоёулуу байвал YOUTUBE_CHANNEL_IDS-ийг ашиглана. */
+function getChannelIds(): string[] {
+  const multi = process.env.YOUTUBE_CHANNEL_IDS;
+  if (multi) return multi.split(",").map((s) => s.trim()).filter(Boolean);
+  const single = process.env.MNB_YOUTUBE_CHANNEL_ID;
+  return single ? [single] : [];
+}
+
+/* YouTube channel UC… ID-ийг тухайн channel-ийн "Uploads" playlist UU… болгож хувиргана */
+function channelToPlaylist(channelId: string): string {
+  return channelId.replace(/^UC/, "UU");
+}
 
 export interface YtVideo {
   youtubeId: string;
@@ -70,13 +85,14 @@ function parseDuration(iso: string): number {
 
 // playlistItems.list → videoId жагсаалт (1 quota unit)
 async function fetchPlaylistItems(
+  playlistId: string,
   pageToken?: string,
-  maxResults = 50
+  maxResults = 50,
 ): Promise<{ ids: string[]; nextPageToken?: string; totalResults: number }> {
   const { data } = await axios.get(`${YT}/playlistItems`, {
     params: {
       part: "contentDetails",
-      playlistId: PLAYLIST_ID,
+      playlistId,
       maxResults,
       pageToken,
       key: KEY,
@@ -133,16 +149,52 @@ async function fetchVideoDetails(ids: string[]): Promise<YtVideo[]> {
 export async function getYoutubeVideos(
   page = 1,
   limit = 20,
-  pageToken?: string
+  pageToken?: string,
 ): Promise<YtListResult> {
-  const cacheKey = `yt:list:${page}:${limit}:${pageToken ?? "start"}`;
+  const channels = getChannelIds();
+  if (channels.length === 0) return { videos: [], totalResults: 0 };
+
+  /* Нэг channel — өмнөх pagination-уу адил */
+  if (channels.length === 1) {
+    const cacheKey = `yt:list:${channels[0]}:${page}:${limit}:${pageToken ?? "start"}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) return JSON.parse(cached) as YtListResult;
+
+    const { ids, nextPageToken, totalResults } = await fetchPlaylistItems(
+      channelToPlaylist(channels[0]), pageToken, limit,
+    );
+    const videos = await fetchVideoDetails(ids);
+    const result: YtListResult = { videos, nextPageToken, totalResults };
+    await redis.set(cacheKey, JSON.stringify(result), "EX", CACHE_TTL);
+    return result;
+  }
+
+  /* Олон channel — channel бүрээс fetch хийгээд publishedAt-аар merge.
+     Cursor-based pagination илүү нарийн боловч, MVP-д channel тус бүрээс
+     эхний `limit` ширхэгийг авч нийлүүлээд, top `limit`-ийг буцаана. */
+  const cacheKey = `yt:list:multi:${channels.join("|")}:${page}:${limit}`;
   const cached = await redis.get(cacheKey);
   if (cached) return JSON.parse(cached) as YtListResult;
 
-  const { ids, nextPageToken, totalResults } = await fetchPlaylistItems(pageToken, limit);
-  const videos = await fetchVideoDetails(ids);
+  const offset = (page - 1) * limit;
+  const perChannel = Math.min(50, limit + offset); // тус бүрээс илүүтэйг авна
 
-  const result: YtListResult = { videos, nextPageToken, totalResults };
+  const all = await Promise.all(
+    channels.map(async (cid) => {
+      const r = await fetchPlaylistItems(channelToPlaylist(cid), undefined, perChannel);
+      return fetchVideoDetails(r.ids);
+    }),
+  );
+
+  const merged = all.flat().sort(
+    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+  );
+  const sliced = merged.slice(offset, offset + limit);
+
+  const result: YtListResult = {
+    videos:       sliced,
+    totalResults: merged.length,
+  };
   await redis.set(cacheKey, JSON.stringify(result), "EX", CACHE_TTL);
   return result;
 }
@@ -194,22 +246,31 @@ function slugify(name: string): string {
 }
 
 // Олон хуудасны видеог нэгтгэж show-уудыг буцаана (cache 1 цаг)
+/* Channel-уудын playlist-аас бүх видеог цуглуулна (fetchPages × 50 видео × N channel) */
+async function fetchAllVideosFromChannels(fetchPages: number): Promise<YtVideo[]> {
+  const channels = getChannelIds();
+  const all: YtVideo[] = [];
+
+  for (const channelId of channels) {
+    const playlistId = channelToPlaylist(channelId);
+    let pageToken: string | undefined;
+    for (let i = 0; i < fetchPages; i++) {
+      const { ids, nextPageToken } = await fetchPlaylistItems(playlistId, pageToken, 50);
+      const videos = await fetchVideoDetails(ids);
+      all.push(...videos);
+      if (!nextPageToken) break;
+      pageToken = nextPageToken;
+    }
+  }
+  return all;
+}
+
 export async function getYoutubeShows(fetchPages = 5): Promise<YtShow[]> {
-  const cacheKey = "yt:shows:v4";
+  const cacheKey = `yt:shows:v5:${getChannelIds().join("|")}`;
   const cached = await redis.get(cacheKey);
   if (cached) return JSON.parse(cached) as YtShow[];
 
-  // 5 хуудас × 50 видео = 250 видео татна
-  const allVideos: YtVideo[] = [];
-  let pageToken: string | undefined;
-
-  for (let i = 0; i < fetchPages; i++) {
-    const { ids, nextPageToken } = await fetchPlaylistItems(pageToken, 50);
-    const videos = await fetchVideoDetails(ids);
-    allVideos.push(...videos);
-    if (!nextPageToken) break;
-    pageToken = nextPageToken;
-  }
+  const allVideos = await fetchAllVideosFromChannels(fetchPages);
 
   // Show-уудаар бүлэглэнэ
   const showMap = new Map<string, YtVideo[]>();
@@ -253,16 +314,7 @@ export async function getYoutubeShowVideos(slug: string, fetchPages = 5): Promis
   const show = shows.find((s) => s.slug === slug);
   if (!show) return [];
 
-  // Бүх видеог дахин татаж, энэ show-ын видеог шүүнэ
-  const allVideos: YtVideo[] = [];
-  let pageToken: string | undefined;
-  for (let i = 0; i < fetchPages; i++) {
-    const { ids, nextPageToken } = await fetchPlaylistItems(pageToken, 50);
-    const videos = await fetchVideoDetails(ids);
-    allVideos.push(...videos);
-    if (!nextPageToken) break;
-    pageToken = nextPageToken;
-  }
+  const allVideos = await fetchAllVideosFromChannels(fetchPages);
 
   return allVideos
     .filter((v) => slugify(extractShowName(v.title)) === slug)
@@ -270,28 +322,36 @@ export async function getYoutubeShowVideos(slug: string, fetchPages = 5): Promis
 }
 
 export async function searchYoutubeVideos(query: string, maxResults = 10): Promise<YtVideo[]> {
-  const cacheKey = `yt:search:${query}:${maxResults}`;
+  const channels = getChannelIds();
+  if (channels.length === 0) return [];
+
+  const cacheKey = `yt:search:${channels.join("|")}:${query}:${maxResults}`;
   const cached = await redis.get(cacheKey);
   if (cached) return JSON.parse(cached) as YtVideo[];
 
-  // search.list = 100 unit → зөвхөн хайлтад ашиглана
-  const { data } = await axios.get(`${YT}/search`, {
-    params: {
-      part: "snippet",
-      channelId: process.env.MNB_YOUTUBE_CHANNEL_ID,
-      q: query,
-      type: "video",
-      maxResults,
-      order: "relevance",
-      key: KEY,
-    },
-  });
+  /* search.list нь quota үнэтэй (100 unit / call) тул channel тус бүрд тусдаа дуудна.
+     Channel бүрээс maxResults / N авч нийлүүлээд relevance-аар үлдээж буцаана. */
+  const perChannel = Math.max(5, Math.ceil(maxResults / channels.length));
 
-  const ids: string[] = data.items.map(
-    (i: { id: { videoId: string } }) => i.id.videoId
+  const all = await Promise.all(
+    channels.map(async (channelId) => {
+      const { data } = await axios.get(`${YT}/search`, {
+        params: {
+          part: "snippet",
+          channelId,
+          q: query,
+          type: "video",
+          maxResults: perChannel,
+          order: "relevance",
+          key: KEY,
+        },
+      });
+      const ids: string[] = data.items.map((i: { id: { videoId: string } }) => i.id.videoId);
+      return fetchVideoDetails(ids);
+    }),
   );
-  const videos = await fetchVideoDetails(ids);
 
+  const videos = all.flat().slice(0, maxResults);
   await redis.set(cacheKey, JSON.stringify(videos), "EX", CACHE_TTL);
   return videos;
 }

@@ -1,191 +1,114 @@
-# МҮОНРТ OTT
+# MNB OTT
 
-Монголын Үндэсний Олон Нийтийн Радио Телевизийн OTT вэб платформ.
+Монголын Үндэсний Олон Нийтийн Радио Телевиз (МҮОНРТ)-ийн OTT платформ.
 
-## Шаардлага
+7 сувгийн шууд дамжуулалт + DVR catch-up + YouTube архив + премиум VOD сан + видео багц.
 
-- **Node.js** 20+
-- **pnpm** 9+ (`npm install -g pnpm`)
-- **Docker** + Docker Compose (Postgres, Redis-д)
+## Stack
 
----
+- **Backend**: Express 4 + Prisma 5 + Postgres 16 + Redis + Node 20
+- **Frontend (Client)**: Next.js 14 App Router + TS + Tailwind + Zustand + HLS.js
+- **Admin Panel**: Next.js 14 + TS + Tailwind + Zustand
+- **Auth**: JWT (access + refresh) · Phone OTP · Google OAuth · Email/password
+- **Payment**: QPay (sandbox + production) · Card payment (planned)
+- **Storage**: AWS S3 + CloudFront CDN
+- **Streaming**: HLS · DRM (Widevine + FairPlay planned)
+- **Email**: Nodemailer + Gmail SMTP (configurable)
+- **SMS**: sms.mn integration
+- **Monitoring**: Sentry + Pino structured logs
 
-## Төслийн бүтэц (monorepo)
+## Project structure
 
 ```
 mnb-ott/
 ├── apps/
-│   ├── server/  ← Express backend (port 3001)
-│   ├── client/  ← Next.js хэрэглэгчийн вэб (port 3000)
-│   └── admin/   ← Next.js удирдлагын самбар (port 3002)
-├── docs/        ← Архитектур, API reference
-├── images/      ← Сувгийн logo
-└── rest/        ← .rest API тестүүд
+│   ├── server/    # Express API (:3001)
+│   ├── client/    # Хэрэглэгчийн web (:3000)
+│   └── admin/     # Админ панель (:3002)
+├── docs/
+│   ├── ARCHITECTURE.md
+│   ├── DEPLOYMENT.md
+│   └── DEVELOPMENT.md
+└── docker-compose.prod.yml
 ```
 
----
-
-## 1. Репо татах
+## Quick start (development)
 
 ```bash
-git clone <repo-url>
-cd mnb-ott
-```
-
-## 2. Dependency суулгах (нэг удаа)
-
-`pnpm install`-ийг **репогийн үндэс**-эс ажиллуулна. Энэ нь гурван apps-ийн dependency-г бүгдийг нь суулгана.
-
-```bash
+# 1. Dependencies суулгах
 pnpm install
-```
 
-## 3. Postgres + Redis ажиллуулах
+# 2. Env файл бэлдэх (3 app тус бүрт)
+cp apps/server/.env.example  apps/server/.env
+cp apps/client/.env.example  apps/client/.env
+cp apps/admin/.env.example   apps/admin/.env.local
 
-```bash
-docker-compose up -d
-```
-
-Шалгах:
-```bash
-docker ps
-# mnb-pg, mnb-redis хоёул "Up" гэж харагдана
-```
-
-## 4. Backend (apps/server) тохируулах
-
-```bash
+# 3. Database migrate
 cd apps/server
-cp .env.example .env
+pnpm exec prisma migrate dev
+cd ../..
+
+# 4. 3 terminal — параллел эхлүүлэх
+pnpm --filter=@mnb-ott/server dev   # :3001
+pnpm --filter=@mnb-ott/client dev   # :3000
+pnpm --filter=@mnb-ott/admin  dev   # :3002
 ```
 
-`.env` дотор заавал бөглөх зүйлс:
+Browser-аар нээх:
+- Client: http://localhost:3000
+- Admin:  http://localhost:3002
+- API:    http://localhost:3001
 
-| Key | Утга |
-|-----|------|
-| `DATABASE_URL` | `postgresql://mnb:mnb123@localhost:5432/mnb` |
-| `REDIS_URL` | `redis://localhost:6379` |
-| `JWT_SECRET` | `openssl rand -base64 32` командаар generate хий |
-| `YOUTUBE_API_KEY` | Google Cloud Console-с авна |
-| `GOOGLE_CLIENT_ID` | Google Cloud Console-с авна |
-| `GOOGLE_CLIENT_SECRET` | Google Cloud Console-с авна |
-
-> SMS, QPay, AWS, Firebase утгуудыг туршилтанд хоосон орхиж болно.
-> `SMS_MOCK=true` байхад OTP код terminal-д харагдана.
+## Тест
 
 ```bash
-# DB schema үүсгэх
-pnpm db:migrate
+# Server (Vitest)
+pnpm --filter=@mnb-ott/server test
 
-# (заавал биш) seed
-pnpm db:seed
+# Admin (Vitest)
+pnpm --filter=@mnb-ott/admin test
 ```
 
-## 5. Frontend (apps/client) тохируулах
+Одоогийн coverage: **38 тест** (auth, subscription access matrix, admin role rules, refund, channels, env, slugify).
 
-```bash
-cd ../client
-cp .env.example .env.local
-```
+## Production deploy
 
-`.env.local` дотор заавал бөглөх зүйлс:
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — бүрэн заавар.
 
-| Key | Утга |
-|-----|------|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:3001` |
-| `NEXTAUTH_URL` | `http://localhost:3000` |
-| `NEXTAUTH_SECRET` | `openssl rand -base64 32` командаар generate хий |
-| `GOOGLE_CLIENT_ID` | Backend-тэй ижил утга |
-| `GOOGLE_CLIENT_SECRET` | Backend-тэй ижил утга |
+**Богино хувилбар** — Vercel + Render:
+- Frontend (client, admin) → Vercel (`vercel deploy --prod`)
+- Backend (server) → Render (`git push` автомат deploy)
+- DB → Supabase Pro
+- Redis → Upstash
 
-## 6. Admin (apps/admin) тохируулах
+## 4 plan систем
 
-```bash
-cd ../admin
-cp .env.example .env.local
-```
+| Plan  | Үнэ/сар  | YouTube архив | Live TV + DVR | Премиум VOD сан |
+|-------|----------|---------------|---------------|------------------|
+| BASIC | Үнэгүй   | ✓             | ✗             | ✗                |
+| TV    | 9,900₮   | ✓             | ✓             | ✗                |
+| VOD   | 12,900₮  | ✓             | ✗             | ✓                |
+| COMBO | 19,900₮  | ✓             | ✓             | ✓                |
 
-| Key | Утга |
-|-----|------|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:3001` |
+Видео багц (Bundle) нь plan-аас гадуур — **тус бүрчлэн TVOD** хэлбэрээр 72 цагаар түрээслэнэ.
 
----
+## Health & monitoring
 
-## Ажиллуулах
+- `GET /health` — liveness
+- `GET /ready`  — readiness (Prisma + Redis ping)
+- Sentry — error tracking (DSN env-д тохируулсны дараа)
+- Pino structured JSON log (production)
 
-Репогийн үндэс-эс:
+## Roles
 
-```bash
-# Бүгдийг зэрэг ажиллуулах (server + client + admin parallel)
-pnpm dev
+| Role         | Юу хийж чадах вэ |
+|--------------|--------------------|
+| `USER`       | Контент үзэх, plan худалдан авах |
+| `EDITOR`     | VOD/Bundle/Channel CRUD |
+| `OPERATOR`   | Channel stream URL засах (live stream restart) |
+| `ADMIN`      | Бүх контент + хэрэглэгч + төлбөр + audit |
+| `SUPER_ADMIN`| Бүгд + role + SystemConfig + бусад SUPER_ADMIN-уудыг demote |
 
-# Эсвэл тус тусад нь
-pnpm dev:server   # → http://localhost:3001
-pnpm dev:client   # → http://localhost:3000
-pnpm dev:admin    # → http://localhost:3002
-```
+## License
 
-## Бусад скрипт
-
-```bash
-pnpm build        # бүх apps build
-pnpm type-check   # бүх apps TS шалгалт
-pnpm lint         # бүх apps lint
-pnpm clean        # build артифакт устгах
-```
-
----
-
-## Шалгах
-
-| Сервис | URL |
-|--------|-----|
-| Frontend | http://localhost:3000 |
-| Admin | http://localhost:3002 |
-| Backend API | http://localhost:3001/health |
-| Postgres | `docker ps` → mnb-pg Up |
-| Redis | `docker ps` → mnb-redis Up |
-
----
-
-## Хурдан эхлэх (copy-paste)
-
-```bash
-# 1. Dependency
-pnpm install
-
-# 2. Postgres + Redis
-docker-compose up -d
-
-# 3. Env файлууд
-cp apps/server/.env.example apps/server/.env
-cp apps/client/.env.example apps/client/.env.local
-cp apps/admin/.env.example apps/admin/.env.local
-# → файл бүрд secret-уудаа бөглөнө
-
-# 4. DB schema
-cd apps/server && pnpm db:migrate && cd ../..
-
-# 5. Бүгдийг зэрэг ажиллуулах
-pnpm dev
-```
-
----
-
-## Цаашид
-
-- **Хөгжүүлэлтийн өдөр тутмын ажиллах гарын авлага:** [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
-- **Архитектур, API reference:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-- **Claude-д өгөх төслийн заавар:** [`CLAUDE.md`](CLAUDE.md)
-
----
-
-## Deployment
-
-Дэлгэрэнгүй deployment гарын авлага: `docs/DEPLOYMENT.md` (хараахан бичигдээгүй).
-
-Товчоор:
-- App бүрд тус тусдаа `Dockerfile` үүсгэнэ (apps/server, apps/client, apps/admin).
-- Production-д `docker-compose.prod.yml` дээр postgres + redis + 3 apps-ийг хамтад нь ажиллуулна.
-- Front-д `nginx` буюу traefik-ийг TLS + routing-д ашиглана.
-- Workspace symlink-ийг тооцох тул Next.js apps-д `output: "standalone"` + `outputFileTracingRoot: "../.."` тохиргоо хэрэгтэй.
+Хувийн төсөл — МҮОНРТ-ийн өмч.

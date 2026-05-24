@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─── Backend: typecheck + tests ─────────────────────────
+  server:
+    name: Server (typecheck + tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Prisma generate
+        run: pnpm --filter=@mnb-ott/server exec prisma generate
+      - name: TypeScript check
+        run: pnpm --filter=@mnb-ott/server type-check
+      - name: Run tests
+        run: pnpm --filter=@mnb-ott/server test
+
+  # ─── Client: typecheck only (test нэмэхэд эндээ нэм) ──
+  client:
+    name: Client (typecheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: TypeScript check
+        run: pnpm --filter=@mnb-ott/client type-check
+
+  # ─── Admin: typecheck + tests ───────────────────────────
+  admin:
+    name: Admin (typecheck + tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: TypeScript check
+        run: pnpm --filter=@mnb-ott/admin type-check
+      - name: Run tests
+        run: pnpm --filter=@mnb-ott/admin test

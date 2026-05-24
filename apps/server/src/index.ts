@@ -1,7 +1,10 @@
+/* Startup-д env validation хийнэ — алдаа байвал процесс шууд унтарна. */
+import { env, loadEnv } from "./lib/env";
+loadEnv();
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -15,7 +18,12 @@ import { adminRouter } from "./routes/admin.routes";
 import { notificationRouter } from "./routes/notification.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
 import { adminLimiter } from "./middleware/rate-limit.middleware";
+import { requestLogger } from "./middleware/request-logger.middleware";
+import { logger } from "./lib/logger";
+import { initSentry, Sentry } from "./lib/sentry";
 import { ensureDefaultConfigs } from "./services/config-seed.service";
+
+initSentry();
 
 const app = express();
 const httpServer = createServer(app);
@@ -23,14 +31,13 @@ const httpServer = createServer(app);
 /* Client (FRONTEND_URL) + Admin (ADMIN_URL) хоёулангаас зөвшөөрнө.
    ALLOWED_ORIGINS env-ээр давхар comma-separated хэлбэрээр өргөтгөж болно. */
 const allowedOrigins: string[] = [
-  process.env.FRONTEND_URL,
-  process.env.ADMIN_URL,
-  ...(process.env.ALLOWED_ORIGINS?.split(",").map((s) => s.trim()) ?? []),
+  env.FRONTEND_URL,
+  env.ADMIN_URL,
+  ...(env.ALLOWED_ORIGINS?.split(",").map((s) => s.trim()) ?? []),
 ].filter((o): o is string => Boolean(o));
 
 const corsOptions = {
   origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
-    /* origin байхгүй = same-origin/curl/server-to-server → зөвшөөрнө */
     if (!origin) return cb(null, true);
     if (allowedOrigins.includes(origin)) return cb(null, true);
     cb(new Error(`CORS: ${origin} зөвшөөрөлгүй`));
@@ -40,27 +47,44 @@ const corsOptions = {
 
 export const io = new Server(httpServer, { cors: corsOptions });
 
-/* Reverse proxy (nginx, fly.io, render г.м.) ард ажиллах үед X-Forwarded-For-оос
-   жинхэнэ IP-г унших — express-rate-limit IP-р хязгаарлахын тулд шаардлагатай */
+/* Reverse proxy ард ажиллах үед X-Forwarded-For-оос жинхэнэ IP-г унших */
 app.set("trust proxy", 1);
 
-app.use(helmet());
+/* ─── Security headers ──────────────────────────────────
+   CSP — XSS, clickjacking-аас хамгаална. YouTube iframe, Cloudinary,
+   Google OAuth, S3 thumbnail-уудыг whitelist-д оруулсан. */
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc:  ["'self'", "'unsafe-inline'", "https://www.youtube.com", "https://www.googleapis.com", "https://accounts.google.com"],
+      styleSrc:   ["'self'", "'unsafe-inline'"],
+      imgSrc:     ["'self'", "data:", "https://i.ytimg.com", "https://img.youtube.com", "https://res.cloudinary.com", "https://lh3.googleusercontent.com", "https://*.s3.amazonaws.com", env.CDN_BASE_URL].filter(Boolean) as string[],
+      mediaSrc:   ["'self'", "https://*.s3.amazonaws.com", env.CDN_BASE_URL, "blob:"].filter(Boolean) as string[],
+      connectSrc: ["'self'", "https://www.googleapis.com", "https://accounts.google.com", "https://*.supabase.co", env.CDN_BASE_URL].filter(Boolean) as string[],
+      frameSrc:   ["'self'", "https://www.youtube.com", "https://accounts.google.com"],
+      objectSrc:  ["'none'"],
+      baseUri:    ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, /* YouTube iframe-тэй сертификат */
+}));
+
 app.use(cors(corsOptions));
-app.use(morgan("dev"));
-app.use(express.json());
+app.use(requestLogger);
+app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 
-/* Liveness — процесс ажиллаж буй эсэхийг шалгана (load balancer-д хангалттай) */
+/* Liveness — процесс ажиллаж буй эсэхийг шалгана */
 app.get("/health", (_req, res) => {
   res.json({ success: true, data: { status: "ok" } });
 });
 
-/* Readiness — DB + Redis dependency-той бэлэн эсэх. K8s readiness probe-д
-   ашиглах ёстой. Аль нэг dependency offline бол 503 буцаана. */
+/* Readiness — DB + Redis dependency бэлэн эсэх. K8s readiness probe-д. */
 app.get("/ready", async (_req, res) => {
   const checks: Record<string, { ok: boolean; error?: string }> = {};
 
-  /* Prisma — энгийн query */
   try {
     const { prisma } = await import("./lib/prisma");
     await prisma.$queryRaw`SELECT 1`;
@@ -69,7 +93,6 @@ app.get("/ready", async (_req, res) => {
     checks.database = { ok: false, error: (e as Error).message };
   }
 
-  /* Redis — ping */
   try {
     const { redis } = await import("./lib/redis");
     const pong = await redis.ping();
@@ -94,15 +117,31 @@ app.use("/api/search", searchRouter);
 app.use("/api/admin", adminLimiter, adminRouter);
 app.use("/api/notifications", notificationRouter);
 
+/* Sentry error handler нь errorMiddleware-аас өмнө */
+if (env.SENTRY_DSN) {
+  app.use((err: Error, _req: express.Request, _res: express.Response, next: express.NextFunction) => {
+    Sentry.captureException(err);
+    next(err);
+  });
+}
+
 app.use(errorMiddleware);
 
-const PORT = process.env.PORT ?? 3001;
-httpServer.listen(PORT, async () => {
-  console.log(`🚀 Backend running on http://localhost:${PORT}`);
-  /* Анхны системийн тохиргоо хоосон үед автомат seed */
+httpServer.listen(env.PORT, async () => {
+  logger.info({ port: env.PORT, env: env.NODE_ENV }, `🚀 Backend running on http://localhost:${env.PORT}`);
   try {
     await ensureDefaultConfigs();
   } catch (e) {
-    console.error("Config seed failed:", e);
+    logger.error({ err: e }, "Config seed failed");
   }
 });
+
+/* Graceful shutdown — Sentry buffer-ийг flush хийгээд процессыг хаах */
+async function shutdown(signal: string) {
+  logger.info({ signal }, "Shutting down gracefully...");
+  if (env.SENTRY_DSN) await Sentry.close(2000);
+  httpServer.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 10000);
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT",  () => shutdown("SIGINT"));
