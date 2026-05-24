@@ -100,13 +100,20 @@ export function VodPlayer({
   const [fullscreen, setFullscreen] = useState(false);
   const [qualities, setQualities] = useState<string[]>([]);
 
-  // Явцыг хадгалах
+  // Явцыг хадгалах — 3 секундын дебоунс. Хэрэглэгчид саадгүй болохын тулд
+  // алдааг toast-аар бус, dev console-руу л бичнэ. Олон тооны fail тохиолдвол
+  // Sentry/analytics-руу хожим илгээнэ.
   const saveProgress = useCallback(async (sec: number) => {
     if (!user) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
-      try { await api.post(`/api/vod/${vodId}/progress`, { positionSec: Math.floor(sec) }); }
-      catch { /* silent */ }
+      try {
+        await api.post(`/api/vod/${vodId}/progress`, { positionSec: Math.floor(sec) });
+      } catch (err) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[VodPlayer] saveProgress failed", err);
+        }
+      }
     }, 3000);
   }, [user, vodId]);
 

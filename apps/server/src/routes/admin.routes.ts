@@ -43,6 +43,12 @@ adminRouter.get("/stats", requireAuth, requireRole(...ADMIN_PLUS), (_req, res, n
   send(admin.getDashboardStats(), res, next),
 );
 
+/* Сүүлийн 7 хоногийн орлогын тренд (chart-д ашиглах) */
+adminRouter.get("/stats/revenue-trend", requireAuth, requireRole(...ADMIN_PLUS), (req, res, next) => {
+  const q = z.object({ days: z.coerce.number().min(1).max(90).optional() }).parse(req.query);
+  return send(admin.getRevenueTrend(q.days), res, next);
+});
+
 /* ─── USERS ─────────────────────────────────────────────── */
 adminRouter.get("/users", requireAuth, requireRole(...ADMIN_PLUS), (req, res, next) => {
   const q = z.object({

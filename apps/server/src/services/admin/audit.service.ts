@@ -49,7 +49,10 @@ export interface EnrichedAuditLog {
 
 /* Target ID-аас тухайн объектын харагдах нэрийг авна. Хэлбэр:
    user → name/email/phone, vod → title, channel → name, bundle → title,
-   payment → "{user} — {amount}₮" */
+   payment → "{user} — {amount}₮"
+
+   Optimization: 5 sequential await → 1 batched `$transaction`. Audit log
+   ачаалах бүрт DB roundtrip 5 → 1 болж буурна. */
 async function enrichTargets(
   items: { targetType: string; targetId: string | null }[],
 ): Promise<Map<string, string>> {
@@ -59,38 +62,47 @@ async function enrichTargets(
     if (!byType.has(it.targetType)) byType.set(it.targetType, new Set());
     byType.get(it.targetType)!.add(it.targetId);
   }
-  const names = new Map<string, string>();
 
-  if (byType.has("user")) {
-    const ids = Array.from(byType.get("user")!);
-    const us = await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, name: true, email: true, phone: true } });
-    for (const u of us) names.set(`user:${u.id}`, u.name ?? u.email ?? u.phone ?? u.id);
-  }
-  if (byType.has("vod")) {
-    const ids = Array.from(byType.get("vod")!);
-    const vs = await prisma.vodContent.findMany({ where: { id: { in: ids } }, select: { id: true, title: true } });
-    for (const v of vs) names.set(`vod:${v.id}`, v.title);
-  }
-  if (byType.has("channel")) {
-    const ids = Array.from(byType.get("channel")!);
-    const cs = await prisma.channel.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } });
-    for (const c of cs) names.set(`channel:${c.id}`, c.name);
-  }
-  if (byType.has("bundle")) {
-    const ids = Array.from(byType.get("bundle")!);
-    const bs = await prisma.vodBundle.findMany({ where: { id: { in: ids } }, select: { id: true, title: true } });
-    for (const b of bs) names.set(`bundle:${b.id}`, b.title);
-  }
-  if (byType.has("payment")) {
-    const ids = Array.from(byType.get("payment")!);
-    const ps = await prisma.payment.findMany({
-      where: { id: { in: ids } },
+  /* Type бүрд array хөрвүүлэх (хоосон бол []) */
+  const userIds    = Array.from(byType.get("user")    ?? []);
+  const vodIds     = Array.from(byType.get("vod")     ?? []);
+  const channelIds = Array.from(byType.get("channel") ?? []);
+  const bundleIds  = Array.from(byType.get("bundle")  ?? []);
+  const paymentIds = Array.from(byType.get("payment") ?? []);
+
+  /* Бүх 5 query-г нэг roundtrip-д. Хоосон array-уудыг ч skip хийнэ
+     (Prisma `in: []` дээр query явдаггүй). */
+  const [users, vods, channels, bundles, payments] = await prisma.$transaction([
+    prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, email: true, phone: true },
+    }),
+    prisma.vodContent.findMany({
+      where: { id: { in: vodIds } },
+      select: { id: true, title: true },
+    }),
+    prisma.channel.findMany({
+      where: { id: { in: channelIds } },
+      select: { id: true, name: true },
+    }),
+    prisma.vodBundle.findMany({
+      where: { id: { in: bundleIds } },
+      select: { id: true, title: true },
+    }),
+    prisma.payment.findMany({
+      where: { id: { in: paymentIds } },
       select: { id: true, amount: true, user: { select: { name: true, email: true, phone: true } } },
-    });
-    for (const p of ps) {
-      const who = p.user.name ?? p.user.email ?? p.user.phone ?? "—";
-      names.set(`payment:${p.id}`, `${who} — ${p.amount.toLocaleString("mn-MN")}₮`);
-    }
+    }),
+  ]);
+
+  const names = new Map<string, string>();
+  for (const u of users)    names.set(`user:${u.id}`,    u.name ?? u.email ?? u.phone ?? u.id);
+  for (const v of vods)     names.set(`vod:${v.id}`,     v.title);
+  for (const c of channels) names.set(`channel:${c.id}`, c.name);
+  for (const b of bundles)  names.set(`bundle:${b.id}`,  b.title);
+  for (const p of payments) {
+    const who = p.user.name ?? p.user.email ?? p.user.phone ?? "—";
+    names.set(`payment:${p.id}`, `${who} — ${p.amount.toLocaleString("mn-MN")}₮`);
   }
   return names;
 }

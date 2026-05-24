@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { font } from "@/lib/font";
 
 export const metadata: Metadata = {
   title: "МҮОНРТ OTT — Admin",
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="mn">
+    <html lang="mn" className={font.variable}>
       <body className="bg-bg text-fg antialiased">{children}</body>
     </html>
   );

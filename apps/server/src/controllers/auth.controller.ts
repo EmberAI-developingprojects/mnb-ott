@@ -267,12 +267,7 @@ export async function me(req: Request, res: Response, next: NextFunction) {
   catch (e) { next(e); }
 }
 
-/**
- * Бүртгэлийг бүхэлд нь устгах.
- * Body-д баталгаажуулалт оруулна: { confirm: "DELETE" }
- * Prisma cascade тохиргооны улмаас сэшн, захиалга, төлбөр,
- * худалдан авалт, мэдэгдэл, watch history бүгд автоматаар цэвэрлэгдэнэ.
- */
+
 export async function deleteAccount(req: Request, res: Response, next: NextFunction) {
   try {
     const { confirm } = z.object({ confirm: z.literal("DELETE") }).parse(req.body);

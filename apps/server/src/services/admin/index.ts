@@ -4,7 +4,7 @@
 export { audit, listAuditLogs, exportAuditXlsx } from "./audit.service";
 export type { EnrichedAuditLog } from "./audit.service";
 
-export { getDashboardStats } from "./stats.service";
+export { getDashboardStats, getRevenueTrend } from "./stats.service";
 
 export {
   listUsers, getUserDetail, changeUserRole, setUserBlocked,

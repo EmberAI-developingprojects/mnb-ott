@@ -6,6 +6,40 @@ function startOfToday(): Date {
   return d;
 }
 
+function daysAgo(n: number): Date {
+  const d = startOfToday();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+
+/* Сүүлийн N хоногийн орлогын өсөлт. Spark chart-д ашиглана. */
+export async function getRevenueTrend(days = 7): Promise<{ date: string; amount: number; count: number }[]> {
+  const since = daysAgo(days - 1);
+  const payments = await prisma.payment.findMany({
+    where:  { status: "PAID", paidAt: { gte: since } },
+    select: { amount: true, paidAt: true },
+  });
+
+  /* Бүх хоног-уудыг 0-аар эхлүүлж, payments-аар нөхнө */
+  const buckets = new Map<string, { amount: number; count: number }>();
+  for (let i = 0; i < days; i++) {
+    const d = daysAgo(days - 1 - i);
+    buckets.set(d.toISOString().slice(0, 10), { amount: 0, count: 0 });
+  }
+
+  for (const p of payments) {
+    if (!p.paidAt) continue;
+    const key = p.paidAt.toISOString().slice(0, 10);
+    const bucket = buckets.get(key);
+    if (bucket) {
+      bucket.amount += p.amount;
+      bucket.count  += 1;
+    }
+  }
+
+  return Array.from(buckets.entries()).map(([date, v]) => ({ date, ...v }));
+}
+
 /* Admin dashboard-ийн ерөнхий тоонууд. Олон query Promise.all-аар параллел. */
 export async function getDashboardStats() {
   const [

@@ -86,6 +86,10 @@ model User {
   otpCodes      OtpCode[]
   notifications Notification[]
   auditLogs     AuditLog[]
+
+  // Admin users page — role filter + createdAt desc sort
+  @@index([role, createdAt])
+  @@index([isBlocked])
 }
 
 // Admin-ийн үйлдлийн түүх — role change, refund, ban г.м.
@@ -106,6 +110,8 @@ model AuditLog {
   @@index([actorUserId])
   @@index([targetType, targetId])
   @@index([createdAt])
+  // Date-range filtering by target type (admin audit page)
+  @@index([targetType, createdAt])
 }
 
 model Account {
@@ -153,6 +159,10 @@ model OtpCode {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Auth flow phone lookup + active OTP filter
+  @@index([phone])
+  @@index([userId, used])
 }
 
 model Subscription {
@@ -257,6 +267,11 @@ model VodContent {
   sources      VodSource[]
   purchases    Purchase[]
   bundleItems  VodBundleItem[]
+
+  // Admin VOD list-д filter (type) + search (title) + sort (createdAt desc)
+  @@index([type, createdAt])
+  @@index([title])
+  @@index([genre])
 }
 
 model VodSource {

@@ -1,8 +1,23 @@
+/* Import-ийн дараалал чухал: env validation хийхээс өмнө .env файлыг
+   process.env-руу ачаалах ёстой. Test үед setup.ts process.env-руу шууд
+   тогтоодог тул dotenv skip хийнэ. */
+if (process.env.NODE_ENV !== "test") {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  require("dotenv/config");
+}
 import { z } from "zod";
 
 /* Startup-д бүх env-уудыг шалгадаг schema. Дутуу/буруу утга байвал процесс
    эхлэхгүй, тодорхой алдааны мэдээлэлтэй унтарна. Энэ нь "production-д
    environment variable дутуу байснаас 500 error буцаах" асуудлаас сэргийлнэ. */
+
+/* Optional URL helper — хоосон string-ийг undefined болгож зөвшөөрдөг.
+   `.env` файлд `KEY=` гэж хоосон утгатай тохиолдолд validation-ээс унахгүй. */
+const optionalUrl = z
+  .string()
+  .optional()
+  .transform((v) => (v === "" ? undefined : v))
+  .pipe(z.string().url().optional());
 
 const envSchema = z.object({
   /* ─── Орчин ───────────────────────────────────────── */
@@ -11,7 +26,7 @@ const envSchema = z.object({
 
   /* ─── DB / Cache (заавал) ─────────────────────────── */
   DATABASE_URL: z.string().url(),
-  DIRECT_URL:   z.string().url().optional(),
+  DIRECT_URL:   optionalUrl,
   REDIS_URL:    z.string(),
 
   /* ─── Auth (заавал) ───────────────────────────────── */
@@ -29,7 +44,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
 
   /* ─── SMS (production-д заавал) ───────────────────── */
-  SMS_GATEWAY_URL:  z.string().optional(),
+  SMS_GATEWAY_URL:  optionalUrl,
   SMS_API_KEY:      z.string().optional(),
   SMS_SENDER_ID:    z.string().optional(),
   SMS_MOCK:         z.enum(["true", "false"]).default("false"),
@@ -47,7 +62,7 @@ const envSchema = z.object({
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
   AWS_REGION:            z.string().optional(),
   S3_BUCKET_NAME:        z.string().optional(),
-  CDN_BASE_URL:          z.string().url().optional(),
+  CDN_BASE_URL:          optionalUrl,
 
   /* ─── YouTube (заавал — public архив feature-д шаардлагатай) ─── */
   YOUTUBE_API_KEY:           z.string(),
@@ -55,11 +70,11 @@ const envSchema = z.object({
   YOUTUBE_CHANNEL_IDS:       z.string().optional(),
 
   /* ─── QPay (production-д заавал) ──────────────────── */
-  QPAY_BASE_URL:       z.string().url().optional(),
+  QPAY_BASE_URL:       optionalUrl,
   QPAY_USERNAME:       z.string().optional(),
   QPAY_PASSWORD:       z.string().optional(),
   QPAY_INVOICE_CODE:   z.string().optional(),
-  QPAY_CALLBACK_URL:   z.string().url().optional(),
+  QPAY_CALLBACK_URL:   optionalUrl,
   PAYMENT_MODE:        z.enum(["mock", "qpay", "live"]).default("mock"),
 
   /* ─── Streaming ───────────────────────────────────── */
@@ -68,7 +83,7 @@ const envSchema = z.object({
   FFMPEG_PATH:             z.string().optional(),
 
   /* ─── Sentry / Observability ──────────────────────── */
-  SENTRY_DSN:           z.string().url().optional(),
+  SENTRY_DSN:           optionalUrl,
   LOG_LEVEL:            z.enum(["fatal","error","warn","info","debug","trace"]).default("info"),
 });
 

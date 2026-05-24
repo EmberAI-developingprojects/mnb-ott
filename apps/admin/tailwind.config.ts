@@ -29,7 +29,7 @@ const config: Config = {
         warning:    "#d97706",
       },
       fontFamily: {
-        sans: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        sans: ["var(--font-app)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
         mono: ["SF Mono", "Menlo", "Consolas", "monospace"],
       },
     },
