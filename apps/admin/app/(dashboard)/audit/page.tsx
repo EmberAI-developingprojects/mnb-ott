@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { ChevronDown, Download } from "lucide-react";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -22,7 +22,7 @@ const ACTION_LABEL: Record<string, string> = {
   ROLE_CHANGE:  "Роль өөрчлөв",
   BAN:          "Блок хийв",
   UNBAN:        "Блок арилгав",
-  REFUND:       "Refund хийв",
+  REFUND:       "Буцаалт хийв",
   BROADCAST:    "Мэдэгдэл илгээв",
   ADD_ITEM:     "Багцад нэмэв",
   REMOVE_ITEM:  "Багцаас хасав",
@@ -60,7 +60,7 @@ function describeAction(a: AuditLog): string {
     case "UNBAN":
       return `${actor} → ${target}-ийн блокыг арилгав`;
     case "REFUND":
-      return `${actor} → ${target} төлбөрийг refund хийв`;
+      return `${actor} → ${target} төлбөрийг буцаав`;
     case "CREATE":
       return `${actor} → шинэ ${targetWord} үүсгэв${target ? `: "${target}"` : ""}`;
     case "DELETE":
@@ -96,16 +96,49 @@ const TARGET_FILTERS: Array<{ value: string; label: string }> = [
   { value: "notification", label: "Мэдэгдэл" },
 ];
 
+/* Хугацааны preset — default 7 хоног, санал болгох 14/30, "Тусгай" = өөрөө сонгох */
+type RangeKey = "7" | "14" | "30" | "all" | "custom";
+const RANGES: Array<{ value: RangeKey; label: string; days?: number }> = [
+  { value: "7",      label: "7 хоног",  days: 7 },
+  { value: "14",     label: "14 хоног", days: 14 },
+  { value: "30",     label: "30 хоног", days: 30 },
+  { value: "all",    label: "Бүгд" },
+  { value: "custom", label: "Тусгай" },
+];
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/* Идэвхтэй preset-ээс query-д явуулах from/to (ISO) тооцоолно.
+   custom: date-only input-ийг өдрийн эхлэл/төгсгөл болгож (same-day-ийг бүрэн хамруулна). */
+function rangeToParams(range: RangeKey, customFrom: string, customTo: string): { from?: string; to?: string } {
+  if (range === "all") return {};
+  if (range === "custom") {
+    const out: { from?: string; to?: string } = {};
+    if (customFrom) out.from = new Date(`${customFrom}T00:00:00`).toISOString();
+    if (customTo)   out.to   = new Date(`${customTo}T23:59:59.999`).toISOString();
+    return out;
+  }
+  const days = Number(range);
+  return { from: new Date(Date.now() - days * DAY_MS).toISOString() };
+}
+
 export default function AuditPage() {
   useRoleGuard(["ADMIN", "SUPER_ADMIN"]);
   const { accessToken } = useAuthStore();
   const [filter, setFilter] = useState("");
-  const [from, setFrom]     = useState("");
-  const [to, setTo]         = useState("");
+  const [range, setRange]   = useState<RangeKey>("7"); /* default = сүүлийн 7 хоног */
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo]     = useState("");
   const [page, setPage]     = useState(1);
   const [data, setData]     = useState<PaginatedResponse<AuditLog> | null>(null);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId]   = useState<string | null>(null);
+
+  /* Идэвхтэй хугацааны from/to (ISO) — preset эсвэл custom-аас */
+  const { from, to } = useMemo(
+    () => rangeToParams(range, customFrom, customTo),
+    [range, customFrom, customTo],
+  );
 
   useEffect(() => { load(); }, [filter, from, to, page]);
 
@@ -118,6 +151,11 @@ export default function AuditPage() {
     const r = await api.get<ApiResponse<PaginatedResponse<AuditLog>>>("/api/admin/audit", { params });
     setData(r.data.data);
     setLoading(false);
+  }
+
+  function selectRange(next: RangeKey) {
+    setRange(next);
+    setPage(1);
   }
 
   /* CSV export — token-ыг URL-руу хийхгүйн тулд fetch + blob ашиглана */
@@ -156,25 +194,62 @@ export default function AuditPage() {
       />
 
       {/* Filters */}
-      <div className="bg-surface border border-border rounded-lg p-4 mb-4 grid md:grid-cols-3 gap-3">
-        <Field label="Чигт">
-          <select value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1); }}
-            className="w-full h-9 px-3 rounded-md text-sm bg-surface border border-border focus:outline-none focus:border-primary">
-            {TARGET_FILTERS.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Эхлэх огноо">
-          <Input type="date" value={from} onChange={(e) => { setFrom(e.target.value); setPage(1); }} />
-        </Field>
-        <Field label="Дуусах огноо">
-          <Input type="date" value={to} onChange={(e) => { setTo(e.target.value); setPage(1); }} />
-        </Field>
+      <div className="bg-surface border border-border rounded-lg shadow-card p-4 mb-4 space-y-3">
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+          <Field label="">
+            <select value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1); }}
+              className="w-full sm:w-44 h-9 px-3 rounded-md text-sm bg-surface text-fg border border-border focus:outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/15">
+              {TARGET_FILTERS.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </Field>
+
+          <div className="space-y-1.5">
+            {/* <span className="text-xs font-medium text-fg">Хугацаа</span> */}
+            <div role="group" aria-label="Хугацааны хязгаар"
+              className="inline-flex flex-wrap items-center gap-1 rounded-lg border border-border bg-bg p-1">
+              {RANGES.map((r) => {
+                const active = range === r.value;
+                return (
+                  <button key={r.value} type="button" onClick={() => selectRange(r.value)}
+                    aria-pressed={active}
+                    className={`h-7 px-3 rounded-md text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                      active
+                        ? "bg-surface text-fg shadow-card border border-border"
+                        : "text-muted hover:text-fg"
+                    }`}>
+                    {r.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Тусгай хугацаа — зөвхөн "Тусгай" сонгоход */}
+        {range === "custom" && (
+          <div className="flex flex-wrap items-end gap-3 border-t border-border pt-3">
+            <Field label="Эхлэх огноо">
+              <Input type="date" value={customFrom} max={customTo || undefined}
+                onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }} className="sm:w-44" />
+            </Field>
+            <Field label="Дуусах огноо">
+              <Input type="date" value={customTo} min={customFrom || undefined}
+                onChange={(e) => { setCustomTo(e.target.value); setPage(1); }} className="sm:w-44" />
+            </Field>
+          </div>
+        )}
       </div>
 
+      {!loading && data && data.items.length > 0 && (
+        <p className="text-xs text-muted mb-3" aria-live="polite">
+          Нийт <span className="font-semibold text-fg tabular-nums">{data.total.toLocaleString("mn-MN")}</span> үйлдэл
+        </p>
+      )}
+
       {loading ? (
-        <p className="text-sm text-muted">Уншиж байна...</p>
+        <p className="text-sm text-muted">Уншиж байна…</p>
       ) : !data || data.items.length === 0 ? (
         <EmptyState message="Тохирох үйлдэл олдсонгүй" />
       ) : (
@@ -197,12 +272,12 @@ export default function AuditPage() {
                     <TR>
                       <TD className="text-xs text-muted whitespace-nowrap align-top">
                         <p>{formatDateTime(a.createdAt)}</p>
-                        {a.ip && <p className="text-[10px] font-mono mt-0.5">{a.ip}</p>}
+                        {a.ip && <p className="text-[11px] font-mono mt-0.5">{a.ip}</p>}
                       </TD>
                       <TD>
                         <div className="flex items-center gap-2 mb-1">
                           <Badge tone={ACTION_TONE[a.action] ?? "neutral"}>{ACTION_LABEL[a.action] ?? a.action}</Badge>
-                          <Badge tone="neutral" className="text-[10px]">{a.actor.role}</Badge>
+                          <Badge tone="neutral" className="text-[11px]">{a.actor.role}</Badge>
                         </div>
                         <p className="text-sm text-fg leading-snug">{sentence}</p>
                       </TD>
@@ -211,9 +286,11 @@ export default function AuditPage() {
                       </TD>
                       <TD className="text-right align-top">
                         {hasDetail && (
-                          <button onClick={() => setOpenId(open ? null : a.id)}
-                            className="p-1 text-muted hover:text-fg transition-colors">
-                            <ChevronDown size={14}
+                          <button type="button" onClick={() => setOpenId(open ? null : a.id)}
+                            aria-label={open ? "Дэлгэрэнгүйг хаах" : "Дэлгэрэнгүйг харах"}
+                            aria-expanded={open}
+                            className="p-1 text-muted hover:text-fg transition-colors rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+                            <ChevronDown size={14} aria-hidden="true"
                               className={`transition-transform ${open ? "rotate-180" : ""}`} />
                           </button>
                         )}
@@ -255,14 +332,14 @@ function DiffBlock({ before, after, reason }: { before: unknown; after: unknown;
     <div className="space-y-2">
       {reason && (
         <div>
-          <p className="text-[10px] uppercase font-semibold text-muted mb-1">Шалтгаан</p>
+          <p className="text-[11px] uppercase font-semibold text-muted mb-1">Шалтгаан</p>
           <p className="text-sm text-fg">{reason}</p>
         </div>
       )}
       <div className="grid md:grid-cols-2 gap-3">
         {before !== undefined && before !== null && (
           <div>
-            <p className="text-[10px] uppercase font-semibold text-muted mb-1">Өмнө</p>
+            <p className="text-[11px] uppercase font-semibold text-muted mb-1">Өмнө</p>
             <pre className="text-[11px] font-mono bg-surface border border-border rounded p-2 overflow-x-auto max-h-40">
               {JSON.stringify(before, null, 2)}
             </pre>
@@ -270,7 +347,7 @@ function DiffBlock({ before, after, reason }: { before: unknown; after: unknown;
         )}
         {after !== undefined && after !== null && (
           <div>
-            <p className="text-[10px] uppercase font-semibold text-muted mb-1">Дараа</p>
+            <p className="text-[11px] uppercase font-semibold text-muted mb-1">Дараа</p>
             <pre className="text-[11px] font-mono bg-surface border border-border rounded p-2 overflow-x-auto max-h-40">
               {JSON.stringify(after, null, 2)}
             </pre>

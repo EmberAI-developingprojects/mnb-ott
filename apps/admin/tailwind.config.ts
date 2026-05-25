@@ -9,28 +9,35 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        /* Classic admin palette — light content area, dark sidebar */
-        bg:       "#f7f8fa",      // page background
-        surface:  "#ffffff",      // cards, tables
-        sidebar:  "#0f172a",      // slate-900 dark sidebar
-        "sidebar-hover": "#1e293b",
-        fg:       "#0f172a",      // primary text
-        muted:    "#64748b",      // secondary text (slate-500)
-        border:   "#e2e8f0",      // slate-200
-        "border-strong": "#cbd5e1",
+        /* Токенууд CSS variable-аас уншина (globals.css :root / [data-theme]).
+           rgb(var() / <alpha-value>) загвар тул opacity utility ажиллана. */
+        bg:              "rgb(var(--c-bg) / <alpha-value>)",
+        surface:         "rgb(var(--c-surface) / <alpha-value>)",
+        sidebar:         "rgb(var(--c-sidebar) / <alpha-value>)",
+        "sidebar-hover": "rgb(var(--c-sidebar-hover) / <alpha-value>)",
+        fg:              "rgb(var(--c-fg) / <alpha-value>)",
+        muted:           "rgb(var(--c-muted) / <alpha-value>)",
+        "muted-strong":  "rgb(var(--c-muted-strong) / <alpha-value>)",
+        border:          "rgb(var(--c-border) / <alpha-value>)",
+        "border-strong": "rgb(var(--c-border-strong) / <alpha-value>)",
 
         /* Brand */
-        primary:    "#0046A5",
-        "primary-hover": "#0055c8",
-        "primary-soft":  "rgba(0,70,165,0.08)",
-        danger:     "#CF1E28",
-        "danger-soft":   "rgba(207,30,40,0.08)",
-        success:    "#16a34a",
-        warning:    "#d97706",
+        primary:         "rgb(var(--c-primary) / <alpha-value>)",
+        "primary-hover": "rgb(var(--c-primary-hover) / <alpha-value>)",
+        "primary-soft":  "rgb(var(--c-primary) / 0.10)",
+        danger:          "rgb(var(--c-danger) / <alpha-value>)",
+        "danger-soft":   "rgb(var(--c-danger) / 0.10)",
+        success:         "rgb(var(--c-success) / <alpha-value>)",
+        warning:         "rgb(var(--c-warning) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-app)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
         mono: ["SF Mono", "Menlo", "Consolas", "monospace"],
+      },
+      boxShadow: {
+        /* Картын өндөрлөг — токеноор (dark scope дотор глоу болж хувирна) */
+        card:         "var(--shadow-card)",
+        "card-hover": "var(--shadow-card-hover)",
       },
     },
   },

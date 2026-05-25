@@ -164,7 +164,7 @@ export default function VodPage() {
       </div>
 
       {loading ? (
-        <div className="bg-surface border border-border rounded-lg p-12 text-center text-sm text-muted">
+        <div className="bg-surface border border-border rounded-lg shadow-card p-12 text-center text-sm text-muted">
           Уншиж байна...
         </div>
       ) : !data || data.items.length === 0 ? (
@@ -289,7 +289,7 @@ export default function VodPage() {
           <div className="grid grid-cols-2 gap-3">
             <Field
               label="Үнэ (₮)"
-              hint={form.type === "PREMIUM" ? "Хязгааргүй plan-гүй хэрэглэгчид түрээслэх үнэ" : "Архив видеонд үнэ хэрэггүй"}
+              hint={form.type === "PREMIUM" ? "VOD/COMBO багцгүй хэрэглэгч тусад нь түрээслэх үнэ" : "Архив видеонд үнэ хэрэггүй"}
             >
               <Input type="number" value={form.price}
                 onChange={(e) => setForm({ ...form, price: e.target.value })}

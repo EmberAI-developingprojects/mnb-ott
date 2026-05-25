@@ -121,7 +121,7 @@ export default function UserDetailPage() {
                 </Button>
               ) : (
                 <Button variant="danger" size="sm" onClick={() => setBanOpen(true)}>
-                  <Ban size={14} /> Block хийх
+                  <Ban size={14} /> Блок хийх
                 </Button>
               )}
             </div>
@@ -147,7 +147,7 @@ export default function UserDetailPage() {
               ? <Badge tone="danger">Блоктой</Badge>
               : user.isVerified
                 ? <Badge tone="success">Идэвхтэй</Badge>
-                : <Badge tone="warning">Verify хүлээж буй</Badge>
+                : <Badge tone="warning">Баталгаажаагүй</Badge>
             }
           </Row>
           <Row label="Бүртгүүлсэн">{formatDateTime(user.createdAt)}</Row>
@@ -170,7 +170,7 @@ export default function UserDetailPage() {
       {/* Sessions */}
       <InfoCard title={`Идэвхтэй төхөөрөмж (${user.sessions.length})`} className="mb-6">
         {user.sessions.length === 0 ? (
-          <p className="text-sm text-muted">Идэвхтэй сесс байхгүй</p>
+          <p className="text-sm text-muted">Идэвхтэй төхөөрөмж байхгүй</p>
         ) : (
           <div className="space-y-2">
             {user.sessions.map((s) => (
@@ -258,11 +258,11 @@ export default function UserDetailPage() {
       <Modal open={banOpen} onClose={() => setBanOpen(false)} title="Хэрэглэгчийг блок хийх">
         <div className="space-y-4">
           <p className="text-sm text-muted">
-            Блок хийсний дараа хэрэглэгч нэвтэрч чадахгүй болно. Бүх идэвхтэй session хаагдана.
+            Блок хийсний дараа хэрэглэгч нэвтэрч чадахгүй болно. Бүх идэвхтэй төхөөрөмж салгагдана.
           </p>
           <Field label="Шалтгаан (заавал)">
             <Input value={banReason} onChange={(e) => setBanReason(e.target.value)}
-              placeholder="Жишээ: spam үйлдэл" />
+              placeholder="Жишээ: спам үйлдэл" />
           </Field>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" onClick={() => setBanOpen(false)}>Болих</Button>
@@ -278,7 +278,7 @@ export default function UserDetailPage() {
 
 function InfoCard({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-surface border border-border rounded-lg p-5 ${className ?? ""}`}>
+    <div className={`bg-surface border border-border rounded-lg shadow-card p-5 ${className ?? ""}`}>
       <h3 className="text-sm font-semibold text-fg mb-3">{title}</h3>
       {children}
     </div>

@@ -102,7 +102,7 @@ export default function BundlesPage() {
       />
 
       {loading ? (
-        <div className="bg-surface border border-border rounded-lg p-12 text-center text-sm text-muted">
+        <div className="bg-surface border border-border rounded-lg shadow-card p-12 text-center text-sm text-muted">
           Уншиж байна...
         </div>
       ) : bundles.length === 0 ? (

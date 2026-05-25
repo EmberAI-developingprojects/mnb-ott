@@ -72,17 +72,19 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Field label="Утас эсвэл и-мэйл">
-            <Input type="text" value={identifier} onChange={(e) => setId(e.target.value)}
+            <Input type="text" name="username" autoComplete="username" value={identifier}
+              onChange={(e) => setId(e.target.value)}
               placeholder="admin@mnb.mn / 99000000" autoFocus />
           </Field>
 
           <Field label="Нууц үг">
-            <Input type="password" value={password} onChange={(e) => setPw(e.target.value)}
+            <Input type="password" name="password" autoComplete="current-password" value={password}
+              onChange={(e) => setPw(e.target.value)}
               placeholder="••••••••" />
           </Field>
 
           {error && (
-            <div className="px-3 py-2 bg-danger/10 border border-danger/30 rounded-md text-xs text-danger">
+            <div role="alert" className="px-3 py-2 bg-danger/10 border border-danger/30 rounded-md text-xs text-danger">
               {error}
             </div>
           )}

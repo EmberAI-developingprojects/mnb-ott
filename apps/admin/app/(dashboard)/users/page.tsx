@@ -71,7 +71,7 @@ export default function UsersPage() {
       </div>
 
       {loading ? (
-        <div className="bg-surface border border-border rounded-lg p-12 text-center text-sm text-muted">
+        <div className="bg-surface border border-border rounded-lg shadow-card p-12 text-center text-sm text-muted">
           Уншиж байна...
         </div>
       ) : !data || data.items.length === 0 ? (
@@ -112,7 +112,7 @@ export default function UsersPage() {
                       ? <Badge tone="danger">Блоктой</Badge>
                       : u.isVerified
                         ? <Badge tone="success">Идэвхтэй</Badge>
-                        : <Badge tone="warning">Verify хүлээж буй</Badge>
+                        : <Badge tone="warning">Баталгаажаагүй</Badge>
                     }
                   </TD>
                   <TD className="text-muted text-xs">{formatDate(u.createdAt)}</TD>

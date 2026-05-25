@@ -11,7 +11,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex min-h-screen">
         <Sidebar />
         <main className="flex-1 overflow-x-hidden">
-          <div className="p-6 md:p-8 max-w-7xl">{children}</div>
+          <div className="p-6 md:p-8 xl:px-10 2xl:px-12 w-full">{children}</div>
         </main>
       </div>
       <ConfirmDialogRoot />

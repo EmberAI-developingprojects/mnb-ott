@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { forwardRef, useId, isValidElement, cloneElement, type InputHTMLAttributes, type TextareaHTMLAttributes, type ReactElement } from "react";
 import { cn } from "@/lib/utils";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -47,12 +47,26 @@ export function Field({ label, children, error, hint }: {
   error?: string;
   hint?: string;
 }) {
+  const id      = useId();
+  const errorId = `${id}-error`;
+  const hintId  = `${id}-hint`;
+
+  /* Хяналтыг (input/select/textarea) label-тай id-аар холбоно.
+     Ганц element хүүхэд бол id + aria-* шинжийг автоматаар ононо. */
+  const control = isValidElement(children)
+    ? cloneElement(children as ReactElement, {
+        id: (children as ReactElement).props.id ?? id,
+        "aria-invalid": error ? true : undefined,
+        "aria-describedby": error ? errorId : hint ? hintId : undefined,
+      })
+    : children;
+
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-medium text-fg">{label}</label>
-      {children}
-      {error && <p className="text-xs text-danger">{error}</p>}
-      {!error && hint && <p className="text-xs text-muted">{hint}</p>}
+      <label htmlFor={id} className="block text-xs font-medium text-fg">{label}</label>
+      {control}
+      {error && <p id={errorId} className="text-xs text-danger">{error}</p>}
+      {!error && hint && <p id={hintId} className="text-xs text-muted">{hint}</p>}
     </div>
   );
 }

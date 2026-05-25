@@ -24,19 +24,21 @@ export function Toggle({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
-        "inline-flex items-center gap-3 select-none transition-opacity",
+        "group inline-flex items-center gap-3 select-none transition-opacity [touch-action:manipulation]",
+        "focus:outline-none",
         disabled && "opacity-50 cursor-not-allowed",
       )}
     >
       <span
         className={cn(
           "relative inline-block w-12 h-7 rounded-full transition-colors shrink-0",
+          "group-focus-visible:ring-2 group-focus-visible:ring-primary/40 group-focus-visible:ring-offset-2",
           checked ? "bg-success" : "bg-border-strong",
         )}
       >
         <span
           className={cn(
-            "absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-sm transition-transform",
+            "absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-sm motion-safe:transition-transform",
             checked && "translate-x-5",
           )}
         />

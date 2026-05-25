@@ -46,7 +46,7 @@ export default function PaymentsPage() {
       await api.post(`/api/admin/payments/${refundOpen.id}/refund`, { reason });
       setRefundOpen(null); setReason("");
       await load();
-      toast.success("Refund амжилттай хийгдлээ");
+      toast.success("Төлбөр амжилттай буцаагдлаа");
     } catch (e) {
       toast.error(getApiError(e).message);
     } finally {
@@ -77,7 +77,7 @@ export default function PaymentsPage() {
       </div>
 
       {loading ? (
-        <div className="bg-surface border border-border rounded-lg p-12 text-center text-sm text-muted">
+        <div className="bg-surface border border-border rounded-lg shadow-card p-12 text-center text-sm text-muted">
           Уншиж байна...
         </div>
       ) : !data || data.items.length === 0 ? (
@@ -109,7 +109,7 @@ export default function PaymentsPage() {
                   <TD className="text-right">
                     {p.status === "PAID" && (
                       <Button variant="ghost" size="sm" onClick={() => setRefundOpen(p)}>
-                        Refund
+                        Буцаалт
                       </Button>
                     )}
                   </TD>
@@ -133,7 +133,7 @@ export default function PaymentsPage() {
       )}
 
       <Modal open={refundOpen !== null} onClose={() => { setRefundOpen(null); setReason(""); }}
-        title="Refund хийх">
+        title="Төлбөр буцаах">
         <div className="space-y-4">
           {refundOpen && (
             <div className="bg-bg rounded-md p-3 border border-border space-y-1">
@@ -151,12 +151,12 @@ export default function PaymentsPage() {
               placeholder="Жишээ: Хэрэглэгчийн хүсэлтээр" />
           </Field>
           <p className="text-xs text-muted">
-            MVP горимд бүхэлд нь зөвхөн status-ийг REFUNDED болгоно. Бодит QPay refund API дараа холбоно.
+            Энэ үйлдэл гүйлгээний төлвийг "Буцаагдсан" болгож тэмдэглэнэ. Мөнгөн дүнгийн буцаалтыг QPay-ээр тусад нь гүйцэтгэнэ.
           </p>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" onClick={() => { setRefundOpen(null); setReason(""); }}>Болих</Button>
             <Button variant="danger" loading={refunding} disabled={!reason.trim()} onClick={handleRefund}>
-              Refund хийх
+              Төлбөр буцаах
             </Button>
           </div>
         </div>

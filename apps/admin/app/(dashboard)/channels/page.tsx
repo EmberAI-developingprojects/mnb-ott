@@ -126,7 +126,7 @@ export default function ChannelsPage() {
   async function handleDelete(c: Channel) {
     const ok = await confirmDialog({
       title:   `"${c.name}"-ийг устгах уу?`,
-      message: "Энэ үйлдлийг буцаах боломжгүй. Суваг устгагдсаны дараа холбоотой stream URL, EPG тохиргоо алга болно.",
+      message: "Энэ үйлдлийг буцаах боломжгүй. Суваг устгагдсаны дараа холбогдох дамжуулалтын хаяг, хөтөлбөрийн хуваарь (EPG) устгагдана.",
       tone:    "danger",
       confirmLabel: "Устгах",
     });
@@ -152,7 +152,7 @@ export default function ChannelsPage() {
     <div>
       <PageHeader
         title="Дамжуулалт"
-        subtitle="Live broadcast, TV сувгууд болон радио — нэгдсэн удирдлага"
+        subtitle="Шууд дамжуулалт, ТВ суваг, радио — нэгдсэн удирдлага"
       />
 
       {loading ? (
@@ -181,6 +181,7 @@ export default function ChannelsPage() {
 
           {/* ─── 2. TV сувгууд ────────────────── */}
           <SectionCard
+            collapsible
             icon={TvIcon}
             title={`Сувгууд (${tvList.length})`}
             subtitle="TV сувгууд — нэмэх, хасах, эрэмбэлэх, stream URL засах"
@@ -195,6 +196,7 @@ export default function ChannelsPage() {
 
           {/* ─── 3. Радио ─────────────────────── */}
           <SectionCard
+            collapsible
             icon={RadioIcon}
             title={`Радио (${radList.length})`}
             subtitle="Радио сувгууд — thumbnail заавал хэрэгтэй"

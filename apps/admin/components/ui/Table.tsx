@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 export function Table({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-surface border border-border rounded-lg overflow-hidden">
+    <div className="bg-surface border border-border rounded-lg overflow-hidden shadow-card">
       <div className="overflow-x-auto">
         <table className={cn("w-full text-sm", className)}>{children}</table>
       </div>
@@ -20,7 +20,7 @@ export function THead({ children }: { children: React.ReactNode }) {
 
 export function TH({ children, className }: { children?: React.ReactNode; className?: string }) {
   return (
-    <th className={cn("text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted", className)}>
+    <th className={cn("text-left px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted", className)}>
       {children}
     </th>
   );
@@ -36,8 +36,21 @@ export function TR({ children, className, onClick }: {
   onClick?: () => void;
 }) {
   return (
-    <tr onClick={onClick}
-      className={cn("transition-colors", onClick && "cursor-pointer hover:bg-bg", className)}>
+    <tr
+      onClick={onClick}
+      /* Дарж болох мөрийг гараар (Enter/Space) ажиллуулах боломжтой болгоно */
+      {...(onClick && {
+        role: "button",
+        tabIndex: 0,
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); }
+        },
+      })}
+      className={cn(
+        "transition-colors",
+        onClick && "cursor-pointer hover:bg-bg focus-visible:outline-none focus-visible:bg-bg focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
+        className,
+      )}>
       {children}
     </tr>
   );

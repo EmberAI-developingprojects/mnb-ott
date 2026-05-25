@@ -68,23 +68,24 @@ export function ToastRoot() {
   if (items.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 max-w-sm">
+    <div role="region" aria-label="Мэдэгдэл" aria-live="polite"
+      className="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 max-w-sm">
       {items.map((t) => {
         const cfg = TONE_CFG[t.tone];
         const Icon = cfg.icon;
         return (
-          <div key={t.id}
+          <div key={t.id} role={t.tone === "error" ? "alert" : "status"}
             className={cn(
               "flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg bg-surface",
-              "animate-in slide-in-from-right",
+              "motion-safe:animate-in motion-safe:slide-in-from-right",
               cfg.cls,
             )}
           >
-            <Icon size={16} className="shrink-0 mt-0.5" />
+            <Icon size={16} aria-hidden="true" className="shrink-0 mt-0.5" />
             <p className="flex-1 text-sm text-fg leading-snug">{t.message}</p>
-            <button onClick={() => dismiss(t.id)}
-              className="text-muted hover:text-fg transition-colors shrink-0 mt-0.5">
-              <X size={14} />
+            <button type="button" onClick={() => dismiss(t.id)} aria-label="Хаах"
+              className="text-muted hover:text-fg transition-colors shrink-0 mt-0.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+              <X size={14} aria-hidden="true" />
             </button>
           </div>
         );

@@ -23,7 +23,7 @@ export function LiveBroadcastToggle({
       next
         ? {
             title:   "Шууд дамжуулалт эхлүүлэх үү?",
-            message: `"${channel.name}" сувгийн live broadcast-ыг асаах болно. Хэрэглэгчид шууд үзэж эхлэх боломжтой.`,
+            message: `"${channel.name}" сувгийн шууд дамжуулалтыг эхлүүлэх болно. Хэрэглэгчид шууд үзэж эхлэх боломжтой.`,
             confirmLabel: "Тийм, эхлүүлэх",
             tone:    "default",
           }

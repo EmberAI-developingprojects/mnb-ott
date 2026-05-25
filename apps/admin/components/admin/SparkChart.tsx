@@ -45,19 +45,19 @@ export function SparkChart({ data, height = 64, formatY }: Props) {
       >
         <defs>
           <linearGradient id="spark-gradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="rgb(var(--primary-rgb,0 70 165))" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="rgb(var(--primary-rgb,0 70 165))" stopOpacity="0" />
+            <stop offset="0%"   stopColor="rgb(var(--c-primary))" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="rgb(var(--c-primary))" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d={areaPath} fill="url(#spark-gradient)" />
-        <path d={path}     fill="none" stroke="#0046A5" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+        <path d={path}     fill="none" stroke="rgb(var(--c-primary))" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
       </svg>
 
       {/* Min/max label corner-уудад */}
       {formatY && (
         <>
-          <span className="absolute top-0 left-0 text-[10px] text-muted">{formatY(max)}</span>
-          <span className="absolute bottom-0 left-0 text-[10px] text-muted">{formatY(min)}</span>
+          <span className="absolute top-0 left-0 text-[11px] text-muted">{formatY(max)}</span>
+          <span className="absolute bottom-0 left-0 text-[11px] text-muted">{formatY(min)}</span>
         </>
       )}
     </div>

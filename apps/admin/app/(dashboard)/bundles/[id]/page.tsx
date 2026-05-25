@@ -102,7 +102,7 @@ export default function BundleItemsPage() {
           Багц хоосон. "Видео нэмэх" товчоор контент нэмнэ үү.
         </div>
       ) : (
-        <div className="bg-surface border border-border rounded-lg divide-y divide-border">
+        <div className="bg-surface border border-border rounded-lg shadow-card divide-y divide-border">
           {items.map((it) => (
             <div key={it.id} className="flex items-center gap-4 px-4 py-3">
               {it.vod.thumbnailUrl && (

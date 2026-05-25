@@ -57,10 +57,10 @@ export default function NotificationsPage() {
     <div>
       <PageHeader
         title="Мэдэгдэл илгээх"
-        subtitle="Бүх эсвэл тодорхой багцтай хэрэглэгчдэд broadcast илгээх"
+        subtitle="Бүх эсвэл сонгосон багцтай хэрэглэгчдэд бөөн мэдэгдэл илгээх"
       />
 
-      <div className="bg-surface border border-border rounded-lg p-6 space-y-5 max-w-2xl">
+      <div className="bg-surface border border-border rounded-lg shadow-card p-6 space-y-5 max-w-2xl">
         <Field label="Гарчиг">
           <Input value={title} onChange={(e) => setTitle(e.target.value)}
             placeholder="Жишээ: Шинэ кино гарлаа" />
@@ -74,9 +74,9 @@ export default function NotificationsPage() {
         <Field label="Төрөл">
           <select value={type} onChange={(e) => setType(e.target.value as typeof type)}
             className="w-full h-9 px-3 rounded-md text-sm bg-surface border border-border focus:outline-none focus:border-primary">
-            <option value="SYSTEM">SYSTEM (системийн)</option>
-            <option value="PROMO">PROMO (сурталчилгаа)</option>
-            <option value="CONTENT">CONTENT (контентийн)</option>
+            <option value="SYSTEM">Системийн мэдэгдэл</option>
+            <option value="PROMO">Сурталчилгаа</option>
+            <option value="CONTENT">Шинэ контент</option>
           </select>
         </Field>
 
