@@ -6,7 +6,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* Left — visual */}
       <div className="hidden lg:flex lg:w-[48%] relative overflow-hidden" style={{ backgroundColor: "#0A1628" }}>
-        <img src="https://i.ytimg.com/vi/EvnEgjMciQs/maxresdefault.jpg" alt=""
+        <img src="../../../../images/login.webp" alt="login"
           className="absolute inset-0 w-full h-full object-cover opacity-25 scale-105"
           style={{ filter: "brightness(0.9) saturate(1.1)" }} />
         <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(0,70,165,0.45) 0%, rgba(0,0,0,0.2) 100%)" }} />

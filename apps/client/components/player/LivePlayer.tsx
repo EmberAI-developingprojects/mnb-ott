@@ -49,9 +49,38 @@ export function LivePlayer({ streamUrl, channelName, poster }: LivePlayerProps) 
 
     if (Hls.isSupported()) {
       const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 90,
+        enableWorker:     true,
+        lowLatencyMode:   false,            /* Чанарыг сонгож, latency төлөх */
+        backBufferLength: 60,               /* 1 минут ухаарах боломж */
+
+        /* Live experience — том буфер + урт хоцролт = stable HD */
+        liveSyncDuration:       20,         /* Live edge-аас 20 сек хойш */
+        liveMaxLatencyDuration: 60,         /* 60 сек хоцортол ухтуулахгүй */
+        maxBufferLength:       120,         /* Forward buffer 2 минут */
+        maxMaxBufferLength:    300,         /* Memory cap 5 минут */
+        maxBufferSize:    120 * 1000 * 1000,/* 120MB buffer (HD stream-д хангалттай) */
+        maxBufferHole:        0.5,          /* 0.5 сек жижиг gap-аас seek-гүй үргэлжлэх */
+        highBufferWatchdogPeriod: 3,        /* Buffer 3 сек тутамд шалгана */
+
+        /* ABR — quality-руу хэлбэйх (multi-bitrate байх үед) */
+        startLevel:             -1,         /* Auto + доорх factor-аар */
+        capLevelToPlayerSize:  false,       /* Player жижиг ч максимум чанар */
+        capLevelOnFPSDrop:     false,       /* FPS унавал чанар бууруулахгүй */
+        abrBandWidthFactor:     0.75,       /* 75% bandwidth л — safety 25% */
+        abrBandWidthUpFactor:   0.3,        /* Quality дээш аажуу шилжих */
+        abrMaxWithRealBitrate: true,
+        testBandwidth:         true,        /* Эхэнд network тест */
+        abrEwmaFastLive:       3.0,         /* Bandwidth дундаж аажуу (stable) */
+        abrEwmaSlowLive:       9.0,         /* Long-term дундаж урт цаг */
+        abrEwmaDefaultEstimate: 1500000,    /* 1.5Mbps default (HD-руу хэлбэйх) */
+        maxStarvationDelay:    20,          /* Buffer хоосон бол 20 сек хүлээж downgrade */
+
+        /* Network resilience — ачаалал ихтэй origin-д */
+        fragLoadingTimeOut:     30000,      /* 30 сек timeout (өмнө 20) */
+        fragLoadingMaxRetry:        8,      /* 8 удаа retry (өмнө 6) */
+        manifestLoadingTimeOut: 15000,
+        manifestLoadingMaxRetry:    4,
+        levelLoadingTimeOut:    15000,
       });
       hlsRef.current = hls;
 
@@ -69,10 +98,22 @@ export function LivePlayer({ streamUrl, channelName, poster }: LivePlayerProps) 
         video.play().catch(() => setIsMuted(true));
       });
 
+      /* Auto-recovery — fatal алдааг шууд recover хийх оролдоно */
       hls.on(Hls.Events.ERROR, (_e, data) => {
-        if (data.fatal) {
-          setError("Stream ачаалахад алдаа гарлаа");
-          setLoading(false);
+        if (!data.fatal) return;
+        switch (data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            /* Network glitch — manifest дахин ачаална */
+            hls.startLoad();
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            /* Decoder problem — media recovery */
+            hls.recoverMediaError();
+            break;
+          default:
+            /* Recoverable биш — UI-д алдаа харуулна */
+            setError("Stream ачаалахад алдаа гарлаа");
+            setLoading(false);
         }
       });
 

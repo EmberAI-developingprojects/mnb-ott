@@ -16,7 +16,6 @@ function getChannelIds(): string[] {
   return single ? [single] : [];
 }
 
-/* YouTube channel UC… ID-ийг тухайн channel-ийн "Uploads" playlist UU… болгож хувиргана */
 function channelToPlaylist(channelId: string): string {
   return channelId.replace(/^UC/, "UU");
 }
