@@ -40,3 +40,4 @@ logs/
 # Temp
 tmp/
 uploads/
+.claude/

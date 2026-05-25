@@ -1,4 +1,4 @@
-import { Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 
 /* ════════════════════════════════════════════════════════════════
    АДМИН APP-ИЙН FONT — НЭГДСЭН ТОХИРГОО
@@ -19,7 +19,7 @@ import { Inter } from "next/font/google";
    тиймээс layout.tsx, globals.css, tailwind.config.ts засах хэрэггүй.
    ════════════════════════════════════════════════════════════════ */
 
-export const font = Inter({
+export const font = Manrope({
   subsets: ["latin", "cyrillic"], /* Mongolian Cyrillic дэмжих заавал */
   variable: "--font-app",
   display:  "swap",
