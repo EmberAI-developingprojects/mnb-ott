@@ -181,7 +181,7 @@ html.light {
   .input-base:focus {
     border-color: var(--primary);
     outline: none;
-    box-shadow: 0 0 0 3px rgb(0 70 165 / 0.15);
+    box-shadow: 0 0 0 2px rgb(0 70 165 / 0.12);
   }
   .input-base:hover:not(:focus) { border-color: var(--border-strong); }
 

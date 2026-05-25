@@ -34,7 +34,8 @@ export default function HomePage() {
       api.get<{ success: true; data: { bundles: Bundle[] } }>("/api/vod/bundles"),
       api.get<{ success: true; data: { channels: ApiChannel[] } }>("/api/channels"),
     ]).then(([a, l, b, c]) => {
-      setChannels(c.data.data.channels);
+      /* LIVE төрлийг хасна — /live тусдаа хуудастай, ChannelStrip-д TV/RADIO л үлдэнэ. */
+      setChannels(c.data.data.channels.filter((ch) => ch.kind !== "LIVE"));
       setArchive(a.data.data.videos);
       setLibrary(l.data.data.videos);
       setBundles(b.data.data.bundles);

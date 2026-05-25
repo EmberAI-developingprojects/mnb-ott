@@ -26,7 +26,7 @@ const KIND_TEXT = {
     en: { title: "To watch this video",            sub: "VOD or COMBO plan required" },
   },
   "bundle": {
-    mn: { title: "Энэ видеог үзэхийн тулд",       sub: "Тус бүрчлэн худалдан авна — 72 цагийн дотор үзнэ" },
+    mn: { title: "Энэ видеог үзэхийн тулд",       sub: "72 цагийн дотор үзнэ" },
     en: { title: "To watch this video",            sub: "Rent for 72 hours" },
   },
 };
@@ -87,7 +87,7 @@ export function UpgradePrompt({ kind, vodId, price, title, backdrop }: Props) {
       <div className="relative aspect-video rounded-2xl overflow-hidden bg-card">
         {backdrop && (
           <Image src={backdrop} alt="" fill sizes="100vw"
-            className="object-cover opacity-25" priority />
+            className="object-cover opacity-75" priority />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/40" />
 
@@ -98,9 +98,6 @@ export function UpgradePrompt({ kind, vodId, price, title, backdrop }: Props) {
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
           </div>
-
-          <h2 className="text-lg md:text-2xl font-bold text-white max-w-md leading-tight">{text.title}</h2>
-          <p className="text-sm text-white/65 mt-2 max-w-md">{text.sub}</p>
 
           {kind === "bundle" && price ? (
             <p className="mt-4 text-3xl font-bold text-accent">
@@ -127,7 +124,7 @@ export function UpgradePrompt({ kind, vodId, price, title, backdrop }: Props) {
                     {lang === "mn" ? "Үүсгэж байна..." : "Creating..."}
                   </span>
                 ) : (
-                  lang === "mn" ? "Худалдаж авах" : "Rent video"
+                  lang === "mn" ? "Түрээслэх" : "Rent video"
                 )}
               </button>
             ) : (

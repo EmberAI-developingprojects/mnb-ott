@@ -52,9 +52,6 @@ export function VideoCard({ v }: { v: Video }) {
         </div>
       </div>
 
-      <p className="mt-2.5 text-[13.5px] text-app line-clamp-2 leading-snug group-hover:text-accent transition-colors px-0.5">
-        {v.title}
-      </p>
     </Link>
   );
 }

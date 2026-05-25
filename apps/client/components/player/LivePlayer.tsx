@@ -2,19 +2,35 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Hls from "hls.js";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
 interface LivePlayerProps {
-  streamUrl: string;
-  channelName: string;
-  poster?: string;
+  streamUrl:        string;
+  channelName:      string;
+  channelLogo?:     string;  /* Player-ийн дотор top bar-д харагдах logo */
+  poster?:          string;
+  /* Одоо гарч буй хөтөлбөрийн прогресс (0–100). Player-ийн доод хэсэгт
+     YouTube-маяг seek bar болж overlay харагдана. DVR seek хийгдээгүй
+     тул одоохондоо зөвхөн visual indicator. */
+  programProgress?: number;
+  programLabel?:    string;  /* "08:30 – 09:30" гэх мэт */
+  programTitle?:    string;
+  /* YouTube-маяг hover tooltip-д ашиглах: hover position-аас цаг тооцоологдоно.
+     Both ISO string-аар хүлээж авна. */
+  programStartTime?: string;
+  programEndTime?:   string;
 }
 
 type Quality = { height: number; bitrate: number; index: number };
 
-export function LivePlayer({ streamUrl, channelName, poster }: LivePlayerProps) {
+export function LivePlayer({
+  streamUrl, channelName, channelLogo, poster,
+  programProgress, programLabel, programTitle,
+  programStartTime, programEndTime,
+}: LivePlayerProps) {
   const { user } = useAuthStore();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -32,6 +48,9 @@ export function LivePlayer({ streamUrl, channelName, poster }: LivePlayerProps) 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const controlsTimer = useRef<ReturnType<typeof setTimeout>>();
+  /* YouTube-style seek bar hover state — 0..1 ratio of bar width, эсвэл null */
+  const [seekHover, setSeekHover] = useState<number | null>(null);
+  const seekBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -215,30 +234,72 @@ export function LivePlayer({ streamUrl, channelName, poster }: LivePlayerProps) 
           showControls || !isPlaying ? "opacity-100" : "opacity-0"
         )}
       >
-        {/* Top bar */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-danger animate-pulse" />
-            <span className="text-white text-sm font-semibold">{channelName}</span>
-            <span className="text-xs bg-danger/80 text-white px-1.5 py-0.5 rounded font-bold">LIVE</span>
-          </div>
-
-          {/* Quality selector */}
-          {qualities.length > 0 && (
-            <select
-              value={currentQuality}
-              onChange={(e) => changeQuality(Number(e.target.value))}
-              className="bg-black/60 text-white text-xs px-2 py-1 rounded border border-white/20 outline-none"
-            >
-              <option value={-1}>AUTO</option>
-              {qualities.map((q) => (
-                <option key={q.index} value={q.index}>
-                  {q.height}p
-                </option>
-              ))}
-            </select>
+        {/* Top bar — logo + суваг + хөтөлбөр + LIVE badge */}
+        <div className="flex items-center mb-3 gap-2.5 min-w-0">
+          {channelLogo && (
+            <div className="relative h-7 w-11 rounded overflow-hidden bg-black/40 shrink-0">
+              <Image src={channelLogo} alt={channelName} fill sizes="44px" className="object-contain p-0.5" />
+            </div>
           )}
+          <span className="text-white text-sm font-semibold shrink-0">{channelName}</span>
+          {programTitle && (
+            <span className="text-white/70 text-xs truncate hidden sm:inline">· {programTitle}</span>
+          )}
+          <span className="text-[10px] bg-danger text-white px-1.5 py-0.5 rounded font-bold tracking-wider shrink-0">LIVE</span>
         </div>
+
+        {/* Program progress seek bar — hover үед YouTube-style preview + цаг */}
+        {typeof programProgress === "number" && (
+          <div className="mb-3 flex items-center gap-3">
+            <div
+              ref={seekBarRef}
+              className="relative flex-1 h-1.5 bg-white/15 rounded-full cursor-pointer group/seek"
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                setSeekHover(ratio);
+              }}
+              onMouseLeave={() => setSeekHover(null)}
+            >
+              {/* Hover progress (gray prefix дээр) */}
+              {seekHover !== null && (
+                <div className="absolute inset-y-0 left-0 bg-white/30 rounded-full pointer-events-none"
+                  style={{ width: `${seekHover * 100}%` }} />
+              )}
+              {/* Played progress */}
+              <div className="absolute inset-y-0 left-0 bg-accent rounded-full transition-all pointer-events-none"
+                style={{ width: `${programProgress}%` }} />
+              {/* Played knob */}
+              <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white shadow-md ring-1 ring-black/20 transition-all pointer-events-none"
+                style={{ left: `${programProgress}%` }} />
+
+              {/* Hover preview — миниатюр + цаг (зөвхөн hover үед) */}
+              {seekHover !== null && programStartTime && programEndTime && (() => {
+                const start = new Date(programStartTime).getTime();
+                const end   = new Date(programEndTime).getTime();
+                const t = new Date(start + (end - start) * seekHover);
+                const hh = String(t.getHours()).padStart(2, "0");
+                const mm = String(t.getMinutes()).padStart(2, "0");
+                return (
+                  <div className="absolute bottom-full mb-3 -translate-x-1/2 pointer-events-none flex flex-col items-center"
+                    style={{ left: `${seekHover * 100}%` }}>
+                    {poster && (
+                      <div className="relative w-40 aspect-video rounded-md overflow-hidden bg-black ring-1 ring-white/20 shadow-xl mb-1.5">
+                        <Image src={poster} alt="" fill sizes="160px" className="object-cover" />
+                      </div>
+                    )}
+                    <span className="px-1.5 py-0.5 rounded bg-black/85 text-white text-[11px] font-mono tabular-nums">
+                      {hh}:{mm}
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
+            {programLabel && (
+              <span className="text-white/80 text-[11px] font-mono tabular-nums shrink-0">{programLabel}</span>
+            )}
+          </div>
+        )}
 
         {/* Bottom controls */}
         <div className="flex items-center gap-3">
@@ -277,6 +338,22 @@ export function LivePlayer({ streamUrl, channelName, poster }: LivePlayerProps) 
           </div>
 
           <div className="flex-1" />
+
+          {/* Quality selector — fullscreen товчны зүүн талд */}
+          {qualities.length > 0 && (
+            <select
+              value={currentQuality}
+              onChange={(e) => changeQuality(Number(e.target.value))}
+              className="bg-black/60 text-white text-xs px-2 py-1 rounded border border-white/20 outline-none hover:bg-black/80 transition-colors cursor-pointer"
+            >
+              <option value={-1}>AUTO</option>
+              {qualities.map((q) => (
+                <option key={q.index} value={q.index}>
+                  {q.height}p
+                </option>
+              ))}
+            </select>
+          )}
 
           {/* Fullscreen */}
           <button onClick={toggleFullscreen} className="text-white hover:text-primary transition-colors">

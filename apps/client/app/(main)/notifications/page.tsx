@@ -7,7 +7,10 @@ import { useAuthStore } from "@/store/authStore";
 import { useSettingsStore, useT } from "@/store/settingsStore";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
 import type { AppNotification } from "@/types";
+
+const PAGE_SIZE = 8;
 
 const TYPE_META: Record<string, { label: string; color: string; icon: JSX.Element }> = {
   SUBSCRIPTION: { label: "Захиалга",  color: "bg-blue-500/15 text-blue-400",
@@ -30,14 +33,31 @@ export default function NotificationsPage() {
   const [items, setItems]   = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
+  const [cursor, setCursor]   = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     if (!user) { router.push("/login?callbackUrl=/notifications"); return; }
-    api.get<{ success: true; data: { items: AppNotification[] } }>("/api/notifications")
-      .then((r) => setItems(r.data.data.items))
+    api.get<{ success: true; data: { items: AppNotification[]; nextCursor: string | null } }>(
+      "/api/notifications", { params: { limit: PAGE_SIZE } },
+    )
+      .then((r) => { setItems(r.data.data.items); setCursor(r.data.data.nextCursor); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user, router]);
+
+  async function loadMore() {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const r = await api.get<{ success: true; data: { items: AppNotification[]; nextCursor: string | null } }>(
+        "/api/notifications", { params: { limit: PAGE_SIZE, cursor } },
+      );
+      setItems((arr) => [...arr, ...r.data.data.items]);
+      setCursor(r.data.data.nextCursor);
+    } catch { /* silent */ }
+    finally { setLoadingMore(false); }
+  }
 
   async function markRead(id: string) {
     setItems((arr) => arr.map((n) => n.id === id ? { ...n, isRead: true } : n));
@@ -145,6 +165,8 @@ export default function NotificationsPage() {
           })}
         </ul>
       )}
+
+      <LoadMoreButton hasMore={!!cursor} loading={loadingMore} onMore={loadMore} />
 
       {/* Delete confirmation modal */}
       {confirmDel && (

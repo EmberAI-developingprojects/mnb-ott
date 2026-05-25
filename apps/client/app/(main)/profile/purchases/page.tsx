@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import { useSettingsStore } from "@/store/settingsStore";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 8;
 
 interface HistoryItem {
   id:        string;
@@ -22,6 +25,7 @@ export default function PurchasesPage() {
   const { lang } = useSettingsStore();
   const [items, setItems]     = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [visible, setVisible] = useState(PAGE_SIZE);
 
   useEffect(() => {
     api.get<{ success: true; data: { items: HistoryItem[] } }>("/api/payment/history")
@@ -46,7 +50,7 @@ export default function PurchasesPage() {
         </div>
       ) : (
         <ul className="divide-y divide-[var(--border)] bg-card rounded-xl border border-app overflow-hidden">
-          {items.map((it) => {
+          {items.slice(0, visible).map((it) => {
             const isActive  = it.status === "PAID" || it.status === "ACTIVE";
             const isExpired = it.expiresAt ? new Date(it.expiresAt) < new Date() : false;
             return (
@@ -103,6 +107,9 @@ export default function PurchasesPage() {
           })}
         </ul>
       )}
+
+      <LoadMoreButton hasMore={visible < items.length}
+        onMore={() => setVisible((v) => v + PAGE_SIZE)} />
     </div>
   );
 }

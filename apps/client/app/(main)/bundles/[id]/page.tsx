@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { MediaCard } from "@/components/layout/MediaCard";
+import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
 import api from "@/lib/api";
+
+const PAGE_SIZE = 12;
 
 interface Video {
   youtubeId: string; title: string; thumbnailUrl: string;
@@ -20,6 +23,7 @@ export default function BundleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [loading, setLoading] = useState(true);
+  const [visible, setVisible] = useState(PAGE_SIZE);
 
   useEffect(() => {
     api.get<{ success: true; data: Bundle }>(`/api/vod/bundles/${id}`)
@@ -43,7 +47,7 @@ export default function BundleDetailPage() {
       <h1 className="text-2xl md:text-3xl font-bold text-app mb-6">{bundle.title}</h1>
 
       <Grid>
-        {bundle.items.map((v) => (
+        {bundle.items.slice(0, visible).map((v) => (
           <MediaCard key={v.youtubeId}
             href={`/vod/${v.youtubeId}`}
             title={v.title}
@@ -51,6 +55,8 @@ export default function BundleDetailPage() {
             duration={v.duration} />
         ))}
       </Grid>
+      <LoadMoreButton hasMore={visible < bundle.items.length}
+        onMore={() => setVisible((n) => n + PAGE_SIZE)} />
     </div>
   );
 }

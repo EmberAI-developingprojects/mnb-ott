@@ -304,8 +304,6 @@ function UserMenu({ user, t, onLogout }: {
               { href: "/profile/subscription", label: t("subscription") },
               { href: "/profile/devices",      label: t("devices") },
               { href: "/profile/settings",     label: t("settings") },
-              ...(["ADMIN", "SUPER_ADMIN"].includes(user.role ?? "")
-                ? [{ href: "/admin", label: "Admin" }] : []),
             ].map(({ href, label }) => (
               <Link key={href} href={href} onClick={() => setOpen(false)}
                 className="flex items-center px-4 py-2 text-[13px] text-sub hover:text-app hover:bg-card-hover transition-colors">

@@ -5,9 +5,12 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PosterCard } from "@/components/layout/PosterCard";
+import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
 import { useSettingsStore } from "@/store/settingsStore";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
+
+const PAGE_SIZE = 12;
 
 type Genre = "Мэдээ" | "Нэвтрүүлэг" | "Хүүхэд" | "Спорт" | "Баримтат" | "Бусад";
 
@@ -24,6 +27,9 @@ function ArchiveContent() {
   const { lang } = useSettingsStore();
   const [videos, setVideos]   = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
+  const [visible, setVisible] = useState(PAGE_SIZE);
+
+  useEffect(() => { setVisible(PAGE_SIZE); }, [genreFilter]);
 
   useEffect(() => {
     api.get<{ success: true; data: { videos: Video[] } }>("/api/vod/archive", { params: { all: 1 } })
@@ -52,17 +58,21 @@ function ArchiveContent() {
             {Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} className="aspect-[2/3] rounded-xl" />)}
           </PosterGrid>
         ) : (
-          <PosterGrid>
-            {filtered.map((v) => (
-              <PosterCard key={v.youtubeId}
-                href={`/vod/${v.youtubeId}`}
-                id={v.youtubeId}
-                title={v.title}
-                thumbnailUrl={v.thumbnailUrl}
-                duration={v.duration}
-                genre={v.genre} />
-            ))}
-          </PosterGrid>
+          <>
+            <PosterGrid>
+              {filtered.slice(0, visible).map((v) => (
+                <PosterCard key={v.youtubeId}
+                  href={`/vod/${v.youtubeId}`}
+                  id={v.youtubeId}
+                  title={v.title}
+                  thumbnailUrl={v.thumbnailUrl}
+                  duration={v.duration}
+                  genre={v.genre} />
+              ))}
+            </PosterGrid>
+            <LoadMoreButton hasMore={visible < filtered.length}
+              onMore={() => setVisible((n) => n + PAGE_SIZE)} className="pt-8" />
+          </>
         )}
       </div>
     );

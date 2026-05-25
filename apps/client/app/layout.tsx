@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { font } from "@/lib/font";
 
 export const metadata: Metadata = {
-  title:       "МҮОНРТ OTT",
+  title:       "MNB",
   description: "Монголын Үндэсний Олон Нийтийн Радио Телевизийн онлайн платформ",
   applicationName: "МНБ OTT",
   icons: { icon: "/mnb.png" },

@@ -1,14 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useWatchlistStore } from "@/store/watchlistStore";
 import { useSettingsStore, useT } from "@/store/settingsStore";
 import { formatDuration } from "@/lib/utils";
+import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
+
+const PAGE_SIZE = 8;
 
 export default function WatchlistPage() {
   const { items, remove } = useWatchlistStore();
   const { lang } = useSettingsStore();
   const t = useT();
+  const [visible, setVisible] = useState(PAGE_SIZE);
 
   return (
     <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+24px)] pb-16">
@@ -36,7 +41,7 @@ export default function WatchlistPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {items.map((item) => (
+          {items.slice(0, visible).map((item) => (
             <div key={item.id} className="group relative">
               <Link href={item.id.startsWith("show-") ? `/vod/shows/${item.id.replace("show-", "")}` : `/vod/${item.id}`}
                 className="block space-y-2">
@@ -78,6 +83,9 @@ export default function WatchlistPage() {
           ))}
         </div>
       )}
+
+      <LoadMoreButton hasMore={visible < items.length}
+        onMore={() => setVisible((v) => v + PAGE_SIZE)} />
     </div>
   );
 }

@@ -7,8 +7,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Left — visual */}
       <div className="hidden lg:flex lg:w-[48%] relative overflow-hidden" style={{ backgroundColor: "#0A1628" }}>
         <img src="/login.webp" alt="login"
-          className="absolute inset-0 w-full h-full object-cover opacity-90 scale-105"
-          style={{ filter: "brightness(0.9) saturate(1.1)" }} />
+          className="absolute inset-0 w-full h-full object-cover scale-105"
+ />
         <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(0,70,165,0.45) 0%, rgba(0,0,0,0.2) 100%)" }} />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#0f172a]/70" />
 
@@ -47,7 +47,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="relative w-7 h-7 rounded-lg overflow-hidden">
             <Image src="/mnb.png" alt="МНБ" fill sizes="28px" className="object-contain" />
           </div>
-          <span className="text-app text-sm font-bold tracking-wide">МҮОНРТ OTT</span>
+          <span className="text-app text-sm font-bold tracking-wide">MNB OTT</span>
         </div>
 
         <div className="flex-1 flex items-center justify-center px-6 py-10">

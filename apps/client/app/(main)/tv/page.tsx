@@ -8,7 +8,7 @@ import { EPGGrid } from "@/components/channel/EPGGrid";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { UpgradePrompt } from "@/components/layout/UpgradePrompt";
 import { useAuthStore } from "@/store/authStore";
-import { useSettingsStore, useT } from "@/store/settingsStore";
+import { useSettingsStore } from "@/store/settingsStore";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { Channel } from "@/types";
@@ -29,7 +29,6 @@ function TvContent() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { lang } = useSettingsStore();
-  const t = useT();
 
   const initialSlug = params.get("ch");
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -38,6 +37,9 @@ function TvContent() {
   const [epgLoading, setEpgLoading]   = useState(true);
   const [tab, setTab] = useState<Tab>("today");
   const [canPlay, setCanPlay] = useState<boolean | null>(null);
+  /* Mobile-д player харуулах эсэх — URL-д ?ch= байгаа бол шууд player,
+     эс үгүй бол суваг сонгох grid. Desktop-д үргэлж player + sidebar 2-уулаа харагдана. */
+  const [mobileShowPlayer, setMobileShowPlayer] = useState<boolean>(!!initialSlug);
 
   const active = channels.find((c) => c.slug === activeSlug) ?? channels[0];
   /* streamUrl нь backend-ээс access-тэй үед ирнэ, эс үгүй бол null */
@@ -84,7 +86,13 @@ function TvContent() {
 
   function selectChannel(slug: string) {
     setActiveSlug(slug);
+    setMobileShowPlayer(true);
     router.replace(`/tv?ch=${slug}`, { scroll: false });
+  }
+
+  /* Mobile-д "бүх суваг руу буцах" — grid view руу буцаана. */
+  function backToGrid() {
+    setMobileShowPlayer(false);
   }
 
   /* ── Тулгуурлах хэлбэрүүд ─────────────────────── */
@@ -113,82 +121,79 @@ function TvContent() {
   }
 
   const activeLogo = active.thumbnailUrl || FALLBACK_LOGO;
-  const activeIsRadio = active.kind === "RADIO";
 
   return (
     <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+16px)] pb-12 space-y-5">
 
-      {/* ── MOBILE: горизонталь channel chip strip ──────── */}
-      <div className="lg:hidden -mx-1 px-1 overflow-x-auto">
-        <div className="flex gap-2 pb-1">
-          {channels.map((ch) => {
-            const isActive = activeSlug === ch.slug;
-            const isRadio  = ch.kind === "RADIO";
-            return (
-              <button key={ch.slug} onClick={() => selectChannel(ch.slug)}
-                className={cn(
-                  "shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-[13px] font-semibold border transition-all whitespace-nowrap",
-                  isActive
-                    ? "bg-accent border-accent text-white"
-                    : "bg-card border-app text-sub hover:text-app",
-                )}>
-                {!isRadio && (
-                  <span className={cn("w-1.5 h-1.5 rounded-full",
-                    isActive ? "bg-white animate-pulse-soft" : "bg-[var(--danger)] animate-pulse-soft")} />
-                )}
-                {ch.name}
-              </button>
-            );
-          })}
+      {/* ── MOBILE: суваг сонгоогүй үед — logo + одоо гарч буй хөтөлбөр (нэг мөр) ── */}
+      {!mobileShowPlayer && (
+        <div className="lg:hidden">
+          <div className="rounded-xl overflow-hidden bg-card">
+            {channels.map((ch, i) => {
+              const logo  = ch.thumbnailUrl || FALLBACK_LOGO;
+              const onAir = epgChannels.find((c) => c.slug === ch.slug)?.programs
+                .find((p) => new Date(p.startTime) <= now && new Date(p.endTime) > now);
+              const isActive = activeSlug === ch.slug;
+              return (
+                <button key={ch.slug} onClick={() => selectChannel(ch.slug)}
+                  className={cn(
+                    "w-full flex items-center gap-4 px-3 py-3.5 text-left active:opacity-70 transition-colors",
+                    i > 0 && "border-t border-[var(--border)]",
+                    isActive && "bg-card-hover",
+                  )}>
+                  <div className="relative h-14 w-20 rounded-md overflow-hidden bg-black shrink-0">
+                    <Image src={logo} alt={ch.name} fill sizes="80px" className="object-contain p-1.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold text-muted truncate">{ch.name}</p>
+                    {onAir ? (
+                      <div className="flex items-baseline gap-2.5 mt-0.5">
+                        <span className="text-[14px] font-bold text-app tabular-nums shrink-0">
+                          {fmtTime(onAir.startTime)}
+                        </span>
+                        <span className="text-[14px] text-app truncate">{onAir.title}</span>
+                      </div>
+                    ) : (
+                      <p className="text-[13px] text-muted mt-0.5">—</p>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* ── PLAYER + sidebar (desktop only) ─────────── */}
-      <section className="grid lg:grid-cols-[1fr_320px] gap-5">
+      {/* ── PLAYER + sidebar — desktop үргэлж, mobile зөвхөн суваг сонгосон үед ── */}
+      <section className={cn("grid lg:grid-cols-[1fr_320px] gap-5", !mobileShowPlayer && "hidden lg:grid")}>
         {/* Player */}
         <div className="space-y-3">
+          {/* Mobile-only: бүх суваг руу буцах */}
+          <button onClick={backToGrid}
+            className="lg:hidden inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub hover:text-app transition-colors">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+            {lang === "mn" ? "Бүх суваг" : "All channels"}
+          </button>
+
           {canPlay === null ? (
             <Skeleton className="aspect-video w-full rounded-xl" />
           ) : canPlay && streamUrl ? (
-            <LivePlayer streamUrl={streamUrl} channelName={active.name} poster={active.thumbnailUrl ?? undefined} />
+            <LivePlayer
+              streamUrl={streamUrl}
+              channelName={active.name}
+              channelLogo={activeLogo}
+              poster={active.thumbnailUrl ?? undefined}
+              programTitle={currentProgram?.title}
+              programLabel={currentProgram
+                ? `${fmtTime(currentProgram.startTime)} – ${fmtTime(currentProgram.endTime)}`
+                : undefined}
+              programProgress={currentProgram ? progressPct(currentProgram) : undefined}
+              programStartTime={currentProgram?.startTime}
+              programEndTime={currentProgram?.endTime}
+            />
           ) : (
             <UpgradePrompt kind="live-tv" backdrop={active.thumbnailUrl ?? undefined} />
           )}
-
-          {/* Channel header */}
-          <div className="flex items-center gap-3 surface-base rounded-xl p-3.5">
-            <div className="relative h-10 w-16 sm:h-11 sm:w-20 rounded-md overflow-hidden bg-black shrink-0">
-              <Image src={activeLogo} alt={active.name} fill sizes="80px" className="object-contain" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-app truncate">{active.name}</h2>
-                {activeIsRadio && (
-                  <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-card text-muted">
-                    {lang === "mn" ? "Радио" : "Radio"}
-                  </span>
-                )}
-              </div>
-              {currentProgram ? (
-                <p className="text-sm text-sub mt-0.5 truncate">
-                  {currentProgram.title}
-                  <span className="text-muted ml-2 text-xs hidden sm:inline">
-                    {fmtTime(currentProgram.startTime)} – {fmtTime(currentProgram.endTime)}
-                  </span>
-                </p>
-              ) : (
-                <p className="text-sm text-muted mt-0.5">
-                  {activeIsRadio ? (lang === "mn" ? "Радио" : "Radio") : t("channels")}
-                </p>
-              )}
-              {currentProgram && (
-                <div className="mt-2 h-1 bg-input rounded-full overflow-hidden">
-                  <div className="h-full bg-accent rounded-full transition-all"
-                    style={{ width: `${progressPct(currentProgram)}%` }} />
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* Channels list (DESKTOP sidebar only — mobile-аас chip ribbon ашиглана) */}
@@ -224,8 +229,8 @@ function TvContent() {
         </aside>
       </section>
 
-      {/* ── TABS: Өнөөдрийн хөтөлбөр / EPG ──────────── */}
-      <section>
+      {/* ── TABS: Өнөөдрийн хөтөлбөр / EPG (mobile-д grid view үед нуугдана) ─── */}
+      <section className={cn(!mobileShowPlayer && "hidden lg:block")}>
         <div className="flex items-center justify-between mb-3">
           <div className="inline-flex bg-card p-1 rounded-xl border border-app gap-1">
             {(["today", "epg"] as Tab[]).map((tb) => (

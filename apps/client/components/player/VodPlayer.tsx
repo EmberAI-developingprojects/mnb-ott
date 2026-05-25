@@ -99,6 +99,8 @@ export function VodPlayer({
   const [showControls, setShowControls] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [qualities, setQualities] = useState<string[]>([]);
+  /* Seek bar hover (0..1 ratio of width) — YouTube-style time + thumbnail tooltip */
+  const [seekHover, setSeekHover] = useState<number | null>(null);
 
   // Явцыг хадгалах — 3 секундын дебоунс. Хэрэглэгчид саадгүй болохын тулд
   // алдааг toast-аар бус, dev console-руу л бичнэ. Олон тооны fail тохиолдвол
@@ -342,19 +344,43 @@ export function VodPlayer({
             )}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Progress bar */}
+            {/* Progress bar + YouTube-style hover preview (thumbnail + цаг) */}
             <div className="mb-3 group/seek">
               <div className="relative h-1 group-hover/seek:h-1.5 transition-all rounded-full bg-white/20 cursor-pointer"
                 onClick={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect();
                   handleSeek(((e.clientX - rect.left) / rect.width) * total);
                 }}
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                  setSeekHover(ratio);
+                }}
+                onMouseLeave={() => setSeekHover(null)}
               >
-                <div className="h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
+                {/* Hover prefix (YouTube саарал гүйлгэх hint) */}
+                {seekHover !== null && (
+                  <div className="absolute inset-y-0 left-0 bg-white/30 rounded-full pointer-events-none"
+                    style={{ width: `${seekHover * 100}%` }} />
+                )}
+                <div className="h-full bg-primary rounded-full pointer-events-none" style={{ width: `${progress}%` }} />
                 <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow
-                  opacity-0 group-hover/seek:opacity-100 transition-opacity"
+                  opacity-0 group-hover/seek:opacity-100 transition-opacity pointer-events-none"
                   style={{ left: `${progress}%`, transform: "translate(-50%, -50%)" }}
                 />
+
+                {/* Hover tooltip — thumbnail + цаг */}
+                {seekHover !== null && total > 0 && (
+                  <div className="absolute bottom-full mb-3 -translate-x-1/2 pointer-events-none flex flex-col items-center"
+                    style={{ left: `${seekHover * 100}%` }}>
+                    <div className="relative w-40 aspect-video rounded-md overflow-hidden bg-black ring-1 ring-white/20 shadow-xl mb-1.5">
+                      <Image src={thumbnailUrl} alt="" fill sizes="160px" className="object-cover" />
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded bg-black/85 text-white text-[11px] font-mono tabular-nums">
+                      {formatDuration(Math.floor(seekHover * total))}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

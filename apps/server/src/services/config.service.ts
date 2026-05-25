@@ -23,8 +23,9 @@ export async function getConfig(key: string): Promise<string | null> {
 
 export async function getConfigNumber(key: string, fallback: number): Promise<number> {
   const val = await getConfig(key);
+  if (val == null || val === "") return fallback;
   const n = Number(val);
-  return isNaN(n) ? fallback : n;
+  return Number.isFinite(n) ? n : fallback;
 }
 
 export async function updateConfig(key: string, value: string): Promise<void> {

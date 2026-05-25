@@ -74,6 +74,31 @@ export async function createVodInvoice(
   price:  number,
   title?: string,
 ): Promise<VodInvoiceMockResult | VodInvoiceLiveResult> {
+  /* Bundle items нь YouTube ID хэлбэрээр ирдэг (classifyContent дотор pool-оос).
+     Purchase.vodId нь VodContent.id FK тул tomorrow YouTube ID-аар Purchase
+     үүсгэх боломжгүй. Шийдэл: 11-char YouTube ID байвал VodContent stub
+     auto-upsert хийнэ — id-г YouTube ID-тай адил болгож хадгална. */
+  const isYoutubeId = /^[a-zA-Z0-9_-]{11}$/.test(vodId);
+  if (isYoutubeId) {
+    await prisma.vodContent.upsert({
+      where:  { id: vodId },
+      update: {},
+      create: {
+        id:    vodId,
+        title: title ?? "YouTube видео",
+        type:  "FREE",
+        price,
+      },
+    });
+  } else {
+    const vod = await prisma.vodContent.findUnique({
+      where: { id: vodId }, select: { id: true },
+    });
+    if (!vod) {
+      throw new AppError("Видео олдсонгүй", 404, "VOD_NOT_FOUND");
+    }
+  }
+
   const owned = await prisma.purchase.findUnique({
     where: { userId_vodId: { userId, vodId } },
   });
