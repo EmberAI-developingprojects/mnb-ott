@@ -2,10 +2,14 @@ import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import * as authService from "../services/auth.service";
 
+/* Production-д client (Vercel) болон server (Render) өөр domain дээр суудаг тул
+   refresh cookie cross-site явах ёстой → sameSite "none" + secure заавал.
+   Local dev (http) дээр "none" ажиллахгүй тул "lax" руу автоматаар буцна. */
+const CROSS_SITE = process.env.NODE_ENV === "production";
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure:   process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  secure:   CROSS_SITE,
+  sameSite: (CROSS_SITE ? "none" : "lax") as "none" | "lax",
   maxAge:   30 * 24 * 60 * 60 * 1000, // 30 days
   path:     "/",
 };
