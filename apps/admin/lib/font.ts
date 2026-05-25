@@ -4,8 +4,8 @@ import { Manrope } from "next/font/google";
    АДМИН APP-ИЙН FONT — НЭГДСЭН ТОХИРГОО
 
    Font солих бол:
-   1. Дээрх `Inter` import-ийг сольж (жишээ нь `Manrope`, `IBM_Plex_Sans`)
-   2. `font = Inter({...})` хэсгийн `Inter`-ийг шинэ нэрээр сольж
+   1. Дээрх `Manrope` import-ийг сольж (жишээ нь `Inter`, `IBM_Plex_Sans`)
+   2. `font = Manrope({...})` хэсгийн `Manrope`-ийг шинэ нэрээр сольж
    3. Client app-ын `apps/client/lib/font.ts` файлд адил өөрчилнө
 
    ⚠️ Cyrillic SUPPORT ЗААВАЛ:
