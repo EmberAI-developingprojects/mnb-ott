@@ -143,12 +143,13 @@ function StatCard({ icon: Icon, label, value, hint, tone = "default" }: {
   tone?: "default" | "danger";
 }) {
   const danger = tone === "danger";
+  /* StatCard нь зөвхөн дэлгэц — click биш. Hover state хийхгүй — дарагдах гэж хүн андуурахаас сэргийлнэ. */
   return (
-    <div className="group rounded-lg bg-surface border border-border shadow-card p-4 transition-colors duration-200 hover:border-primary/50">
+    <div className="rounded-lg bg-surface border border-border shadow-card p-4">
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs font-medium text-muted">{label}</p>
-        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors
-                          ${danger ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary group-hover:bg-primary/20"}`}>
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md
+                          ${danger ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"}`}>
           <Icon size={14} aria-hidden="true" />
         </span>
       </div>

@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/admin/PageHeader";
 import { useRoleGuard } from "@/components/admin/AuthGate";
 import { Input } from "@/components/ui/Input";
 import { Table, THead, TH, TBody, TR, TD, EmptyState } from "@/components/ui/Table";
-import { Badge } from "@/components/ui/Badge";
+import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
 import { Button } from "@/components/ui/Button";
 import { formatDate } from "@/lib/utils";
 
@@ -22,28 +22,37 @@ export default function UsersPage() {
   useRoleGuard(["ADMIN", "SUPER_ADMIN"]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<Role | "">("");
-  const [page, setPage] = useState(1);
-  const [data, setData] = useState<PaginatedResponse<User> | null>(null);
+  /* Load more pattern — items-ыг append хийнэ, filter солигдоход reset */
+  const [items, setItems]     = useState<User[]>([]);
+  const [page, setPage]       = useState(1);
+  const [total, setTotal]     = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  useEffect(() => {
-    setLoading(true);
-    const params: Record<string, string | number> = { page };
+  async function load(p: number, replace: boolean) {
+    if (replace) setLoading(true); else setLoadingMore(true);
+    const params: Record<string, string | number> = { page: p };
     if (search) params.search = search;
     if (roleFilter) params.role = roleFilter;
+    try {
+      const r = await api.get<ApiResponse<PaginatedResponse<User>>>("/api/admin/users", { params });
+      const d = r.data.data;
+      setItems((prev) => replace ? d.items : [...prev, ...d.items]);
+      setTotal(d.total); setPage(p);
+    } finally {
+      setLoading(false); setLoadingMore(false);
+    }
+  }
 
-    api.get<ApiResponse<PaginatedResponse<User>>>("/api/admin/users", { params })
-      .then((r) => setData(r.data.data))
-      .finally(() => setLoading(false));
-  }, [search, roleFilter, page]);
+  useEffect(() => { load(1, true); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [search, roleFilter]);
 
-  const totalPages = data ? Math.ceil(data.total / data.pageSize) : 0;
+  const hasMore = items.length < total;
 
   return (
     <div>
       <PageHeader
         title="Хэрэглэгчид"
-        subtitle={data ? `Нийт ${data.total.toLocaleString("mn-MN")} хэрэглэгч` : ""}
+        subtitle={total ? `Нийт ${total.toLocaleString("mn-MN")} хэрэглэгч` : ""}
       />
 
       {/* Filters */}
@@ -53,14 +62,14 @@ export default function UsersPage() {
           <Input
             placeholder="Нэр, утас, и-мэйлээр хайх..."
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
 
         <select
           value={roleFilter}
-          onChange={(e) => { setRoleFilter(e.target.value as Role | ""); setPage(1); }}
+          onChange={(e) => setRoleFilter(e.target.value as Role | "")}
           className="h-9 px-3 rounded-md text-sm bg-surface border border-border focus:outline-none focus:border-primary"
         >
           <option value="">Бүх ролиуд</option>
@@ -74,7 +83,7 @@ export default function UsersPage() {
         <div className="bg-surface border border-border rounded-lg shadow-card p-12 text-center text-sm text-muted">
           Уншиж байна...
         </div>
-      ) : !data || data.items.length === 0 ? (
+      ) : items.length === 0 ? (
         <EmptyState message="Тохирох хэрэглэгч олдсонгүй" />
       ) : (
         <>
@@ -84,38 +93,24 @@ export default function UsersPage() {
               <TH>Холбоо</TH>
               <TH>Багц</TH>
               <TH>Роль</TH>
-              <TH>Төлөв</TH>
               <TH>Бүртгүүлсэн</TH>
               <TH className="text-right">Үйлдэл</TH>
             </THead>
             <TBody>
-              {data.items.map((u) => (
-                <TR key={u.id}>
+              {items.map((u) => (
+                /* Блоктой хэрэглэгчийн мөр улаан өнгөтэй — Badge оронд бүхэл мөр */
+                <TR key={u.id} className={u.isBlocked ? "bg-danger/5 text-danger" : undefined}>
                   <TD>
-                    <p className="font-medium text-fg">{u.name ?? "—"}</p>
+                    <p className="font-medium">{u.name ?? "—"}</p>
                   </TD>
-                  <TD className="text-muted">
+                  <TD className={u.isBlocked ? "" : "text-muted"}>
                     {u.email ?? u.phone ?? "—"}
                   </TD>
-                  <TD>
-                    {u.subscription ? (
-                      <Badge tone="primary">{u.subscription.planType}</Badge>
-                    ) : <span className="text-muted text-xs">—</span>}
+                  <TD className="text-xs font-mono uppercase tracking-wider">
+                    {u.subscription?.planType ?? <span className="text-muted">—</span>}
                   </TD>
-                  <TD>
-                    <Badge tone={u.role === "USER" ? "neutral" : "primary"}>
-                      {ROLE_LABEL[u.role]}
-                    </Badge>
-                  </TD>
-                  <TD>
-                    {u.isBlocked
-                      ? <Badge tone="danger">Блоктой</Badge>
-                      : u.isVerified
-                        ? <Badge tone="success">Идэвхтэй</Badge>
-                        : <Badge tone="warning">Баталгаажаагүй</Badge>
-                    }
-                  </TD>
-                  <TD className="text-muted text-xs">{formatDate(u.createdAt)}</TD>
+                  <TD className="text-xs">{ROLE_LABEL[u.role]}</TD>
+                  <TD className={u.isBlocked ? "text-xs" : "text-muted text-xs"}>{formatDate(u.createdAt)}</TD>
                   <TD className="text-right">
                     <Link href={`/users/${u.id}`}>
                       <Button variant="ghost" size="sm">Дэлгэрэнгүй</Button>
@@ -126,20 +121,8 @@ export default function UsersPage() {
             </TBody>
           </Table>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 text-sm">
-              <span className="text-muted">
-                Хуудас {page} / {totalPages}
-              </span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page === 1}
-                  onClick={() => setPage((p) => p - 1)}>Өмнөх</Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}>Дараах</Button>
-              </div>
-            </div>
-          )}
+          <LoadMoreButton hasMore={hasMore} loading={loadingMore}
+            onMore={() => load(page + 1, false)} />
         </>
       )}
     </div>

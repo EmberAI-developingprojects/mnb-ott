@@ -20,6 +20,7 @@ export async function broadcastNotification(actorUserId: string, data: {
   body:        string;
   type?:       "SYSTEM" | "PROMO" | "CONTENT";
   planFilter?: ("BASIC" | "TV" | "VOD" | "COMBO")[];
+  link?:       string;
 }, ip?: string) {
   /* Idэвхгүй (isBlocked=true) хэрэглэгчдэд мэдэгдэл явуулахгүй */
   const userIds = data.planFilter && data.planFilter.length > 0
@@ -45,15 +46,59 @@ export async function broadcastNotification(actorUserId: string, data: {
         type:  data.type ?? "SYSTEM",
         title: data.title,
         body:  data.body,
+        link:  data.link || null,
       })),
     });
   }
 
   await audit({
     actorUserId, targetType: "notification", action: "BROADCAST",
-    after: { recipients: userIds.length, title: data.title, planFilter: data.planFilter },
+    after: {
+      recipients: userIds.length,
+      title:      data.title,
+      body:       data.body,
+      type:       data.type ?? "SYSTEM",
+      planFilter: data.planFilter,
+      link:       data.link,
+    },
     ip,
   });
 
   return { sent: userIds.length };
+}
+
+/* Илгээсэн broadcast-ын түүх — audit log-аас уншина (тус бүрчилсэн storage гэхгүй,
+   audit нь аль хэдийн actor + timestamp + payload-ыг хадгалдаг). */
+export async function listSentBroadcasts(limit = 20, cursor?: string) {
+  const rows = await prisma.auditLog.findMany({
+    where:   { targetType: "notification", action: "BROADCAST" },
+    orderBy: { createdAt: "desc" },
+    take:    limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    include: { actor: { select: { id: true, name: true, email: true, phone: true } } },
+  });
+
+  const nextCursor = rows.length > limit ? rows.pop()!.id : null;
+
+  const items = rows.map((r) => {
+    const after = (r.after ?? {}) as Record<string, unknown>;
+    return {
+      id:         r.id,
+      sentAt:     r.createdAt,
+      actor:      r.actor ? {
+        id:    r.actor.id,
+        name:  r.actor.name,
+        email: r.actor.email,
+        phone: r.actor.phone,
+      } : null,
+      title:      String(after.title ?? ""),
+      body:       String(after.body ?? ""),
+      type:       String(after.type ?? "SYSTEM"),
+      link:       (after.link as string | undefined) ?? null,
+      planFilter: (after.planFilter as string[] | undefined) ?? null,
+      recipients: Number(after.recipients ?? 0),
+    };
+  });
+
+  return { items, nextCursor };
 }

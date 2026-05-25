@@ -1,4 +1,6 @@
 import nodemailer, { type Transporter } from "nodemailer";
+import { logger } from "../lib/logger";
+import { AppError } from "../middleware/error.middleware";
 
 /* SMTP_* env-ийг lazy байдлаар ачаалж, нэг л transporter дахин ашиглана.
    EMAIL_MOCK=true үед, эсвэл SMTP_HOST/USER/PASS дутуу үед console.log-р fallback. */
@@ -31,17 +33,48 @@ export async function sendEmail(opts: {
   text?: string;
 }): Promise<void> {
   if (isMock()) {
+    logger.warn({ to: opts.to, subject: opts.subject },
+      "[EMAIL MOCK] SMTP_* env дутуу — имэйл илгээгдээгүй (console-д л харагдана)");
     console.log(`[EMAIL MOCK] → ${opts.to} :: ${opts.subject}\n${opts.text ?? opts.html}`);
     return;
   }
   const from = process.env.SMTP_FROM ?? process.env.SMTP_USER!;
-  await getTransporter().sendMail({
-    from,
-    to: opts.to,
-    subject: opts.subject,
-    html: opts.html,
-    text: opts.text,
-  });
+  try {
+    await getTransporter().sendMail({
+      from,
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.html,
+      text: opts.text,
+    });
+  } catch (e) {
+    /* Хэрэглэгчид ойлгомжтой алдааны код буцаах + log дотор бүрэн trace.
+       Хамгийн түгээмэл Gmail кейс: "Username and Password not accepted" → App Password
+       хэрэглээгүй (заавал 2FA + App Password шаардлагатай 2022 оноос хойш). */
+    const err = e as Error & { code?: string; response?: string; responseCode?: number };
+    logger.error({
+      smtpCode:     err.code,
+      smtpResponse: err.response,
+      smtpStatus:   err.responseCode,
+      err:          err.message,
+      to:           opts.to,
+      from,
+    }, "Email send failed");
+
+    const isAuthError =
+      err.responseCode === 535 ||
+      err.code === "EAUTH" ||
+      (err.response ?? "").includes("5.7.8") ||
+      (err.message ?? "").includes("Username and Password not accepted");
+
+    if (isAuthError) {
+      throw new AppError(
+        "Email server-ийн нэвтрэлт амжилтгүй (Gmail App Password шалгана уу)",
+        500, "EMAIL_AUTH_FAILED",
+      );
+    }
+    throw new AppError("Email илгээгдсэнгүй, дахин оролдоно уу", 500, "EMAIL_SEND_FAILED");
+  }
 }
 
 /* Брэндлэгдсэн OTP имэйл — purpose: "register" | "reset" | "login" */

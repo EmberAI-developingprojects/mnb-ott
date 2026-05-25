@@ -10,6 +10,7 @@ import { useRoleGuard } from "@/components/admin/AuthGate";
 import { Button } from "@/components/ui/Button";
 import { Input, Field } from "@/components/ui/Input";
 import { Table, THead, TH, TBody, TR, TD, EmptyState } from "@/components/ui/Table";
+import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
 import { toast } from "@/components/ui/Toast";
 import { Badge } from "@/components/ui/Badge";
 import { formatDateTime } from "@/lib/utils";
@@ -129,9 +130,12 @@ export default function AuditPage() {
   const [range, setRange]   = useState<RangeKey>("7"); /* default = сүүлийн 7 хоног */
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo]     = useState("");
-  const [page, setPage]     = useState(1);
-  const [data, setData]     = useState<PaginatedResponse<AuditLog> | null>(null);
+  /* Page биш — items array-г load more-аар өргөтгөнө. Filter/range солигдсон үед reset. */
+  const [items, setItems]     = useState<AuditLog[]>([]);
+  const [page, setPage]       = useState(1);
+  const [total, setTotal]     = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [openId, setOpenId]   = useState<string | null>(null);
 
   /* Идэвхтэй хугацааны from/to (ISO) — preset эсвэл custom-аас */
@@ -140,22 +144,30 @@ export default function AuditPage() {
     [range, customFrom, customTo],
   );
 
-  useEffect(() => { load(); }, [filter, from, to, page]);
+  /* Filter/range солигдоход page=1-ээс шинээр ачаална (replace) */
+  useEffect(() => { setPage(1); load(1, true); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [filter, from, to]);
 
-  async function load() {
-    setLoading(true);
-    const params: Record<string, string | number> = { page };
+  async function load(p: number, replace: boolean) {
+    if (replace) setLoading(true); else setLoadingMore(true);
+    const params: Record<string, string | number> = { page: p };
     if (filter) params.targetType = filter;
     if (from)   params.from = from;
     if (to)     params.to   = to;
-    const r = await api.get<ApiResponse<PaginatedResponse<AuditLog>>>("/api/admin/audit", { params });
-    setData(r.data.data);
-    setLoading(false);
+    try {
+      const r = await api.get<ApiResponse<PaginatedResponse<AuditLog>>>("/api/admin/audit", { params });
+      const d = r.data.data;
+      setItems((prev) => replace ? d.items : [...prev, ...d.items]);
+      setTotal(d.total); setPage(p);
+    } finally {
+      setLoading(false); setLoadingMore(false);
+    }
   }
+
+  const loadedCount = items.length;
+  const hasMore = loadedCount < total;
 
   function selectRange(next: RangeKey) {
     setRange(next);
-    setPage(1);
   }
 
   /* CSV export — token-ыг URL-руу хийхгүйн тулд fetch + blob ашиглана */
@@ -179,7 +191,6 @@ export default function AuditPage() {
     URL.revokeObjectURL(url);
   }
 
-  const totalPages = data ? Math.ceil(data.total / data.pageSize) : 0;
 
   return (
     <div>
@@ -232,25 +243,25 @@ export default function AuditPage() {
           <div className="flex flex-wrap items-end gap-3 border-t border-border pt-3">
             <Field label="Эхлэх огноо">
               <Input type="date" value={customFrom} max={customTo || undefined}
-                onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }} className="sm:w-44" />
+                onChange={(e) => setCustomFrom(e.target.value)} className="sm:w-44" />
             </Field>
             <Field label="Дуусах огноо">
               <Input type="date" value={customTo} min={customFrom || undefined}
-                onChange={(e) => { setCustomTo(e.target.value); setPage(1); }} className="sm:w-44" />
+                onChange={(e) => setCustomTo(e.target.value)} className="sm:w-44" />
             </Field>
           </div>
         )}
       </div>
 
-      {!loading && data && data.items.length > 0 && (
+      {!loading && items.length > 0 && (
         <p className="text-xs text-muted mb-3" aria-live="polite">
-          Нийт <span className="font-semibold text-fg tabular-nums">{data.total.toLocaleString("mn-MN")}</span> үйлдэл
+          Нийт <span className="font-semibold text-fg tabular-nums">{total.toLocaleString("mn-MN")}</span> үйлдлээс <span className="font-semibold text-fg tabular-nums">{loadedCount.toLocaleString("mn-MN")}</span>
         </p>
       )}
 
       {loading ? (
         <p className="text-sm text-muted">Уншиж байна…</p>
-      ) : !data || data.items.length === 0 ? (
+      ) : items.length === 0 ? (
         <EmptyState message="Тохирох үйлдэл олдсонгүй" />
       ) : (
         <>
@@ -262,7 +273,7 @@ export default function AuditPage() {
               <TH></TH>
             </THead>
             <TBody>
-              {data.items.map((a) => {
+              {items.map((a) => {
                 const open = openId === a.id;
                 const sentence = describeAction(a);
                 const hasDetail = Boolean(a.before || a.after);
@@ -309,17 +320,8 @@ export default function AuditPage() {
             </TBody>
           </Table>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 text-sm">
-              <span className="text-muted">Хуудас {page} / {totalPages}</span>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled={page === 1}
-                  onClick={() => setPage((p) => p - 1)}>Өмнөх</Button>
-                <Button variant="outline" size="sm" disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}>Дараах</Button>
-              </div>
-            </div>
-          )}
+          <LoadMoreButton hasMore={hasMore} loading={loadingMore}
+            onMore={() => load(page + 1, false)} />
         </>
       )}
     </div>

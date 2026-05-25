@@ -247,8 +247,18 @@ adminRouter.post("/notifications/broadcast", requireAuth, requireRole(...CONTENT
     body:  z.string().min(1),
     type:  z.enum(["SYSTEM", "PROMO", "CONTENT"]).optional(),
     planFilter: z.array(z.enum(["BASIC", "TV", "VOD", "COMBO"])).optional(),
+    link:  z.string().trim().max(500).optional(),
   }).parse(req.body);
   return send(admin.broadcastNotification(req.user!.userId, body, ip(req)), res, next);
+});
+
+/* Илгээгдсэн broadcast-уудын түүх (audit log-аас) */
+adminRouter.get("/notifications/broadcasts", requireAuth, requireRole(...CONTENT_ROLES), (req, res, next) => {
+  const q = z.object({
+    limit:  z.coerce.number().int().min(1).max(50).default(20),
+    cursor: z.string().optional(),
+  }).parse(req.query);
+  return send(admin.listSentBroadcasts(q.limit, q.cursor), res, next);
 });
 
 /* ─── AUDIT LOG ─────────────────────────────────────────── */

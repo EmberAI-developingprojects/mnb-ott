@@ -28,5 +28,5 @@ export {
 } from "./payments.service";
 
 export {
-  broadcastNotification,
+  broadcastNotification, listSentBroadcasts,
 } from "./notifications.service";

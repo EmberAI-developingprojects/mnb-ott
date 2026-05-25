@@ -108,7 +108,8 @@ export default function UserDetailPage() {
 
       <PageHeader
         title={user.name ?? user.email ?? user.phone ?? "Хэрэглэгч"}
-        subtitle={`ID: ${user.id}`}
+        /* Хэрэв title нэр бол subtitle нь холбоо; нэр байхгүй бол subtitle хоосон */
+        subtitle={user.name ? (user.email ?? user.phone ?? undefined) : undefined}
         action={
           canManage ? (
             <div className="flex gap-2">
