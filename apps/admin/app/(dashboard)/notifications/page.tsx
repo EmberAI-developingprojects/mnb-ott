@@ -213,7 +213,7 @@ export default function NotificationsPage() {
                     <Clock size={11} /> {formatDate(h.sentAt)}
                   </span>
                   <span className="text-fg font-semibold tabular-nums">
-                    {h.recipients.toLocaleString("mn-MN")} хүрэлсэн
+                    {h.recipients.toLocaleString("mn-MN")} хэрэглэгчид илгээгдсэн
                   </span>
                   {h.planFilter && h.planFilter.length > 0 && (
                     <span className="text-muted">→ {h.planFilter.join(", ")}</span>
