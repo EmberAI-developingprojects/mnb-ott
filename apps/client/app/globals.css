@@ -30,18 +30,18 @@
   --border-strong:rgba(255,255,255,0.12);
 
   /* Brand — hex format CSS-д, RGB channels Tailwind opacity-д хэрэгтэй.
-     Dark theme: hover-ийг ТОД болгож visual feedback өгнө (хуучин #0055c8). */
-  --primary:        #0046A5;
-  --primary-hover:  #0055c8;
-  --primary-soft:   rgba(0,70,165,0.12);
-  --accent:         #0046A5;      /* МНБ brand blue — Watch CTA, highlight */
-  --accent-hover:   #0055c8;      /* Bright hover for dark theme */
-  --accent-soft:    rgba(0,70,165,0.15);
-  --accent-rgb:        0 70 165;
-  --accent-hover-rgb:  0 85 200;
-  --danger:         #CF1E28;
-  --danger-soft:    rgba(207,30,40,0.12);
-  --danger-rgb:        207 30 40;
+     Dark theme: hover-ийг ТОД болгож visual feedback өгнө (хуучин #0077cc). */
+  --primary:        #0066B2;
+  --primary-hover:  #0077cc;
+  --primary-soft:   rgba(0,102,178,0.12);
+  --accent:         #0066B2;      /* МНБ brand blue — Watch CTA, highlight */
+  --accent-hover:   #0077cc;      /* Bright hover for dark theme */
+  --accent-soft:    rgba(0,102,178,0.15);
+  --accent-rgb:        0 102 178;
+  --accent-hover-rgb:  0 119 204;
+  --danger:         #DA2031;
+  --danger-soft:    rgba(218,32,49,0.12);
+  --danger-rgb:        218 32 49;
   --success:        #16a34a;
   --warning:        #d97706;
 
@@ -50,13 +50,13 @@
   --shadow-sm:    0 1px 2px rgba(0,0,0,0.4);
   --shadow:       0 1px 3px rgba(0,0,0,0.4), 0 8px 24px -6px rgba(0,0,0,0.5);
   --shadow-lg:    0 8px 32px -8px rgba(0,0,0,0.6);
-  --shadow-glow:  0 0 0 1px rgba(0,70,165,0.35), 0 8px 32px -8px rgba(0,70,165,0.45);
+  --shadow-glow:  0 0 0 1px rgba(0,102,178,0.35), 0 8px 32px -8px rgba(0,102,178,0.45);
 
   /* Cinematic gradients */
   --grad-hero:    linear-gradient(90deg, rgba(11,12,16,0.95) 0%, rgba(11,12,16,0.7) 40%, rgba(11,12,16,0.15) 75%, transparent 100%);
   --grad-card:    linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.85) 100%);
-  --grad-amber:   linear-gradient(135deg, #0046A5 0%, #002d6b 100%);
-  --grad-brand:   linear-gradient(135deg, #0046A5 0%, #002d6b 100%);
+  --grad-amber:   linear-gradient(135deg, #0066B2 0%, #003366 100%);
+  --grad-brand:   linear-gradient(135deg, #0066B2 0%, #003366 100%);
 
   /* Sizing */
   --header-h:     72px;
@@ -87,17 +87,17 @@ html.light {
   --border:       rgba(21,22,28,0.08);
   --border-strong:rgba(21,22,28,0.15);
 
-  --primary:        #0046A5;
-  --primary-hover:  #003a8c;
-  --primary-soft:   rgba(0,70,165,0.08);
-  --accent:         #0046A5;
-  --accent-hover:   #003a8c;
-  --accent-soft:    rgba(0,70,165,0.10);
-  --accent-rgb:        0 70 165;
-  --accent-hover-rgb:  0 58 140;
-  --danger:         #CF1E28;
-  --danger-soft:    rgba(207,30,40,0.08);
-  --danger-rgb:        207 30 40;
+  --primary:        #0066B2;
+  --primary-hover:  #004d8c;
+  --primary-soft:   rgba(0,102,178,0.08);
+  --accent:         #0066B2;
+  --accent-hover:   #004d8c;
+  --accent-soft:    rgba(0,102,178,0.10);
+  --accent-rgb:        0 102 178;
+  --accent-hover-rgb:  0 77 140;
+  --danger:         #DA2031;
+  --danger-soft:    rgba(218,32,49,0.08);
+  --danger-rgb:        218 32 49;
   --success:        #15803d;
   --warning:        #b45309;
 
@@ -105,12 +105,12 @@ html.light {
   --shadow-sm:    0 1px 2px rgba(21,22,28,0.04);
   --shadow:       0 1px 3px rgba(21,22,28,0.05), 0 8px 24px -8px rgba(21,22,28,0.12);
   --shadow-lg:    0 12px 40px -10px rgba(21,22,28,0.18);
-  --shadow-glow:  0 0 0 1px rgba(0,70,165,0.20), 0 12px 32px -8px rgba(0,70,165,0.30);
+  --shadow-glow:  0 0 0 1px rgba(0,102,178,0.20), 0 12px 32px -8px rgba(0,102,178,0.30);
 
   --grad-hero:    linear-gradient(90deg, rgba(244,244,239,0.95) 0%, rgba(244,244,239,0.7) 40%, rgba(244,244,239,0.15) 75%, transparent 100%);
   --grad-card:    linear-gradient(180deg, transparent 30%, rgba(20,21,28,0.75) 100%);
-  --grad-amber:   linear-gradient(135deg, #0046A5 0%, #003a8c 100%);
-  --grad-brand:   linear-gradient(135deg, #0046A5 0%, #003a8c 100%);
+  --grad-amber:   linear-gradient(135deg, #0066B2 0%, #004d8c 100%);
+  --grad-brand:   linear-gradient(135deg, #0066B2 0%, #004d8c 100%);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -181,7 +181,7 @@ html.light {
   .input-base:focus {
     border-color: var(--primary);
     outline: none;
-    box-shadow: 0 0 0 2px rgb(0 70 165 / 0.12);
+    box-shadow: 0 0 0 2px rgb(0 102 178 / 0.12);
   }
   .input-base:hover:not(:focus) { border-color: var(--border-strong); }
 

@@ -69,7 +69,7 @@ export default function ProfilePage() {
                       value === "dark" ? "border-white/10 bg-[#0b0f17]" : "border-black/10 bg-[#eef1f6]",
                     )}
                   >
-                    <span className={cn("h-7 w-1.5 rounded-full", value === "dark" ? "bg-[#3b82f6]" : "bg-[#0046A5]")} />
+                    <span className={cn("h-7 w-1.5 rounded-full", value === "dark" ? "bg-[#3b82f6]" : "bg-[#0066B2]")} />
                     <div className="flex-1 space-y-1.5">
                       <span className={cn("block h-1.5 w-3/4 rounded-full", value === "dark" ? "bg-white/30" : "bg-black/25")} />
                       <span className={cn("block h-1.5 w-1/2 rounded-full", value === "dark" ? "bg-white/15" : "bg-black/15")} />

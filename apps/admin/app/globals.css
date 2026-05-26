@@ -21,9 +21,9 @@
   --c-muted-strong:  148 163 184;  /* #94a3b8 — faintest text/icons */
   --c-border:        214 220 230;  /* #d6dce6 */
   --c-border-strong: 188 198 214;  /* #bcc6d6 */
-  --c-primary:         0  70 165;  /* #0046A5 brand blue */
-  --c-primary-hover:   0  85 200;  /* #0055c8 */
-  --c-danger:        207  30  40;  /* #CF1E28 */
+  --c-primary:         0 102 178;  /* #0066B2 brand blue */
+  --c-primary-hover:   0 119 204;  /* #0077cc */
+  --c-danger:        218 32 49;  /* #DA2031 */
   --c-success:        22 163  74;  /* #16a34a */
   --c-warning:       217 119   6;  /* #d97706 */
 

@@ -66,7 +66,7 @@ export default function DevicesPage() {
                   <p className="text-muted text-xs mt-0.5">{time}</p>
                 </div>
                 <button onClick={() => handleRemove(s.id)} disabled={removing === s.id}
-                  className="text-xs text-muted hover:text-[#CF1E28] transition-colors disabled:opacity-40">
+                  className="text-xs text-muted hover:text-[#DA2031] transition-colors disabled:opacity-40">
                   {removing === s.id ? "..." : t("device_signout")}
                 </button>
               </div>

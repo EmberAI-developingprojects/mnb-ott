@@ -73,7 +73,7 @@ export default function ShowPage() {
 
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-muted">
-        <Link href="/vod" className="hover:text-app transition-colors">Архив</Link>
+        <Link href="/archive" className="hover:text-app transition-colors">Архив</Link>
         <span className="text-muted">/</span>
         <span className="text-app">{show.name}</span>
       </nav>
@@ -145,8 +145,8 @@ export default function ShowPage() {
                   className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl hover:bg-[var(--border)] transition-colors"
                   title={saved ? "Хасах" : "Дуртай жагсаалтад нэмэх"}>
                   <svg width="22" height="22" viewBox="0 0 24 24"
-                    fill={saved ? "#CF1E28" : "none"}
-                    stroke={saved ? "#CF1E28" : "currentColor"}
+                    fill={saved ? "#DA2031" : "none"}
+                    stroke={saved ? "#DA2031" : "currentColor"}
                     strokeWidth="1.8">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                   </svg>

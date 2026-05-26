@@ -145,11 +145,12 @@ export function Header() {
 
         {/* Brand text logo */}
         <Link href="/" className="shrink-0 flex items-center mr-4">
-          <span
+          {/* <span
             className="text-[22px] md:text-[24px] font-black tracking-[0.02em] leading-none"
-            style={{ color: "#CF1E28" }}>
-            M<span style={{ color: "#0046A5" }}>N</span>B
-          </span>
+            style={{ color: "#DA2031" }}>
+            M<span style={{ color: "#0066B2" }}>N</span>B
+          </span> */}
+            <img src="/logo.png" alt="" className="w-9 h-9 object-cover rounded" />
         </Link>
 
         {/* Desktop nav */}

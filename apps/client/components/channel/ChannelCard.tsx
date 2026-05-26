@@ -43,8 +43,8 @@ export function ChannelCard({ channel, active, onClick }: ChannelCardProps) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-app truncate">{channel.name}</p>
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#CF1E28] animate-pulse shrink-0" />
-          <span className="text-[10px] text-[#CF1E28]/70 font-semibold tracking-wider">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#DA2031] animate-pulse shrink-0" />
+          <span className="text-[10px] text-[#DA2031]/70 font-semibold tracking-wider">
             {channel.isRadio ? "RADIO" : "LIVE"}
           </span>
         </div>

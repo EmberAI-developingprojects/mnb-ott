@@ -67,7 +67,6 @@ export default function LoginPage() {
             <span className="text-danger">B</span>
             <span className="text-muted text-xs font-semibold ml-2 tracking-wider">ADMIN</span>
           </div>
-          <p className="text-sm text-muted">МҮОНРТ OTT удирдлагын самбар</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

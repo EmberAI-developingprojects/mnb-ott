@@ -102,7 +102,7 @@ export async function sendOtpEmail(
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
         <tr><td style="padding:28px 28px 8px;">
           <div style="font-size:22px;font-weight:800;letter-spacing:0.5px;">
-            <span style="color:#CF1E28;">M</span><span style="color:#0046A5;">N</span><span style="color:#CF1E28;">B</span>
+            <span style="color:#DA2031;">M</span><span style="color:#0066B2;">N</span><span style="color:#DA2031;">B</span>
             <span style="color:#666;font-size:13px;font-weight:600;margin-left:6px;">OTT</span>
           </div>
         </td></tr>
@@ -115,7 +115,7 @@ export async function sendOtpEmail(
           </p>
         </td></tr>
         <tr><td style="padding:0 28px 22px;" align="center">
-          <div style="display:inline-block;padding:14px 28px;background:#0046A5;color:#ffffff;font-size:30px;font-weight:800;letter-spacing:10px;border-radius:10px;font-family:'SF Mono',Menlo,monospace;">
+          <div style="display:inline-block;padding:14px 28px;background:#0066B2;color:#ffffff;font-size:30px;font-weight:800;letter-spacing:10px;border-radius:10px;font-family:'SF Mono',Menlo,monospace;">
             ${code}
           </div>
         </td></tr>

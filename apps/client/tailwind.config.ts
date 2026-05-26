@@ -18,7 +18,7 @@ const config: Config = {
         "c-text":   "var(--text)",
         "c-muted":  "var(--muted)",
         "c-border": "var(--border)",
-        primary: "#0046A5",
+        primary: "#0066B2",
         /* Accent — RGB channels-аас уншиж opacity (bg-accent/90) болон theme switching дэмжинэ */
         accent:         "rgb(var(--accent-rgb) / <alpha-value>)",
         "accent-hover": "rgb(var(--accent-hover-rgb) / <alpha-value>)",

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title:       "MNB",
   description: "Монголын Үндэсний Олон Нийтийн Радио Телевизийн онлайн платформ",
   applicationName: "МНБ OTT",
-  icons: { icon: "/mnb.png" },
+  icons: { icon: "/logo.png" },
 };
 
 export const viewport: Viewport = {

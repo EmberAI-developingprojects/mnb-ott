@@ -9,13 +9,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <img src="/login.webp" alt="login"
           className="absolute inset-0 w-full h-full object-cover scale-105"
  />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(0,70,165,0.45) 0%, rgba(0,0,0,0.2) 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(0,102,178,0.45) 0%, rgba(0,0,0,0.2) 100%)" }} />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#0f172a]/70" />
 
         {/* Logo */}
         <div className="absolute top-8 left-8 flex items-center gap-3">
           <div className="relative w-9 h-9 rounded-xl overflow-hidden">
-            <Image src="/mnb.png" alt="МНБ" fill sizes="36px" className="object-contain" />
+            <Image src="/logo.png" alt="МНБ" fill sizes="36px" className="object-contain" />
           </div>
           <div>
             <p className="text-white/50 text-[10px] tracking-[0.25em] uppercase font-semibold">МҮОНРТ</p>
@@ -45,7 +45,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Mobile logo */}
         <div className="lg:hidden flex items-center gap-2.5 px-6 pt-6">
           <div className="relative w-7 h-7 rounded-lg overflow-hidden">
-            <Image src="/mnb.png" alt="МНБ" fill sizes="28px" className="object-contain" />
+            <Image src="/logo.png" alt="МНБ" fill sizes="28px" className="object-contain" />
           </div>
           <span className="text-app text-sm font-bold tracking-wide">MNB OTT</span>
         </div>

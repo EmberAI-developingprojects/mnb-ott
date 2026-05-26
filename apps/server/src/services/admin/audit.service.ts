@@ -173,7 +173,7 @@ export async function exportAuditXlsx(opts: { targetType?: string; from?: Date; 
 
   const headerRow = sheet.getRow(1);
   headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
-  headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0046A5" } };
+  headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0066B2" } };
   headerRow.alignment = { vertical: "middle", horizontal: "left" };
   headerRow.height = 22;
 

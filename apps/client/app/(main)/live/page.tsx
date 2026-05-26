@@ -89,7 +89,7 @@ export default function LivePage() {
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-bold text-app">{live?.name ?? "—"}</h1>
             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white
-              bg-[#CF1E28] px-2 py-0.5 rounded-full">
+              bg-[#DA2031] px-2 py-0.5 rounded-full">
               <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
               LIVE
             </span>
@@ -143,7 +143,7 @@ export default function LivePage() {
                     </div>
                     <div className="flex-1 min-w-0 flex items-center gap-2">
                       {isCurrent && (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-white bg-[#CF1E28] px-1.5 py-0.5 rounded-full shrink-0">
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-white bg-[#DA2031] px-1.5 py-0.5 rounded-full shrink-0">
                           <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
                           LIVE
                         </span>
