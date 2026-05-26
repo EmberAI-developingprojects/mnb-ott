@@ -23,11 +23,13 @@ export function ScrollRow({ children, center, step = 380, className }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
 
   const update = useCallback(() => {
     const el = ref.current;
     if (!el) return;
     const overflow = el.scrollWidth > el.clientWidth + 4;
+    setOverflowing(overflow);
     setCanPrev(overflow && el.scrollLeft > 4);
     setCanNext(overflow && el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
   }, []);
@@ -71,10 +73,13 @@ export function ScrollRow({ children, center, step = 380, className }: Props) {
           </svg>
         </button>
       )}
+      {/* justify-center нь overflow үед хамгийн зүүн item-ыг сөрөг scrollLeft-руу
+          гаргадаг — scroll буцаахад анхны card нуугдана. Тиймээс зөвхөн overflow
+          байхгүй үед л center хийнэ. */}
       <div ref={ref}
         className={cn(
           "flex gap-3 overflow-x-auto py-2",
-          center && "justify-center",
+          center && !overflowing && "justify-center",
         )}>
         {children}
       </div>

@@ -150,7 +150,7 @@ function TvContent() {
       <section className={cn("grid lg:grid-cols-[1fr_320px] gap-5", !mobileShowPlayer && "hidden lg:grid")}>
         <div className="space-y-0">
           <button onClick={backToGrid}
-            className="lg:hidden inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub hover:text-app transition-colors">
+            className="lg:hidden inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub hover:text-app transition-colors mb-4">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
             {lang === "mn" ? "Бүх суваг" : "All channels"}
           </button>
