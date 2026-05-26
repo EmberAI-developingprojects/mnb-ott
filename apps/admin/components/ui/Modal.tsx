@@ -18,15 +18,22 @@ export function Modal({ open, onClose, title, children, size = "md" }: Props) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
+  /* onClose нь parent дотор inline arrow function-аар өгөгдвөл renderdoo шинэ
+     instance болоход эффект дахин ажиллаж focus-ийг панель руу буцаах, input
+     алдагдах bug гарна. Тиймээс onClose-ийг ref-д хадгалж, эффектийг ЗӨВХӨН
+     `open` солигдоход ажиллуулна. */
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCloseRef.current(); };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     /* Нээгдэхэд фокусыг modal дотор оруулна (фокус ард үлдэхгүй) */
     panelRef.current?.focus();
     return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

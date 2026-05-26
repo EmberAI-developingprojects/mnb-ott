@@ -42,9 +42,14 @@ export default function ChannelsPage() {
 
   async function load() {
     setLoading(true);
-    const r = await api.get<ApiResponse<Channel[]>>("/api/admin/channels");
-    setChannels(r.data.data);
-    setLoading(false);
+    try {
+      const r = await api.get<ApiResponse<Channel[]>>("/api/admin/channels");
+      setChannels(r.data.data);
+    } catch (e) {
+      toast.error(getApiError(e).message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   /* Нэр оруулахад slug автомат шинэчлэх (хэрэв slug гараар бичээгүй бол) */
@@ -75,6 +80,9 @@ export default function ChannelsPage() {
       thumbnailUrl: c.thumbnailUrl ?? "",
       isActive:     c.isActive,
       orderIndex:   c.orderIndex.toString(),
+      price:        c.price?.toString() ?? "",
+      /* datetime-local input нь "YYYY-MM-DDTHH:mm" формат шаардана */
+      endsAt:       c.endsAt ? new Date(c.endsAt).toISOString().slice(0, 16) : "",
     });
     /* Засаж байгаа бол slug аль хэдийн бий — auto-overwrite хийхгүй */
     setError(""); setSlugTouched(true); setEditing(c);
@@ -107,12 +115,20 @@ export default function ChannelsPage() {
   async function handleSave() {
     setError(""); setSaving(true);
     const kind: ChannelKind = editing?.kind ?? creating ?? "TV";
+    /* price + endsAt нь зөвхөн LIVE-д хэрэглэгдэнэ — бусдад илгээхгүй */
+    const liveExtra = kind === "LIVE"
+      ? {
+          price:  form.price ? Number(form.price) : null,
+          endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : null,
+        }
+      : {};
     const payload = {
       name: form.name, slug: form.slug, kind,
       streamUrl:    form.streamUrl || undefined,
       thumbnailUrl: form.thumbnailUrl || undefined,
       isActive:     form.isActive,
       orderIndex:   Number(form.orderIndex) || 0,
+      ...liveExtra,
     };
     try {
       if (editing) await api.patch(`/api/admin/channels/${editing.id}`, payload);

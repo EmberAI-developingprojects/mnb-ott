@@ -15,7 +15,9 @@ interface MySubscription {
   plans: PlanDefinition[];
 }
 
-const PURCHASABLE: PlanType[] = ["TV", "VOD", "COMBO"];
+/* Шинэ загвар: зөвхөн VOD plan худалдан авах боломжтой
+   (TV/Radio + архив нь BASIC plan-аар үнэгүй) */
+const PURCHASABLE: PlanType[] = ["VOD"];
 
 export default function ProfileSubscriptionPage() {
   const { user } = useAuthStore();
@@ -167,13 +169,12 @@ export default function ProfileSubscriptionPage() {
         </div>
       </div>
 
-      {/* 4 plan grid */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {plans.map((plan) => {
+      {/* 2 plan grid — шинэ загвар (BASIC + VOD) */}
+      <div className="grid sm:grid-cols-2 gap-4">
+        {plans.filter((p) => p.type === "BASIC" || PURCHASABLE.includes(p.type)).map((plan) => {
           const price     = period === "monthly" ? plan.priceMonthly : plan.priceWeekly;
           const isCurrent = current?.planType === plan.type;
           const isBasic   = plan.type === "BASIC";
-          const isCombo   = plan.type === "COMBO";
           const isPending = pending === plan.type;
 
           return (
@@ -182,17 +183,8 @@ export default function ProfileSubscriptionPage() {
                 "relative rounded-2xl border p-5 flex flex-col gap-4 transition-all",
                 isCurrent
                   ? "border-accent bg-accent-soft"
-                  : isCombo
-                    ? "border-accent/40 bg-card"
-                    : "border-app bg-card",
+                  : "border-app bg-card",
               )}>
-              {isCombo && !isCurrent && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-accent text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">
-                    {lang === "mn" ? "Хамгийн зөв" : "Best value"}
-                  </span>
-                </div>
-              )}
 
               <div>
                 <p className="text-[11px] font-bold text-muted uppercase tracking-[0.15em]">{plan.label}</p>
@@ -215,11 +207,11 @@ export default function ProfileSubscriptionPage() {
                 </p>
               </div>
 
+              {/* Шинэ загварт зөвхөн premium VOD capability ялгаатай —
+                  үлдсэн (TV/Radio/Archive) нь бүх plan-д free */}
               <div className="space-y-1.5">
-                <CapRow on={plan.capabilities.youtubeArchive}
-                  label={lang === "mn" ? "YouTube архив" : "YouTube archive"} />
-                <CapRow on={plan.capabilities.liveTv}
-                  label={lang === "mn" ? "Live TV + DVR" : "Live TV + DVR"} />
+                <CapRow on label={lang === "mn" ? "TV суваг + Радио + DVR" : "TV channels + Radio + DVR"} />
+                <CapRow on label={lang === "mn" ? "YouTube архив" : "YouTube archive"} />
                 <CapRow on={plan.capabilities.premiumVod}
                   label={lang === "mn" ? "Премиум VOD сан" : "Premium VOD library"} />
               </div>
@@ -245,11 +237,9 @@ export default function ProfileSubscriptionPage() {
                   "w-full py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50",
                   isCurrent
                     ? "bg-card border border-app text-muted cursor-default"
-                    : isCombo
-                      ? "bg-accent hover:bg-accent-hover text-white"
-                      : isBasic
-                        ? "bg-card border border-app text-muted cursor-default"
-                        : "bg-card border border-app text-app hover:border-accent",
+                    : isBasic
+                      ? "bg-card border border-app text-muted cursor-default"
+                      : "bg-accent hover:bg-accent-hover text-white",
                 )}>
                 {isPending ? (
                   <span className="inline-flex items-center gap-2">
@@ -265,6 +255,18 @@ export default function ProfileSubscriptionPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* LIVE event PPV-ийн тайлбар */}
+      <div className="rounded-2xl border border-app bg-card p-5 space-y-2">
+        <p className="text-[11px] font-bold text-muted uppercase tracking-[0.15em]">
+          {lang === "mn" ? "LIVE event" : "LIVE events"}
+        </p>
+        <p className="text-sm text-sub leading-relaxed">
+          {lang === "mn"
+            ? "Шууд цацалттай LIVE event-уудыг (футболын тоглолт, концерт, эфир) plan-аас гадуур тус бүрчлэн худалдан авч үзнэ. Худалдан авснаас хойш 24 цагийн дотор үзэх боломжтой."
+            : "LIVE events (matches, concerts, airings) are purchased individually outside plans — accessible for 24 hours after purchase."}
+        </p>
       </div>
 
       {/* Confirm modal */}

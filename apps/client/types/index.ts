@@ -6,9 +6,9 @@ export type ContentType = "LIVE" | "VOD";
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "CANCELLED";
 export type NotificationType = "SYSTEM" | "SUBSCRIPTION" | "PAYMENT" | "CONTENT" | "PROMO";
 
+/* v2 plan загвар: TV/Radio + архив бүх нэвтэрсэн хэрэглэгчид үнэгүй —
+   зөвхөн premium VOD сан plan-аас хамаарна. */
 export interface PlanCapability {
-  youtubeArchive: boolean;
-  liveTv: boolean;
   premiumVod: boolean;
 }
 

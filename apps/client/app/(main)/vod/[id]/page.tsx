@@ -3,57 +3,59 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { VodPlayer } from "@/components/player/VodPlayer";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { UpgradePrompt } from "@/components/layout/UpgradePrompt";
 import { LoginPrompt } from "@/components/layout/LoginPrompt";
+import { ScrollRow } from "@/components/layout/ScrollRow";
 import { useAuthStore } from "@/store/authStore";
-import { useT } from "@/store/settingsStore";
-import { formatDuration, formatViews } from "@/lib/utils";
+import { useT, useSettingsStore } from "@/store/settingsStore";
 import { useWatchlistStore } from "@/store/watchlistStore";
+import { formatDuration, formatViews, cn } from "@/lib/utils";
 import api from "@/lib/api";
-import Image from "next/image";
 
 interface VideoDetail {
-  youtubeId: string;
-  title: string;
-  description: string;
+  youtubeId:    string;
+  title:        string;
+  description:  string;
   thumbnailUrl: string;
-  duration: number;
-  viewCount: number;
-  publishedAt: string;
+  duration:     number;
+  viewCount:    number;
+  publishedAt:  string;
   channelTitle: string;
-  accessKind?: "archive" | "library" | "bundle";
-  price?: number;
-  bundleId?: string;
+  accessKind?:  "archive" | "library" | "bundle";
+  price?:       number;
+  bundleId?:    string;
 }
 
 interface AccessDecision {
-  allowed: boolean;
-  reason?: "PLAN_REQUIRED" | "PURCHASE_REQUIRED" | "EXPIRED";
+  allowed:        boolean;
+  reason?:        "PLAN_REQUIRED" | "PURCHASE_REQUIRED" | "EXPIRED";
   requiredPlans?: string[];
 }
 
 interface RelatedVideo {
-  youtubeId: string;
-  title: string;
+  youtubeId:    string;
+  title:        string;
   thumbnailUrl: string;
-  duration: number;
-  publishedAt: string;
+  duration:     number;
+  publishedAt:  string;
 }
 
 export default function VodDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const t = useT();
+  const { lang } = useSettingsStore();
   const { user } = useAuthStore();
   const { add, remove, has } = useWatchlistStore();
   const saved = has(id);
 
-  const [video, setVideo] = useState<VideoDetail | null>(null);
+  const [video, setVideo]     = useState<VideoDetail | null>(null);
   const [related, setRelated] = useState<RelatedVideo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [access, setAccess] = useState<AccessDecision | null>(null);
+  const [access, setAccess]   = useState<AccessDecision | null>(null);
   const [descExpanded, setDescExpanded] = useState(false);
 
   useEffect(() => {
@@ -67,7 +69,6 @@ export default function VodDetailPage() {
         setVideo(vRes.data.data);
         setRelated(rRes.data.data.videos.filter((v) => v.youtubeId !== id));
 
-        // Access check (зөвхөн нэвтэрсэн хэрэглэгчид)
         if (user && vRes.data.data.accessKind) {
           try {
             const a = await api.post<{ success: true; data: AccessDecision }>(
@@ -82,7 +83,7 @@ export default function VodDetailPage() {
           setAccess({ allowed: !!user });
         }
       } catch {
-        router.push("/vod");
+        router.push("/archive");
       } finally {
         setLoading(false);
       }
@@ -96,173 +97,226 @@ export default function VodDetailPage() {
     else add({ id, title: video.title, thumbnailUrl: video.thumbnailUrl, duration: video.duration });
   }
 
-  if (loading) {
-    return (
-      <div className="max-w-[1440px] mx-auto px-4 md:px-12 pt-[calc(var(--header-h)+16px)] pb-12">
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="flex-1 space-y-4">
-            <Skeleton className="aspect-video w-full rounded-xl" />
-            <Skeleton className="h-7 w-3/4" />
-            <Skeleton className="h-4 w-1/3" />
-          </div>
-          <div className="lg:w-72 space-y-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex gap-3">
-                <Skeleton className="w-28 aspect-video shrink-0 rounded-lg" />
-                <div className="flex-1 space-y-2 pt-1">
-                  <Skeleton className="h-3 w-full" /><Skeleton className="h-3 w-3/4" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+  async function share() {
+    if (!video) return;
+    if (navigator.share) {
+      try { await navigator.share({ title: video.title, url: window.location.href }); }
+      catch { /* user cancelled */ }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        /* toast байгаагүй учир brief visual feedback хийхгүй — clipboard амжилттай copied */
+      } catch { /* silent */ }
+    }
   }
 
-  if (!video) return null;
+  if (loading) return <LoadingState />;
+  if (!video)  return null;
 
-  const date = new Date(video.publishedAt).toLocaleDateString("mn-MN", {
+  const date = new Date(video.publishedAt).toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US", {
     year: "numeric", month: "long", day: "numeric",
   });
 
-  const descLines = (video.description ?? "")
+  /* Description-аас URL шугам цэвэрлэнэ (YouTube description ихэвчлэн зөвхөн линк) */
+  const descClean = (video.description ?? "")
     .split("\n")
-    .filter((l) => !l.match(/https?:\/\//))
+    .filter((l) => !l.match(/^\s*https?:\/\//))
     .join("\n")
     .trim();
+  const showToggle = descClean.length > 240;
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-12 pt-[calc(var(--header-h)+16px)] pb-12 space-y-5">
+    <div className="pt-[var(--header-h)]">
+      {/* ── 1. PLAYER — full width, cinematic ── */}
+      <section className="max-w-[1240px] mx-auto px-3 md:px-6 pt-4 md:pt-6">
+        {access?.allowed ? (
+          <VodPlayer
+            youtubeId={video.youtubeId}
+            vodId={id}
+            title={video.title}
+            thumbnailUrl={video.thumbnailUrl}
+            duration={video.duration}
+          />
+        ) : !user ? (
+          <LoginPrompt backdrop={video.thumbnailUrl} title={video.title} />
+        ) : (
+          <UpgradePrompt
+            kind={video.accessKind === "bundle" ? "bundle" : "library"}
+            vodId={id}
+            price={video.price}
+            title={video.title}
+            backdrop={video.thumbnailUrl}
+          />
+        )}
+      </section>
 
-      {/* Back */}
-      <button onClick={() => router.back()}
-        className="-ml-2 inline-flex items-center gap-1.5 pl-1.5 pr-3 py-2 rounded-full text-sub hover:text-app hover:bg-card-hover transition-colors text-sm font-medium">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M15 18l-6-6 6-6"/>
-        </svg>
-        {t("back")}
-      </button>
-
-      <div className="flex flex-col lg:flex-row gap-6">
-
-        {/* Left — player + info */}
-        <div className="flex-1 min-w-0 space-y-5">
-
-          {access?.allowed ? (
-            <VodPlayer
-              youtubeId={video.youtubeId}
-              vodId={id}
-              title={video.title}
-              thumbnailUrl={video.thumbnailUrl}
-              duration={video.duration}
-            />
-          ) : !user ? (
-            /* Зочин — plan/худалдан авалт биш, эхлээд нэвтрэх ёстой */
-            <LoginPrompt backdrop={video.thumbnailUrl} title={video.title} />
-          ) : (
-            <UpgradePrompt
-              kind={video.accessKind === "bundle" ? "bundle" : "library"}
-              vodId={id}
-              price={video.price}
-              title={video.title}
-              backdrop={video.thumbnailUrl}
-            />
-          )}
-
-          <h1 className="text-xl md:text-2xl font-bold text-app leading-snug">
+      {/* ── 2. INFO BLOCK ── */}
+      <section className="max-w-[1240px] mx-auto px-4 md:px-6 mt-6 md:mt-8 space-y-5">
+        {/* Title + meta */}
+        <div className="space-y-3">
+          <h1 className="text-xl md:text-3xl font-bold text-app leading-tight">
             {video.title}
           </h1>
 
-          {/* Meta + actions */}
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3 text-sm text-muted flex-wrap">
-              <span>{video.channelTitle}</span>
-              {video.viewCount > 0 && (
-                <><span>·</span><span>{formatViews(video.viewCount)} үзэлт</span></>
-              )}
-              <span>·</span><span>{date}</span>
-              {video.duration > 0 && (
-                <><span>·</span><span>{formatDuration(video.duration)}</span></>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Watchlist */}
-              <button onClick={toggleWatchlist}
-                className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl hover:bg-[var(--border)] transition-colors group"
-                title={saved ? t("watchlist") : t("watchlist")}>
-                <svg width="22" height="22" viewBox="0 0 24 24"
-                  fill={saved ? "var(--danger)" : "none"}
-                  stroke={saved ? "var(--danger)" : "currentColor"}
-                  strokeWidth="1.8"
-                  className="transition-all group-hover:scale-110">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-                <span className="text-[11px] text-muted">{saved ? t("saved_ok") : t("watchlist")}</span>
-              </button>
-
-              {/* Share */}
-              <button
-                onClick={() => navigator.share?.({ title: video.title, url: window.location.href }).catch(() => {})}
-                className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl hover:bg-[var(--border)] transition-colors group">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-                  className="text-muted group-hover:text-app transition-colors">
-                  <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                </svg>
-                <span className="text-[11px] text-muted">Share</span>
-              </button>
-            </div>
+          <div className="flex items-center gap-2 text-[13px] text-sub flex-wrap">
+            <span className="font-medium text-app">{video.channelTitle}</span>
+            {video.viewCount > 0 && (
+              <><span className="text-muted">·</span>
+              <span>{formatViews(video.viewCount)} {lang === "mn" ? "үзэлт" : "views"}</span></>
+            )}
+            <span className="text-muted">·</span>
+            <span>{date}</span>
+            {video.duration > 0 && (
+              <><span className="text-muted">·</span>
+              <span className="font-mono tabular-nums">{formatDuration(video.duration)}</span></>
+            )}
           </div>
-
-          {/* Description */}
-          {descLines && (
-            <div className="bg-surface rounded-xl p-4 border border-app">
-              <p className={`text-sm text-sub whitespace-pre-line leading-relaxed ${descExpanded ? "" : "line-clamp-3"}`}>
-                {descLines}
-              </p>
-              {descLines.length > 200 && (
-                <button onClick={() => setDescExpanded(!descExpanded)}
-                  className="text-xs text-accent mt-2 hover:underline">
-                  {descExpanded ? t("cancel") : t("details")}
-                </button>
-              )}
-            </div>
-          )}
         </div>
 
-        {/* Right — related */}
-        <aside className="lg:w-72 shrink-0">
-          <h2 className="text-sm font-semibold text-muted mb-3">Бусад нэвтрүүлгүүд</h2>
-          <div className="space-y-1">
-            {related.slice(0, 10).map((v) => {
-              const d = new Date(v.publishedAt).toLocaleDateString("mn-MN", { month: "short", day: "numeric" });
-              return (
-                <Link key={v.youtubeId} href={`/vod/${v.youtubeId}`}
-                  className="flex gap-3 p-2 rounded-lg hover:bg-surface transition-colors group">
-                  <div className="relative w-28 aspect-video rounded-md overflow-hidden shrink-0 bg-surface">
-                    <Image src={v.thumbnailUrl} alt={v.title} fill sizes="112px"
-                      className="object-cover" loading="lazy" />
-                    {v.duration > 0 && (
-                      <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] px-1 rounded font-mono">
-                        {formatDuration(v.duration)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-1 pt-0.5">
-                    <p className="text-xs text-app line-clamp-3 leading-snug group-hover:text-accent transition-colors">
-                      {v.title}
-                    </p>
-                    <p className="text-[11px] text-muted">{d}</p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </aside>
+        {/* Action pills — Save / Share / Back */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <ActionPill
+            active={saved}
+            onClick={toggleWatchlist}
+            label={saved
+              ? (lang === "mn" ? "Хадгалсан" : "Saved")
+              : (lang === "mn" ? "Хадгалах" : "Save")}
+            icon={saved ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polyline points="20 6 9 17 4 12" fill="none" stroke="currentColor" strokeWidth="2.5"/></svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            )} />
 
+          <ActionPill
+            onClick={share}
+            label={lang === "mn" ? "Хуваалцах" : "Share"}
+            icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+            } />
+
+          <button onClick={() => router.back()}
+            className="ml-auto text-[13px] text-muted hover:text-app transition-colors inline-flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+            {t("back")}
+          </button>
+        </div>
+
+        {/* Description */}
+        {descClean && (
+          <div className="bg-card border border-app rounded-2xl p-4 md:p-5">
+            <p className={cn(
+              "text-[13.5px] text-sub leading-relaxed whitespace-pre-line",
+              !descExpanded && "line-clamp-3",
+            )}>
+              {descClean}
+            </p>
+            {showToggle && (
+              <button onClick={() => setDescExpanded(!descExpanded)}
+                className="mt-2 text-[12px] font-semibold text-sub hover:text-app transition-colors">
+                {descExpanded
+                  ? (lang === "mn" ? "Хураах" : "Show less")
+                  : (lang === "mn" ? "Дэлгэрэнгүй харах" : "Show more")}
+              </button>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* ── 3. RELATED — horizontal scroll row (cinematic) ── */}
+      {related.length > 0 && (
+        <section className="max-w-[1440px] mx-auto px-4 md:px-6 mt-10 md:mt-14 pb-16">
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-lg md:text-xl font-bold text-app">
+              {lang === "mn" ? "Холбоотой нэвтрүүлэг" : "Related videos"}
+            </h2>
+            <Link href="/archive"
+              className="text-[13px] font-semibold text-sub hover:text-app transition-colors">
+              {t("see_more")}
+            </Link>
+          </div>
+
+          <ScrollRow>
+            {related.slice(0, 12).map((v) => <RelatedCard key={v.youtubeId} v={v} lang={lang} />)}
+          </ScrollRow>
+        </section>
+      )}
+    </div>
+  );
+}
+
+/* ─── Action pill — Save / Share — нэг загвар ──────────────── */
+function ActionPill({ icon, label, active, onClick }: {
+  icon:    React.ReactNode;
+  label:   string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-2 px-4 py-2 rounded-full border text-[13px] font-semibold transition-colors",
+        active
+          ? "bg-app text-bg border-app"
+          : "bg-card border-app text-app hover:bg-card-hover",
+      )}>
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+/* ─── Related card — горизонталь scroll-д ──────────────────── */
+function RelatedCard({ v, lang }: { v: RelatedVideo; lang: "mn" | "en" }) {
+  const date = new Date(v.publishedAt).toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US",
+    { month: "short", day: "numeric" });
+
+  return (
+    <Link href={`/vod/${v.youtubeId}`}
+      className="group shrink-0 w-[220px] sm:w-[250px] md:w-[280px] block">
+      <div className="relative aspect-video rounded-xl overflow-hidden bg-card ring-1 ring-transparent group-hover:ring-2 group-hover:ring-accent ring-inset transition-all duration-200">
+        <Image src={v.thumbnailUrl} alt={v.title} fill
+          sizes="(max-width: 640px) 70vw, (max-width: 1024px) 35vw, 280px"
+          className="object-cover" loading="lazy" />
+        {v.duration > 0 && (
+          <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/85 text-white text-[10px] font-mono tabular-nums">
+            {formatDuration(v.duration)}
+          </span>
+        )}
       </div>
+      <p className="mt-2.5 text-[13.5px] text-app line-clamp-2 leading-snug group-hover:text-accent transition-colors px-0.5">
+        {v.title}
+      </p>
+      <p className="mt-1 text-[11.5px] text-muted px-0.5">{date}</p>
+    </Link>
+  );
+}
+
+/* ─── Loading skeleton ──────────────────────────────────── */
+function LoadingState() {
+  return (
+    <div className="pt-[var(--header-h)]">
+      <section className="max-w-[1240px] mx-auto px-3 md:px-6 pt-4 md:pt-6">
+        <Skeleton className="aspect-video w-full rounded-xl" />
+      </section>
+      <section className="max-w-[1240px] mx-auto px-4 md:px-6 mt-6 space-y-3">
+        <Skeleton className="h-8 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-28 rounded-full" />
+          <Skeleton className="h-10 w-28 rounded-full" />
+        </div>
+      </section>
+      <section className="max-w-[1440px] mx-auto px-4 md:px-6 mt-12">
+        <Skeleton className="h-6 w-40 mb-4" />
+        <div className="flex gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="shrink-0 w-[260px] aspect-video rounded-xl" />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

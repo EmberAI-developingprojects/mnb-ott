@@ -33,27 +33,28 @@ export async function updateConfig(key: string, value: string): Promise<void> {
   await redis.del(CACHE_KEY); // cache цэвэрлэнэ
 }
 
+/* Plan capability — шинэ бүтэц (v2):
+   - youtubeArchive ба liveTv нь бүх нэвтэрсэн хэрэглэгчдэд үнэгүй болсон тул
+     capability flag шаардлагагүй. Зөвхөн `premiumVod` нь plan-аас хамаарна.
+   - LIVE event-үүд нь plan-аас гадуур TVOD (PPV) — Purchase шалгалтаар явна. */
 export type PlanCapability = {
-  /** YouTube архив (үнэгүй VOD) үзэх боломж */
-  youtubeArchive: boolean;
-  /** Live TV (5 суваг) + DVR catch-up */
-  liveTv: boolean;
   /** Премиум VOD сан (DRM хамгаалалттай) */
   premiumVod: boolean;
 };
 
 export interface PlanDefinition {
-  type: "BASIC" | "TV" | "VOD" | "COMBO";
-  label: string;
-  tagline: string;
+  type:         "BASIC" | "VOD";
+  label:        string;
+  tagline:      string;
   priceMonthly: number;
-  priceWeekly: number;
-  deviceLimit: number;
-  features: string[];
+  priceWeekly:  number;
+  deviceLimit:  number;
+  features:     string[];
   capabilities: PlanCapability;
 }
 
-// 4 plan + ердийн TVOD (тусдаа видео багц) — capabilities нь access control-д ашиглагдана
+/* Шинэ загвар: 2 plan л бий — BASIC (үнэгүй) + VOD (премиум сан).
+   LIVE event-үүд тус бүрчлэн PPV (Purchase). Bundle хуучнаараа TVOD. */
 export async function getSubscriptionPlans(): Promise<PlanDefinition[]> {
   const cfg = await getAllConfigs();
   const n = (k: string, fb: number) => Number(cfg[k]?.value ?? fb);
@@ -62,71 +63,48 @@ export async function getSubscriptionPlans(): Promise<PlanDefinition[]> {
     {
       type: "BASIC",
       label: "Энгийн",
-      tagline: "Нэвтэрсэн бол YouTube архив үнэгүй",
+      tagline: "Нэвтэрсэн бол TV суваг, радио, архив бүгд үнэгүй",
       priceMonthly: 0,
       priceWeekly: 0,
-      deviceLimit: n("plan.basic.device_limit", 1),
+      deviceLimit: n("plan.basic.device_limit", 2),
       features: [
-        "YouTube архив бүх видео",
-        "Мэдээний клип, шоунууд",
-        "1 төхөөрөмж зэрэг",
-        "Багц доторх видеог тус бүрчлэн түрээслэх боломжтой",
+        "5 TV суваг + 2 радио шууд",
+        "DVR 2 цаг хойш үзэх",
+        "YouTube архив бүх нэвтрүүлэг",
+        "LIVE event-үүдийг тус бүрчлэн худалдан авч үзнэ",
       ],
-      capabilities: { youtubeArchive: true, liveTv: false, premiumVod: false },
-    },
-    {
-      type: "TV",
-      label: "ТВ",
-      tagline: "5 суваг шууд + DVR catch-up",
-      priceMonthly: n("plan.tv.price_monthly", 9900),
-      priceWeekly:  n("plan.tv.price_weekly",  3500),
-      deviceLimit:  n("plan.tv.device_limit",  2),
-      features: [
-        "5 суваг шууд (LIVE)",
-        "DVR 2 цаг catch-up",
-        "EPG хөтөлбөр (3 хойш / 5 урагш өдөр)",
-        "YouTube архив",
-      ],
-      capabilities: { youtubeArchive: true, liveTv: true, premiumVod: false },
+      capabilities: { premiumVod: false },
     },
     {
       type: "VOD",
       label: "Видео сан",
-      tagline: "Санг бүхэлд нь сараар захиалаад хязгааргүй үзнэ",
+      tagline: "Премиум санг сараар захиалж хязгааргүй үзнэ",
       priceMonthly: n("plan.vod.price_monthly", 12900),
       priceWeekly:  n("plan.vod.price_weekly",  4500),
-      deviceLimit:  n("plan.vod.device_limit",  2),
+      deviceLimit:  n("plan.vod.device_limit",  3),
       features: [
-        "Видео сан дотор хязгааргүй үзэх",
+        "Премиум VOD сан дотор хязгааргүй",
         "HD/4K чанар",
         "DRM хамгаалалт",
-        "YouTube архив",
+        "BASIC plan-ийн бүх давуу талтай",
       ],
-      capabilities: { youtubeArchive: true, liveTv: false, premiumVod: true },
-    },
-    {
-      type: "COMBO",
-      label: "Бүгд",
-      tagline: "ТВ + Видео сан хосолсон бүх багц",
-      priceMonthly: n("plan.combo.price_monthly", 19900),
-      priceWeekly:  n("plan.combo.price_weekly",  6900),
-      deviceLimit:  n("plan.combo.device_limit",  4),
-      features: [
-        "Бүх суваг шууд (LIVE) + DVR",
-        "Видео сан хязгааргүй",
-        "HD/4K, DRM",
-        "4 төхөөрөмж зэрэг",
-        "EPG хөтөлбөр",
-      ],
-      capabilities: { youtubeArchive: true, liveTv: true, premiumVod: true },
+      capabilities: { premiumVod: true },
     },
   ];
 }
 
-export async function getPlanCapabilities(
-  planType: "BASIC" | "TV" | "VOD" | "COMBO",
-): Promise<PlanCapability> {
+/* Legacy TV / COMBO plan байгаа хуучин subscriber-ын хувьд:
+   - TV    → шинэ системд BASIC (TV үнэгүй болсон тул)
+   - COMBO → шинэ системд VOD (премиум үлдсэн) */
+type AnyPlanType = "BASIC" | "TV" | "VOD" | "COMBO";
+function normalize(plan: AnyPlanType): "BASIC" | "VOD" {
+  if (plan === "VOD" || plan === "COMBO") return "VOD";
+  return "BASIC";
+}
+
+export async function getPlanCapabilities(planType: AnyPlanType): Promise<PlanCapability> {
   const plans = await getSubscriptionPlans();
-  const plan  = plans.find((p) => p.type === planType) ?? plans[0];
+  const normalized = normalize(planType);
+  const plan = plans.find((p) => p.type === normalized) ?? plans[0];
   return plan.capabilities;
 }

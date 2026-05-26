@@ -32,11 +32,16 @@ export default function PaymentsPage() {
 
   async function load() {
     setLoading(true);
-    const params: Record<string, string | number> = { page };
-    if (filter) params.status = filter;
-    const r = await api.get<ApiResponse<PaginatedResponse<Payment>>>("/api/admin/payments", { params });
-    setData(r.data.data);
-    setLoading(false);
+    try {
+      const params: Record<string, string | number> = { page };
+      if (filter) params.status = filter;
+      const r = await api.get<ApiResponse<PaginatedResponse<Payment>>>("/api/admin/payments", { params });
+      setData(r.data.data);
+    } catch (e) {
+      toast.error(getApiError(e).message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleRefund() {

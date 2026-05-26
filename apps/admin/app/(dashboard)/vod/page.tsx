@@ -1,19 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, ImageOff } from "lucide-react";
 import api, { getApiError } from "@/lib/api";
 import type { ApiResponse, PaginatedResponse, VodContent } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input, Field, Textarea } from "@/components/ui/Input";
-import { Table, THead, TH, TBody, TR, TD, EmptyState } from "@/components/ui/Table";
-import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/Table";
 import { Modal } from "@/components/ui/Modal";
-import { Toggle } from "@/components/ui/Toggle";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/components/ui/Toast";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { VodType } from "@/types";
 
 interface FormData {
@@ -50,12 +49,17 @@ export default function VodPage() {
 
   async function load() {
     setLoading(true);
-    const params: Record<string, string | number> = { page };
-    if (search) params.search = search;
-    if (typeFilter) params.type = typeFilter;
-    const r = await api.get<ApiResponse<PaginatedResponse<VodContent>>>("/api/admin/vod", { params });
-    setData(r.data.data);
-    setLoading(false);
+    try {
+      const params: Record<string, string | number> = { page };
+      if (search) params.search = search;
+      if (typeFilter) params.type = typeFilter;
+      const r = await api.get<ApiResponse<PaginatedResponse<VodContent>>>("/api/admin/vod", { params });
+      setData(r.data.data);
+    } catch (e) {
+      toast.error(getApiError(e).message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function openCreate() {
@@ -164,66 +168,91 @@ export default function VodPage() {
       </div>
 
       {loading ? (
-        <div className="bg-surface border border-border rounded-lg shadow-card p-12 text-center text-sm text-muted">
-          Уншиж байна...
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="bg-surface border border-border rounded-lg overflow-hidden">
+              <div className="aspect-video bg-bg animate-pulse" />
+              <div className="p-3 space-y-2">
+                <div className="h-3 w-3/4 bg-bg rounded animate-pulse" />
+                <div className="h-3 w-1/2 bg-bg rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : !data || data.items.length === 0 ? (
         <EmptyState message="Видео байхгүй байна" />
       ) : (
         <>
-          <Table>
-            <THead>
-              <TH>Видео</TH>
-              <TH>Төрөл</TH>
-              <TH>Категори</TH>
-              <TH>Үнэ</TH>
-              <TH>Худалдан авалт</TH>
-              <TH>Төлөв</TH>
-              <TH>Огноо</TH>
-              <TH className="text-right">Үйлдэл</TH>
-            </THead>
-            <TBody>
-              {data.items.map((v) => (
-                <TR key={v.id}>
-                  <TD>
-                    <div className="flex items-center gap-3">
-                      {v.thumbnailUrl && (
-                        <img src={v.thumbnailUrl} alt="" className="w-16 h-9 object-cover rounded" />
+          {/* Card grid layout — thumbnail-тэй ойлгомжтой */}
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+            {data.items.map((v) => (
+              <article key={v.id}
+                className="group bg-surface border border-border rounded-lg overflow-hidden hover:border-primary/40 transition-colors">
+
+                {/* Thumbnail */}
+                <div className="relative aspect-video bg-bg">
+                  {v.thumbnailUrl ? (
+                    <img src={v.thumbnailUrl} alt={v.title}
+                      className="w-full h-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted">
+                      <ImageOff size={28} aria-hidden="true" />
+                    </div>
+                  )}
+                  {/* Type badge — Архив / Сан */}
+                  <span className={cn(
+                    "absolute top-2 left-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md",
+                    v.type === "PREMIUM"
+                      ? "bg-primary text-white"
+                      : "bg-black/70 text-white",
+                  )}>
+                    {v.type === "PREMIUM" ? "Сан" : "Архив"}
+                  </span>
+                  {/* Inactive overlay */}
+                  {!v.isActive && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <span className="text-white text-xs font-semibold uppercase tracking-wider">Идэвхгүй</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Body */}
+                <div className="p-3 space-y-2">
+                  <h3 className="text-sm font-semibold text-fg line-clamp-2 leading-snug min-h-[40px]">
+                    {v.title}
+                  </h3>
+
+                  <div className="flex items-center justify-between gap-2 text-[11px] text-muted">
+                    <span className="truncate">{v.genre ?? "—"}</span>
+                    <span className="tabular-nums">{formatDate(v.createdAt)}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
+                    <div className="text-[11px] text-muted">
+                      {v.price && v.price > 0 ? (
+                        <span className="text-fg font-semibold">{formatCurrency(v.price)}</span>
+                      ) : (
+                        <span>Үнэгүй</span>
                       )}
-                      <p className="font-medium text-fg line-clamp-1">{v.title}</p>
+                      <span className="mx-1.5">·</span>
+                      <span className="tabular-nums">{v._count?.purchases ?? 0} худ.</span>
                     </div>
-                  </TD>
-                  <TD>
-                    <Badge tone={v.type === "PREMIUM" ? "primary" : "neutral"}>
-                      {v.type === "PREMIUM" ? "Видео сан" : "Архив"}
-                    </Badge>
-                  </TD>
-                  <TD className="text-muted text-xs">{v.genre ?? "—"}</TD>
-                  <TD>{v.price ? formatCurrency(v.price) : <span className="text-muted">Үнэгүй</span>}</TD>
-                  <TD className="text-muted">{v._count?.purchases ?? 0}</TD>
-                  <TD>
-                    <Badge tone={v.isActive ? "success" : "neutral"}>
-                      {v.isActive ? "Идэвхтэй" : "Идэвхгүй"}
-                    </Badge>
-                  </TD>
-                  <TD className="text-muted text-xs">{formatDate(v.createdAt)}</TD>
-                  <TD className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(v)}>
-                        <Edit size={14} />
+                    <div className="flex gap-0.5">
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(v)} title="Засах">
+                        <Edit size={13} />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(v)}>
-                        <Trash2 size={14} className="text-danger" />
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(v)} title="Устгах">
+                        <Trash2 size={13} className="text-danger" />
                       </Button>
                     </div>
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 text-sm">
+            <div className="flex items-center justify-between mt-6 text-sm">
               <span className="text-muted">Хуудас {page} / {totalPages}</span>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Өмнөх</Button>

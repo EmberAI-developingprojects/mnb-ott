@@ -1,8 +1,11 @@
-/* Payment metadata-ийн төрлүүд — Payment.metadata talbar-d JSON хэлбэрээр хадгалагдана.
-   SVOD (plan түрээс) vs TVOD (нэг VOD) гэх 2 төрөл. */
+/* Payment metadata-ийн төрлүүд — Payment.metadata-д JSON хэлбэрээр хадгалагдана.
+   3 төрөл:
+     PLAN  — VOD subscription (TV/COMBO нь хуучны utga, legacy)
+     VOD   — Bundle item TVOD (72 цаг)
+     LIVE  — LIVE event PPV (24 цаг хүчинтэй) */
 export type PlanMeta = {
   kind?:    "PLAN";
-  planType: "TV" | "VOD" | "COMBO";
+  planType: "VOD";        // шинээр зөвхөн VOD; TV/COMBO нь legacy
   period:   "monthly" | "weekly";
 };
 
@@ -12,7 +15,13 @@ export type VodMeta = {
   title?: string;
 };
 
-export type AnyMeta = PlanMeta | VodMeta;
+export type LiveMeta = {
+  kind:      "LIVE";
+  channelId: string;
+  title?:    string;
+};
+
+export type AnyMeta = PlanMeta | VodMeta | LiveMeta;
 
 /* QPay байхгүй / mock горим — local dev болон CI-д шууд PAID болгох. */
 export function isMockPayment(): boolean {

@@ -2,32 +2,43 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSettingsStore } from "@/store/settingsStore";
 import api, { getApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  kind:    "live-tv" | "library" | "bundle";
+  /* live-tv: хуучин TV plan. Шинэ загварт энэ нь нэвтэрсэн бүхэнд free тул UI-д
+     ашиглагдахгүй боловч type-ийн тулд үлдсэн.
+     library: премиум VOD plan шаардлагатай
+     bundle:  bundle item TVOD (72 цаг)
+     live:    LIVE event PPV (24 цаг, Channel.id-аар) */
+  kind:       "live-tv" | "library" | "bundle" | "live";
   /** Bundle видео — тус бүрчлэн худалдан авах ID/үнэ/гарчиг */
-  vodId?:  string;
-  price?:  number;
-  title?:  string;
-  backdrop?: string;
+  vodId?:     string;
+  /** LIVE PPV — channel ID + цолоор сонгох үнэ */
+  channelId?: string;
+  price?:     number;
+  title?:     string;
+  backdrop?:  string;
 }
 
 const KIND_TEXT = {
   "live-tv": {
-    mn: { title: "Шууд цацалт үзэхийн тулд",     sub: "TV эсвэл COMBO багц шаардлагатай" },
-    en: { title: "To watch live TV",              sub: "TV or COMBO plan required" },
+    mn: { title: "Шууд цацалт үзэхийн тулд",  sub: "Нэвтэрсэн ч уу шалгана уу" },
+    en: { title: "To watch live TV",          sub: "Please log in" },
   },
   "library": {
-    mn: { title: "Энэ видеог үзэхийн тулд",       sub: "VOD эсвэл COMBO багц шаардлагатай" },
-    en: { title: "To watch this video",            sub: "VOD or COMBO plan required" },
+    mn: { title: "Энэ видеог үзэхийн тулд",   sub: "VOD захиалга шаардлагатай" },
+    en: { title: "To watch this video",       sub: "VOD subscription required" },
   },
   "bundle": {
-    mn: { title: "Энэ видеог үзэхийн тулд",       sub: "72 цагийн дотор үзнэ" },
-    en: { title: "To watch this video",            sub: "Rent for 72 hours" },
+    mn: { title: "Энэ видеог үзэхийн тулд",   sub: "72 цагаар түрээслэнэ" },
+    en: { title: "To watch this video",       sub: "Rent for 72 hours" },
+  },
+  "live": {
+    mn: { title: "Энэ LIVE-ыг үзэхийн тулд",  sub: "24 цагийн дотор үзнэ" },
+    en: { title: "To watch this LIVE",        sub: "Access for 24 hours" },
   },
 };
 
@@ -40,7 +51,7 @@ interface InvoiceData {
   amount: number;
 }
 
-export function UpgradePrompt({ kind, vodId, price, title, backdrop }: Props) {
+export function UpgradePrompt({ kind, vodId, channelId, price, title, backdrop }: Props) {
   const { lang } = useSettingsStore();
   const text = KIND_TEXT[kind][lang];
 
@@ -48,29 +59,46 @@ export function UpgradePrompt({ kind, vodId, price, title, backdrop }: Props) {
   const [paying, setPaying] = useState(false);
   const [error, setError]   = useState<string | null>(null);
 
-  async function rentVideo() {
-    if (!vodId || !price) return;
+  /* Polling timer ref — modal хаагдах, унтрах, эсвэл component unmount үед
+     зайлшгүй цэвэрлэх ёстой (өмнө memory leak + олон concurrent polling-тай байсан). */
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  function stopPolling() {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+  }
+  useEffect(() => () => stopPolling(), []);    /* unmount → cleanup */
+  useEffect(() => { if (!qpay) stopPolling(); }, [qpay]);  /* modal хаагдсан үед */
+
+  /* Single purchase flow — bundle (VOD invoice) vs live (Live invoice).
+     Mock горимд шууд PAID болж reload. Production-д QR + polling. */
+  async function purchase() {
+    stopPolling();
     setPaying(true); setError(null);
     try {
-      const r = await api.post<{ success: true; data: InvoiceData }>(
-        "/api/payment/vod-invoice",
-        { vodId, price, title },
-      );
+      let r;
+      if (kind === "bundle") {
+        if (!vodId || !price) return;
+        r = await api.post<{ success: true; data: InvoiceData }>(
+          "/api/payment/vod-invoice", { vodId, price, title },
+        );
+      } else if (kind === "live") {
+        if (!channelId) return;
+        r = await api.post<{ success: true; data: InvoiceData }>(
+          "/api/payment/live-invoice", { channelId },
+        );
+      } else return;
 
-      /* Mock mode — шууд төлбөр амжилттай гэж тооцох → reload */
       if (r.data.data.mock && r.data.data.paid) {
         window.location.reload();
         return;
       }
-
-      /* Бодит QPay — QR modal харуулаад polling */
       setQpay(r.data.data);
-      const iv = setInterval(async () => {
+      const invoiceId = r.data.data.invoiceId;
+      pollRef.current = setInterval(async () => {
         try {
           const res = await api.post<{ success: true; data: { paid: boolean } }>(
-            "/api/payment/check", { invoiceId: r.data.data.invoiceId });
+            "/api/payment/check", { invoiceId });
           if (res.data.data.paid) {
-            clearInterval(iv);
+            stopPolling();
             window.location.reload();
           }
         } catch { /* silent */ }
@@ -99,7 +127,7 @@ export function UpgradePrompt({ kind, vodId, price, title, backdrop }: Props) {
             </svg>
           </div>
 
-          {kind === "bundle" && price ? (
+          {(kind === "bundle" || kind === "live") && price ? (
             <p className="mt-4 text-3xl font-bold text-accent">
               {price.toLocaleString("mn-MN")}<span className="text-base text-white/60 font-normal ml-1">₮</span>
             </p>
@@ -110,10 +138,10 @@ export function UpgradePrompt({ kind, vodId, price, title, backdrop }: Props) {
           )}
 
           <div className="flex items-center gap-2.5 mt-6 flex-wrap justify-center">
-            {kind === "bundle" ? (
+            {kind === "bundle" || kind === "live" ? (
               <button
-                onClick={rentVideo}
-                disabled={paying || !vodId || !price}
+                onClick={purchase}
+                disabled={paying || (kind === "bundle" ? (!vodId || !price) : !channelId)}
                 className={cn(
                   "px-6 py-3 rounded-full bg-accent hover:bg-accent-hover text-white text-sm font-bold transition-colors",
                   "disabled:opacity-50 disabled:cursor-not-allowed",
@@ -123,9 +151,9 @@ export function UpgradePrompt({ kind, vodId, price, title, backdrop }: Props) {
                     <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     {lang === "mn" ? "Үүсгэж байна..." : "Creating..."}
                   </span>
-                ) : (
-                  lang === "mn" ? "Түрээслэх" : "Rent video"
-                )}
+                ) : kind === "bundle"
+                  ? (lang === "mn" ? "Түрээслэх" : "Rent video")
+                  : (lang === "mn" ? "Худалдан авч үзэх" : "Purchase to watch")}
               </button>
             ) : (
               <Link href="/profile/subscription"

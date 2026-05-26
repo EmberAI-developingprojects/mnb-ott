@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, Suspense } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useT } from "@/store/settingsStore";
@@ -25,10 +25,20 @@ function ForgotForm() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
   const [countdown, setCountdown] = useState(0);
+  /* Countdown timer ref — page remount/unmount үед orphan хийгдэхгүй цэвэрлэх */
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
   function startCountdown() {
+    if (timerRef.current) clearInterval(timerRef.current);
     setCountdown(60);
-    const timer = setInterval(() => setCountdown((c) => { if (c <= 1) { clearInterval(timer); return 0; } return c - 1; }), 1000);
+    timerRef.current = setInterval(() => setCountdown((c) => {
+      if (c <= 1) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        return 0;
+      }
+      return c - 1;
+    }), 1000);
   }
 
   async function handleSendOtp(e: React.FormEvent) {

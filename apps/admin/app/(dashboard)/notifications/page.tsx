@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { Send, CheckCircle2, Link2, Clock, User } from "lucide-react";
 import api, { getApiError } from "@/lib/api";
-import type { ApiResponse, PlanType } from "@/types";
+import type { ApiResponse } from "@/types";
+
+/* v2 plan загвар — broadcast зорилтот үед зөвхөн идэвхтэй plan-ууд */
+type ActivePlan = "BASIC" | "VOD";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input, Field, Textarea } from "@/components/ui/Input";
@@ -11,7 +14,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/components/ui/Toast";
 import { formatDate } from "@/lib/utils";
 
-const PLANS: PlanType[] = ["BASIC", "TV", "VOD", "COMBO"];
+const PLANS: ActivePlan[] = ["BASIC", "VOD"];
 
 interface SentBroadcast {
   id:         string;
@@ -31,7 +34,7 @@ export default function NotificationsPage() {
   const [body, setBody]         = useState("");
   const [link, setLink]         = useState("");
   const [type, setType]         = useState<"SYSTEM" | "PROMO" | "CONTENT">("SYSTEM");
-  const [plans, setPlans]       = useState<PlanType[]>([]);
+  const [plans, setPlans]       = useState<ActivePlan[]>([]);
   const [sending, setSending]   = useState(false);
   const [result, setResult]     = useState<{ sent: number } | null>(null);
   const [error, setError]       = useState("");
@@ -67,7 +70,7 @@ export default function NotificationsPage() {
     finally { setLoadingMore(false); }
   }
 
-  function togglePlan(p: PlanType) {
+  function togglePlan(p: ActivePlan) {
     setPlans((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]);
   }
 
@@ -112,7 +115,10 @@ export default function NotificationsPage() {
         subtitle="Бүх эсвэл сонгосон багцтай хэрэглэгчдэд бөөн мэдэгдэл илгээх"
       />
 
-      <div className="bg-surface border border-border rounded-lg shadow-card p-6 space-y-5 max-w-2xl">
+      {/* lg-аас дээш: form (зүүн) + history (баруун) хажуу хажуудаа.
+          lg-аас доош: form дээр, history доор хэвтээ. */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+      <div className="bg-surface border border-border rounded-lg shadow-card p-6 space-y-5">
         <Field label="Гарчиг">
           <Input value={title} onChange={(e) => setTitle(e.target.value)}
             placeholder="Жишээ: Шинэ кино гарлаа" />
@@ -175,7 +181,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* ─── Илгээгдсэн мэдэгдлүүдийн түүх ─── */}
-      <div className="mt-8 max-w-2xl">
+      <div>
         <h2 className="text-sm font-semibold text-fg mb-3">Илгээсэн мэдэгдлүүд</h2>
         {historyLoading ? (
           <div className="bg-surface border border-border rounded-lg p-6 text-center text-sm text-muted">
@@ -201,7 +207,15 @@ export default function NotificationsPage() {
 
                 {h.link && (
                   <p className="flex items-center gap-1.5 text-[11px] text-muted font-mono truncate">
-                    <Link2 size={11} /> {h.link}
+                    <Link2 size={11} />
+                    <a
+                      href={h.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="truncate hover:underline"
+                    >
+                      {h.link}
+                    </a>
                   </p>
                 )}
 
@@ -231,6 +245,7 @@ export default function NotificationsPage() {
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

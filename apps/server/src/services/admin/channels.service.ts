@@ -10,20 +10,24 @@ export async function listChannels() {
 }
 
 export async function createChannel(actorUserId: string, data: {
-  name:         string;
-  slug:         string;
-  kind:         ChannelKind;
-  streamUrl?:   string;
+  name:          string;
+  slug:          string;
+  kind:          ChannelKind;
+  streamUrl?:    string;
   thumbnailUrl?: string;
-  isActive?:    boolean;
-  orderIndex?:  number;
+  isActive?:     boolean;
+  orderIndex?:   number;
+  price?:        number | null;
+  endsAt?:       string | Date | null;
 }, ip?: string) {
-  /* LIVE төрөл нь нэг л байх ёстой — давтан үүсгэх оролдлогыг таслан зогсооно */
-  if (data.kind === "LIVE") {
-    const existing = await prisma.channel.findFirst({ where: { kind: "LIVE" } });
-    if (existing) throw new AppError("LIVE суваг аль хэдийн бий — оронд нь засна уу", 400, "LIVE_EXISTS");
-  }
-  const ch = await prisma.channel.create({ data });
+  /* Шинэ загвар (v2): LIVE event-үүд олон удаа үүсгэх боломжтой — нэг event нэг
+   * channel. Тиймээс хуучин LIVE_EXISTS check-ийг устгасан. */
+  const ch = await prisma.channel.create({
+    data: {
+      ...data,
+      endsAt: data.endsAt ? new Date(data.endsAt) : null,
+    },
+  });
   await audit({ actorUserId, targetType: "channel", targetId: ch.id, action: "CREATE", after: data, ip });
   return ch;
 }
@@ -36,10 +40,18 @@ export async function updateChannel(actorUserId: string, id: string, data: Parti
   thumbnailUrl: string;
   isActive:     boolean;
   orderIndex:   number;
+  price:        number | null;
+  endsAt:       string | Date | null;
 }>, ip?: string) {
   const before = await prisma.channel.findUnique({ where: { id } });
   if (!before) throw new AppError("Channel олдсонгүй", 404, "NOT_FOUND");
-  const after = await prisma.channel.update({ where: { id }, data });
+  const after = await prisma.channel.update({
+    where: { id },
+    data: {
+      ...data,
+      ...(data.endsAt !== undefined && { endsAt: data.endsAt ? new Date(data.endsAt) : null }),
+    },
+  });
   await audit({ actorUserId, targetType: "channel", targetId: id, action: "UPDATE", before, after, ip });
   return after;
 }

@@ -19,7 +19,7 @@ export async function broadcastNotification(actorUserId: string, data: {
   title:       string;
   body:        string;
   type?:       "SYSTEM" | "PROMO" | "CONTENT";
-  planFilter?: ("BASIC" | "TV" | "VOD" | "COMBO")[];
+  planFilter?: ("BASIC" | "VOD")[];
   link?:       string;
 }, ip?: string) {
   /* Idэвхгүй (isBlocked=true) хэрэглэгчдэд мэдэгдэл явуулахгүй */

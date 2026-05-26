@@ -18,16 +18,20 @@ enum Role {
   SUPER_ADMIN
 }
 
-// 4 төрлийн plan:
-//  BASIC : YouTube архив (үнэгүй) — анхдагч
-//  TV    : Live TV + DVR + EPG
-//  VOD   : Премиум видео сан
-//  COMBO : TV + VOD аль аль
+// Шинэ загвар (v2):
+//  BASIC : Нэвтэрсэн бүх хэрэглэгчдэд үнэгүй —
+//          YouTube архив + TV/Radio суваг (DVR оролцоотой) бүгд хүртээмжтэй
+//  VOD   : Премиум видео санд хүрэх захиалга (сараар)
+//  LIVE event-үүд нь plan-аас гадуур TVOD (event бүрд өөр үнэ, 24 цаг)
+//  Bundle видео нь хуучны адил TVOD (72 цаг)
+//
+//  Хуучин TV / COMBO утгууд legacy compatibility-ийн тулд enum-д үлдсэн —
+//  UI болон шинэ subscribe flow-д TV/COMBO харагдахгүй.
 enum PlanType {
   BASIC
-  TV
+  TV // legacy — TV-г үнэгүй болгосон тул шинээр оноогохгүй
   VOD
-  COMBO
+  COMBO // legacy — VOD-ыг хадгална
 }
 
 enum SubStatus {
@@ -65,17 +69,17 @@ enum ContentType {
 }
 
 model User {
-  id          String    @id @default(cuid())
-  phone       String?   @unique
-  email       String?   @unique
-  name        String?
-  avatar      String?
-  password    String?   // bcrypt hash, Google OAuth-д null
-  role        Role      @default(USER)
-  isVerified  Boolean   @default(false)
-  isBlocked   Boolean   @default(false)  // Admin ban: true бол login хийж чадахгүй
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         String   @id @default(cuid())
+  phone      String?  @unique
+  email      String?  @unique
+  name       String?
+  avatar     String?
+  password   String? // bcrypt hash, Google OAuth-д null
+  role       Role     @default(USER)
+  isVerified Boolean  @default(false)
+  isBlocked  Boolean  @default(false) // Admin ban: true бол login хийж чадахгүй
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   accounts      Account[]
   sessions      UserSession[]
@@ -94,16 +98,16 @@ model User {
 
 // Admin-ийн үйлдлийн түүх — role change, refund, ban г.м.
 model AuditLog {
-  id           String   @id @default(cuid())
-  actorUserId  String
-  targetType   String   // "user" | "vod" | "channel" | "payment" | "config" | ...
-  targetId     String?
-  action       String   // "ROLE_CHANGE" | "BAN" | "REFUND" | "CREATE" | "UPDATE" | "DELETE"
-  before       Json?
-  after        Json?
-  reason       String?
-  ip           String?
-  createdAt    DateTime @default(now())
+  id          String   @id @default(cuid())
+  actorUserId String
+  targetType  String // "user" | "vod" | "channel" | "payment" | "config" | ...
+  targetId    String?
+  action      String // "ROLE_CHANGE" | "BAN" | "REFUND" | "CREATE" | "UPDATE" | "DELETE"
+  before      Json?
+  after       Json?
+  reason      String?
+  ip          String?
+  createdAt   DateTime @default(now())
 
   actor User @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
 
@@ -134,15 +138,15 @@ model Account {
 }
 
 model UserSession {
-  id          String   @id @default(cuid())
-  userId      String
-  deviceId    String
-  deviceName  String
-  deviceType  String
-  refreshToken String  @unique
-  lastActive  DateTime @default(now())
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  deviceId     String
+  deviceName   String
+  deviceType   String
+  refreshToken String   @unique
+  lastActive   DateTime @default(now())
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -231,9 +235,9 @@ model Notification {
 }
 
 enum ChannelKind {
-  LIVE   // МНБ-ийн үндсэн live broadcast (нэг бичлэг — тайлбар + URL)
-  TV     // 5 TV суваг — thumbnail-тэй
-  RADIO  // 2 радио суваг — thumbnail-тэй
+  LIVE // МНБ-ийн үндсэн live broadcast (нэг бичлэг — тайлбар + URL)
+  TV // 5 TV суваг — thumbnail-тэй
+  RADIO // 2 радио суваг — thumbnail-тэй
 }
 
 model Channel {
@@ -246,27 +250,33 @@ model Channel {
   thumbnailUrl String?
   isActive     Boolean     @default(true)
   orderIndex   Int         @default(0)
+  // LIVE event-ийн PPV үнэ (₮). TV/RADIO үед хоосон — тэдгээр нь үнэгүй.
+  price        Int?
+  // LIVE event-ийн дуусах хугацаа — null бол байнгын live (24 цагийн catch-up).
+  endsAt       DateTime?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+
+  purchases Purchase[]
 }
 
 model VodContent {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   title        String
-  description  String?  @db.Text
+  description  String?   @db.Text
   thumbnailUrl String?
   genre        String?
-  type         VodType  @default(FREE)
+  type         VodType   @default(FREE)
   price        Int?
   duration     Int?
   publishedAt  DateTime?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  sources      VodSource[]
-  purchases    Purchase[]
-  bundleItems  VodBundleItem[]
+  sources     VodSource[]
+  purchases   Purchase[]
+  bundleItems VodBundleItem[]
 
   // Admin VOD list-д filter (type) + search (title) + sort (createdAt desc)
   @@index([type, createdAt])
@@ -290,30 +300,35 @@ model VodSource {
 model Purchase {
   id        String         @id @default(cuid())
   userId    String
-  vodId     String
+  // Bundle TVOD үед vodId, LIVE PPV үед channelId — нэг л заагдсан байна
+  vodId     String?
+  channelId String?
   amount    Int
   expiresAt DateTime?
   status    PurchaseStatus @default(ACTIVE)
   createdAt DateTime       @default(now())
 
-  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vod  VodContent @relation(fields: [vodId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vod     VodContent? @relation(fields: [vodId], references: [id], onDelete: Cascade)
+  channel Channel?    @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
+  // Нэг хэрэглэгч нэг видео/channel-ыг 1 удаа active байх — хоёр unique index
   @@unique([userId, vodId])
+  @@unique([userId, channelId])
 }
 
 model Payment {
-  id             String        @id @default(cuid())
-  userId         String
-  invoiceId      String        @unique @default(cuid())
-  qpayInvoiceId  String?
-  amount         Int
-  provider       String        @default("qpay")
-  status         PaymentStatus @default(PENDING)
-  metadata       Json?
-  paidAt         DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id            String        @id @default(cuid())
+  userId        String
+  invoiceId     String        @unique @default(cuid())
+  qpayInvoiceId String?
+  amount        Int
+  provider      String        @default("qpay")
+  status        PaymentStatus @default(PENDING)
+  metadata      Json?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -322,7 +337,7 @@ model Payment {
 model SystemConfig {
   key       String   @id
   value     String
-  label     String   // Admin UI-д харагдах нэр
+  label     String // Admin UI-д харагдах нэр
   updatedAt DateTime @updatedAt
 }
 

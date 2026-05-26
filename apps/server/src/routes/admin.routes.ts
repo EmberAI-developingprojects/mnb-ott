@@ -150,6 +150,9 @@ adminRouter.post("/channels", requireAuth, requireRole(...CONTENT_ROLES), (req, 
     thumbnailUrl: z.string().url().optional(),
     isActive:     z.boolean().optional(),
     orderIndex:   z.number().int().optional(),
+    /* LIVE PPV — үнэ ₮ + дуусах огноо (ISO string) */
+    price:        z.number().int().min(0).nullable().optional(),
+    endsAt:       z.string().datetime().nullable().optional(),
   }).parse(req.body);
   return send(admin.createChannel(req.user!.userId, body, ip(req)), res, next);
 });
@@ -164,6 +167,8 @@ adminRouter.patch("/channels/:id", requireAuth, requireRole(...CONTENT_ROLES, "O
     thumbnailUrl: z.string().url().optional(),
     isActive:     z.boolean().optional(),
     orderIndex:   z.number().int().optional(),
+    price:        z.number().int().min(0).nullable().optional(),
+    endsAt:       z.string().datetime().nullable().optional(),
   }).parse(req.body);
   return send(admin.updateChannel(req.user!.userId, req.params.id, body, ip(req)), res, next);
 });
@@ -246,7 +251,8 @@ adminRouter.post("/notifications/broadcast", requireAuth, requireRole(...CONTENT
     title: z.string().min(1),
     body:  z.string().min(1),
     type:  z.enum(["SYSTEM", "PROMO", "CONTENT"]).optional(),
-    planFilter: z.array(z.enum(["BASIC", "TV", "VOD", "COMBO"])).optional(),
+    /* v2 plan загвар — зөвхөн BASIC, VOD. TV/COMBO нь legacy ба broadcast-д таргетлахгүй. */
+    planFilter: z.array(z.enum(["BASIC", "VOD"])).optional(),
     link:  z.string().trim().max(500).optional(),
   }).parse(req.body);
   return send(admin.broadcastNotification(req.user!.userId, body, ip(req)), res, next);

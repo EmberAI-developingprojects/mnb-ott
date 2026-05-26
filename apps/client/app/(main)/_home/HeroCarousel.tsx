@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useSettingsStore, useT } from "@/store/settingsStore";
 import { useWatchlistStore } from "@/store/watchlistStore";
@@ -51,9 +50,24 @@ export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolea
                 isActive ? "opacity-100 z-10" : "opacity-90 z-0",
               )}
               style={{ transform: `translateX(${offset * 102}%) scale(${isActive ? 1 : 0.95})` }}>
-              <Image src={`https://i.ytimg.com/vi/${v.youtubeId}/maxresdefault.jpg`}
-                alt={v.title} fill sizes="100vw"
-                className="object-cover" priority={isActive} />
+              {/* Responsive YouTube thumbnail:
+                  - mobile (< 640px) : mqdefault 320x180  ~10-20KB
+                  - tablet (< 1280px): hqdefault 480x360  ~30-50KB
+                  - desktop          : maxresdefault 1280x720 ~150-300KB
+                  fetchPriority="high" зөвхөн visible slide-д. */}
+              <img
+                src={`https://i.ytimg.com/vi/${v.youtubeId}/hqdefault.jpg`}
+                srcSet={[
+                  `https://i.ytimg.com/vi/${v.youtubeId}/mqdefault.jpg 320w`,
+                  `https://i.ytimg.com/vi/${v.youtubeId}/hqdefault.jpg 480w`,
+                  `https://i.ytimg.com/vi/${v.youtubeId}/maxresdefault.jpg 1280w`,
+                ].join(", ")}
+                sizes="(max-width: 640px) 100vw, (max-width: 1280px) 80vw, 1240px"
+                alt={v.title}
+                className="absolute inset-0 w-full h-full object-cover"
+                loading={isActive ? "eager" : "lazy"}
+                fetchPriority={isActive ? "high" : "auto"}
+                decoding="async" />
 
               <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />

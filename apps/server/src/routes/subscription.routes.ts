@@ -27,12 +27,14 @@ subscriptionRouter.get("/me", requireAuth, async (req, res, next) => {
 // Контент үзэх эрх шалгах (frontend-ээс gate-д ашиглана)
 subscriptionRouter.post("/access", requireAuth, async (req, res, next) => {
   try {
-    const { kind, vodId } = z.object({
-      kind:  z.enum(["archive", "library", "bundle", "live-tv"]),
-      vodId: z.string().optional(),
+    const { kind, vodId, contentId } = z.object({
+      kind:      z.enum(["archive", "library", "bundle", "live-tv", "live"]),
+      /* vodId — хуучин нэр (bundle-д), contentId — шинэ ерөнхий нэр (live эсвэл bundle) */
+      vodId:     z.string().optional(),
+      contentId: z.string().optional(),
     }).parse(req.body);
 
-    const decision = await checkContentAccess(req.user!.userId, kind, vodId);
+    const decision = await checkContentAccess(req.user!.userId, kind, contentId ?? vodId);
     res.json({ success: true, data: decision });
   } catch (e) { next(e); }
 });
@@ -54,7 +56,7 @@ subscriptionRouter.post("/activate", requireAuth, async (req, res, next) => {
     }
 
     const { planType, period } = z.object({
-      planType: z.enum(["TV", "VOD", "COMBO"]),
+      planType: z.literal("VOD"),
       period:   z.enum(["monthly", "weekly"]),
     }).parse(req.body);
 

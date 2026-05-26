@@ -39,9 +39,14 @@ export default function BundlesPage() {
 
   async function load() {
     setLoading(true);
-    const r = await api.get<ApiResponse<VodBundle[]>>("/api/admin/bundles");
-    setBundles(r.data.data);
-    setLoading(false);
+    try {
+      const r = await api.get<ApiResponse<VodBundle[]>>("/api/admin/bundles");
+      setBundles(r.data.data);
+    } catch (e) {
+      toast.error(getApiError(e).message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function openCreate() { setForm(EMPTY_FORM); setError(""); setCreating(true); }

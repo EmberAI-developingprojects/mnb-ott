@@ -15,12 +15,15 @@ type QpayInvoiceResponse = {
   amount:         number;
 };
 
-/* SVOD plan-ы invoice (сар/7 хоног). QPay invoice үүсгээд QR + deeplinks буцаана. */
+/* Subscription invoice — шинэ загварт зөвхөн VOD plan. */
 export async function createPlanInvoice(
   userId:   string,
-  planType: "TV" | "VOD" | "COMBO",
+  planType: "VOD",
   period:   "monthly" | "weekly",
 ): Promise<QpayInvoiceResponse> {
+  if (planType !== "VOD") {
+    throw new AppError("Plan буруу — зөвхөн VOD захиалга боломжтой", 400, "INVALID_PLAN");
+  }
   const plans = await getSubscriptionPlans();
   const plan  = plans.find((p) => p.type === planType);
   if (!plan) throw new AppError("Plan олдсонгүй", 404, "NOT_FOUND");
@@ -148,6 +151,102 @@ export async function createVodInvoice(
     invoiceId:   payment.invoiceId,
     amount:      price,
     description: `МҮОНРТ түрээс: ${title ?? vodId}`,
+    callbackUrl: `${process.env.QPAY_CALLBACK_URL}`,
+  });
+
+  await prisma.payment.update({
+    where: { id: payment.id },
+    data:  { qpayInvoiceId: invoice.invoice_id },
+  });
+
+  return {
+    mock: false,
+    paymentId:     payment.id,
+    invoiceId:     payment.invoiceId,
+    qpayInvoiceId: invoice.invoice_id,
+    qrText:        invoice.qr_text,
+    qrImage:       invoice.qr_image,
+    deeplinks:     invoice.urls,
+    amount:        price,
+  };
+}
+
+/* LIVE event PPV — Channel.id-аар Purchase + 24 цаг хүчинтэй.
+   - Channel байх ёстой, kind LIVE, price тогтоосон байх
+   - Аль хэдийн идэвхтэй Purchase бол ALREADY_PURCHASED
+   - Mock mode-д шууд PAID болгож Purchase + Payment үүсгэнэ */
+export async function createLiveInvoice(
+  userId:    string,
+  channelId: string,
+): Promise<VodInvoiceMockResult | VodInvoiceLiveResult> {
+  const channel = await prisma.channel.findUnique({
+    where: { id: channelId },
+    select: { id: true, name: true, kind: true, price: true, isActive: true },
+  });
+  if (!channel) throw new AppError("Live олдсонгүй", 404, "LIVE_NOT_FOUND");
+  if (channel.kind !== "LIVE") {
+    throw new AppError("Зөвхөн LIVE event-ийг худалдаж авна", 400, "NOT_LIVE_CHANNEL");
+  }
+  if (!channel.isActive) {
+    throw new AppError("Live идэвхгүй байна", 400, "LIVE_INACTIVE");
+  }
+  if (!channel.price || channel.price < 100) {
+    throw new AppError("Live event үнэгүй байна", 400, "LIVE_NO_PRICE");
+  }
+
+  const owned = await prisma.purchase.findUnique({
+    where: { userId_channelId: { userId, channelId } },
+  });
+  if (owned && owned.status === "ACTIVE" &&
+      (!owned.expiresAt || owned.expiresAt > new Date())) {
+    throw new AppError("Аль хэдийн худалдаж авсан", 400, "ALREADY_PURCHASED");
+  }
+
+  const hours = await getConfigNumber("live.access_hours", 24);
+  const price = channel.price;
+
+  if (isMockPayment()) {
+    const expiresAt = new Date(Date.now() + hours * 3600_000);
+    const payment = await prisma.payment.create({
+      data: {
+        userId, amount: price,
+        status: "PAID", paidAt: new Date(),
+        metadata: { kind: "LIVE", channelId, title: channel.name },
+      },
+    });
+
+    await prisma.purchase.upsert({
+      where:  { userId_channelId: { userId, channelId } },
+      update: { status: "ACTIVE", expiresAt, amount: price },
+      create: { userId, channelId, amount: price, expiresAt },
+    });
+
+    try {
+      await pushNotification({
+        userId, type: "CONTENT",
+        title: `${channel.name} худалдан авагдлаа`,
+        body:  `${hours} цагийн дотор үзэх боломжтой.`,
+        link:  `/live`,
+      });
+    } catch { /* silent */ }
+
+    return {
+      mock: true, paid: true,
+      paymentId: payment.id, invoiceId: payment.invoiceId, amount: price,
+    };
+  }
+
+  const payment = await prisma.payment.create({
+    data: {
+      userId, amount: price,
+      metadata: { kind: "LIVE", channelId, title: channel.name },
+    },
+  });
+
+  const invoice = await qpay.createInvoice({
+    invoiceId:   payment.invoiceId,
+    amount:      price,
+    description: `МҮОНРТ LIVE: ${channel.name}`,
     callbackUrl: `${process.env.QPAY_CALLBACK_URL}`,
   });
 

@@ -3,7 +3,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { ChevronDown, Download } from "lucide-react";
 import api from "@/lib/api";
-import { useAuthStore } from "@/store/authStore";
 import type { ApiResponse, PaginatedResponse, AuditLog } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { useRoleGuard } from "@/components/admin/AuthGate";
@@ -125,7 +124,6 @@ function rangeToParams(range: RangeKey, customFrom: string, customTo: string): {
 
 export default function AuditPage() {
   useRoleGuard(["ADMIN", "SUPER_ADMIN"]);
-  const { accessToken } = useAuthStore();
   const [filter, setFilter] = useState("");
   const [range, setRange]   = useState<RangeKey>("7"); /* default = сүүлийн 7 хоног */
   const [customFrom, setCustomFrom] = useState("");
@@ -136,6 +134,7 @@ export default function AuditPage() {
   const [total, setTotal]     = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [openId, setOpenId]   = useState<string | null>(null);
 
   /* Идэвхтэй хугацааны from/to (ISO) — preset эсвэл custom-аас */
@@ -170,25 +169,32 @@ export default function AuditPage() {
     setRange(next);
   }
 
-  /* CSV export — token-ыг URL-руу хийхгүйн тулд fetch + blob ашиглана */
+  /* Excel export — axios instance-аар, токен interceptor + refresh автомат.
+     `exporting` flag нь товчинд loading spinner үзүүлж, double-click сэргийлнэ. */
   async function handleExport() {
-    const params = new URLSearchParams();
-    if (filter) params.set("targetType", filter);
-    if (from)   params.set("from", from);
-    if (to)     params.set("to", to);
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const params: Record<string, string> = {};
+      if (filter) params.targetType = filter;
+      if (from)   params.from = from;
+      if (to)     params.to   = to;
 
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/admin/audit/export.xlsx?${params}`,
-      { headers: { Authorization: `Bearer ${accessToken}` }, credentials: "include" },
-    );
-    if (!res.ok) { toast.error("Экспорт амжилтгүй"); return; }
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href = url;
-    a.download = `audit-${new Date().toISOString().slice(0, 10)}.xlsx`;
-    a.click();
-    URL.revokeObjectURL(url);
+      const res = await api.get("/api/admin/audit/export.xlsx", {
+        params, responseType: "blob",
+      });
+      const url = URL.createObjectURL(res.data);
+      const a   = document.createElement("a");
+      a.href = url;
+      a.download = `audit-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Excel татагдлаа");
+    } catch {
+      toast.error("Экспорт амжилтгүй");
+    } finally {
+      setExporting(false);
+    }
   }
 
 
@@ -198,8 +204,9 @@ export default function AuditPage() {
         title="Үйлдлийн түүх"
         subtitle="Админуудын хийсэн бүх өөрчлөлт — экспорт боломжтой"
         action={
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download size={14} /> Excel экспорт
+          <Button variant="outline" size="sm" onClick={handleExport}
+            loading={exporting} disabled={exporting}>
+            <Download size={14} /> {exporting ? "Татаж байна..." : "Excel экспорт"}
           </Button>
         }
       />

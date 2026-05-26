@@ -9,8 +9,9 @@ import type { AuthPayload } from "../middleware/auth.middleware";
 export const channelRouter = Router();
 
 /* Public: бүх идэвхтэй суваг буцаана (browse үед нэвтрэхгүй ч харагдана).
-   streamUrl нь зөвхөн live-tv access-тэй нэвтэрсэн хэрэглэгчид буцаах.
-   Зочин/access-гүй: streamUrl=null → frontend дээр UpgradePrompt харуулна. */
+   TV/RADIO: нэвтэрсэн л бол streamUrl буцаана (үнэгүй).
+   LIVE event: PPV — streamUrl зөвхөн худалдан авсан хэрэглэгчид. Энэ check-ийг
+   олон concurrent DB call-аар хийхгүйгээр нэг batch query-аар хийнэ. */
 channelRouter.get("/", async (req, res, next) => {
   try {
     const channels = await prisma.channel.findMany({
@@ -18,31 +19,57 @@ channelRouter.get("/", async (req, res, next) => {
       orderBy: [{ kind: "asc" }, { orderIndex: "asc" }],
     });
 
-    /* Optional auth — Authorization header байгаа бол verify хийж access шалгах */
-    let hasLiveAccess = false;
+    /* Optional auth — token байгаа бол userId */
+    let userId: string | null = null;
     const token = req.headers.authorization?.split(" ")[1];
     if (token) {
       try {
         const payload = jwt.verify(token, process.env.JWT_SECRET!) as AuthPayload;
-        const decision = await checkContentAccess(payload.userId, "live-tv");
-        hasLiveAccess = decision.allowed;
-      } catch { /* token хүчингүй — хэвээр зочин */ }
+        userId = payload.userId;
+      } catch { /* token хүчингүй */ }
+    }
+
+    /* LIVE channel-уудын Purchase-ийг нэг query-аар татна (batch). */
+    let livePurchaseIds = new Set<string>();
+    if (userId) {
+      const liveChannelIds = channels.filter((c) => c.kind === "LIVE").map((c) => c.id);
+      if (liveChannelIds.length > 0) {
+        const purchases = await prisma.purchase.findMany({
+          where: {
+            userId,
+            channelId: { in: liveChannelIds },
+            status:    "ACTIVE",
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
+          select: { channelId: true },
+        });
+        livePurchaseIds = new Set(purchases.map((p) => p.channelId!).filter(Boolean));
+      }
     }
 
     res.json({
       success: true,
       data: {
-        channels: channels.map((c) => ({
-          id:           c.id,
-          name:         c.name,
-          slug:         c.slug,
-          kind:         c.kind,
-          thumbnailUrl: c.thumbnailUrl,
-          orderIndex:   c.orderIndex,
-          isActive:     c.isActive,
-          /* streamUrl зөвхөн access-тэй хэрэглэгчид */
-          streamUrl:    hasLiveAccess ? c.streamUrl : null,
-        })),
+        channels: channels.map((c) => {
+          /* Access logic:
+           *  - TV/RADIO  → нэвтэрсэн хэрэглэгчид free
+           *  - LIVE      → Purchase шалгана (24 цаг) */
+          const allowed =
+            (c.kind === "TV" || c.kind === "RADIO") ? !!userId :
+            c.kind === "LIVE" ? livePurchaseIds.has(c.id) : false;
+          return {
+            id:           c.id,
+            name:         c.name,
+            slug:         c.slug,
+            kind:         c.kind,
+            thumbnailUrl: c.thumbnailUrl,
+            orderIndex:   c.orderIndex,
+            isActive:     c.isActive,
+            price:        c.price,
+            endsAt:       c.endsAt,
+            streamUrl:    allowed ? c.streamUrl : null,
+          };
+        }),
       },
     });
   } catch (e) { next(e); }

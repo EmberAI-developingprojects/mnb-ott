@@ -20,6 +20,8 @@ interface LiveChannel {
   kind: "LIVE" | "TV" | "RADIO";
   thumbnailUrl: string | null;
   streamUrl: string | null;
+  price?: number | null;
+  endsAt?: string | null;
 }
 
 /* Backend LIVE-төрлийн суваг олдохгүй үед ашиглах placeholder зураг */
@@ -32,15 +34,24 @@ export default function LivePage() {
   const [programs, setPrograms] = useState<EpgProgram[]>([]);
   const [canPlay, setCanPlay]   = useState<boolean | null>(null);
 
-  /* LIVE төрөлтэй сувгийг сонгож татна (admin-аас үүсгэсэн) */
+  /* LIVE төрөлтэй сувгийг сонгож татна (admin-аас үүсгэсэн).
+     LIVE байхгүй бол fallback: эхний TV channel (хуучин үндсэн live broadcast-аар).
+     Бүх channel хоосон бол `live` нь null хэвээр → empty state. */
+  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     api.get<{ success: true; data: { channels: LiveChannel[] } }>("/api/channels")
       .then((r) => {
-        const liveCh = r.data.data.channels.find((c) => c.kind === "LIVE")
-          ?? r.data.data.channels[0]; /* fallback: эхний идэвхтэй */
+        const list = r.data.data?.channels ?? [];
+        const liveCh = list.find((c) => c.kind === "LIVE") ?? list[0];
         setLive(liveCh ?? null);
+        if (process.env.NODE_ENV === "development") {
+          console.log("[live page] channels:", list.length, "selected:", liveCh?.slug);
+        }
       })
-      .catch(() => {});
+      .catch((e) => {
+        if (process.env.NODE_ENV === "development") console.error("[live page] channels error:", e);
+      })
+      .finally(() => setLoaded(true));
   }, []);
 
   useEffect(() => {
@@ -53,14 +64,18 @@ export default function LivePage() {
       .catch(() => {});
   }, [live]);
 
+  /* LIVE event PPV access — channelId-аар Purchase шалгана.
+     TV/RADIO нь үнэгүй, харин LIVE event нь тус бүрчлэн худалдан авах ёстой. */
   useEffect(() => {
-    if (!user) { setCanPlay(false); return; }
+    if (!user || !live) { setCanPlay(false); return; }
+    /* LIVE channel бол PPV, харин TV/RADIO бол free (нэвтэрсэн бол үргэлж pass) */
+    if (live.kind !== "LIVE") { setCanPlay(true); return; }
     api.post<{ success: true; data: { allowed: boolean } }>(
       "/api/subscription/access",
-      { kind: "live-tv" },
+      { kind: "live", vodId: live.id },
     ).then((r) => setCanPlay(r.data.data.allowed))
      .catch(() => setCanPlay(false));
-  }, [user?.id]);
+  }, [user?.id, live?.id, live?.kind]);
 
   const now = new Date();
   const current = programs.find(
@@ -72,12 +87,27 @@ export default function LivePage() {
     <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+24px)] pb-12 space-y-5">
 
       {/* Player */}
-      {canPlay === null || !live ? (
+      {!loaded || canPlay === null ? (
         <Skeleton className="aspect-video w-full rounded-xl" />
+      ) : !live ? (
+        /* Channels огт алга — admin/channels-аас үүсгэх ёстой */
+        <div className="aspect-video rounded-2xl border border-app bg-card flex items-center justify-center text-center px-6">
+          <div className="space-y-2">
+            <p className="text-app font-semibold">Шууд цацалт байхгүй</p>
+            <p className="text-sm text-muted">Админ дамжуулалт нэмэхэд энд харагдана.</p>
+          </div>
+        </div>
       ) : canPlay && live.streamUrl ? (
         <LivePlayer streamUrl={live.streamUrl} channelName={live.name} poster={live.thumbnailUrl ?? FALLBACK_LOGO} />
       ) : (
-        <UpgradePrompt kind="live-tv" backdrop={live.thumbnailUrl ?? FALLBACK_LOGO} />
+        /* LIVE event-д PPV худалдан авах товч (24 цаг) — `live` kind */
+        <UpgradePrompt
+          kind="live"
+          channelId={live.id}
+          price={live.price ?? undefined}
+          title={live.name}
+          backdrop={live.thumbnailUrl ?? FALLBACK_LOGO}
+        />
       )}
 
       {/* Суваг мэдээлэл */}

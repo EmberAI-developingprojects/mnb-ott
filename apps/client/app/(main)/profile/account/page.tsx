@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { useT } from "@/store/settingsStore";
@@ -36,6 +36,15 @@ export default function ProfilePage() {
     else setName(user.name ?? "");
   }, [user, router]);
 
+  /* "Saved ✓" badge auto-hide timer-уудыг ref-д тэмдэглээд unmount үед цэвэрлэнэ.
+     Component-аас гарах үед setState fire болохгүй. */
+  const savedTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pwSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (savedTimer.current)   clearTimeout(savedTimer.current);
+    if (pwSavedTimer.current) clearTimeout(pwSavedTimer.current);
+  }, []);
+
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
@@ -43,7 +52,9 @@ export default function ProfilePage() {
     try {
       const res = await api.patch<ApiResponse<User>>("/api/auth/profile", { name });
       setAuth(res.data.data, "");
-      setSaved(true); setTimeout(() => setSaved(false), 2500);
+      setSaved(true);
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+      savedTimer.current = setTimeout(() => setSaved(false), 2500);
     } catch (e) { setError(getApiError(e).message); }
     finally { setSaving(false); }
   }
@@ -61,7 +72,9 @@ export default function ProfilePage() {
     try {
       await api.post("/api/auth/change-password", { currentPassword: curPw, newPassword: newPw });
       setCurPw(""); setNewPw(""); setConfPw("");
-      setPwSaved(true); setTimeout(() => setPwSaved(false), 2500);
+      setPwSaved(true);
+      if (pwSavedTimer.current) clearTimeout(pwSavedTimer.current);
+      pwSavedTimer.current = setTimeout(() => setPwSaved(false), 2500);
     } catch (e) { setPwError(getApiError(e).message); }
     finally { setPwSaving(false); }
   }

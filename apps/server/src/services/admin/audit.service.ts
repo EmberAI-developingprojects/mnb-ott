@@ -150,7 +150,9 @@ export async function listAuditLogs(opts: {
 
 /* XLSX экспорт — Native Excel формат. Office онлайнд шууд нээгдэнэ. */
 export async function exportAuditXlsx(opts: { targetType?: string; from?: Date; to?: Date }): Promise<Buffer> {
-  const ExcelJS = await import("exceljs");
+  /* `exceljs` нь CJS package. Dynamic import нь module namespace-аар орох тул
+     `Workbook` нь `default`-ийн дотор байна — destructure-аар авна. */
+  const { default: ExcelJS } = await import("exceljs");
   const all = await listAuditLogs({ ...opts, page: 1, pageSize: 500 });
 
   const wb = new ExcelJS.Workbook();

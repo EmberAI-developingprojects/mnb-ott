@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-/* Channel CRUD дотор LIVE-ийн singleton constraint-ийг тестлэнэ. */
+/* Channel CRUD — шинэ v2 загвар: LIVE singleton хязгаар арилсан.
+   LIVE event-үүд олон удаа үүсгэх боломжтой (event бүр өөр PPV). */
 
 vi.mock("../../lib/prisma", () => ({
   prisma: {
@@ -12,32 +13,25 @@ vi.mock("../../lib/prisma", () => ({
 import { createChannel } from "../admin/channels.service";
 import { prisma } from "../../lib/prisma";
 
-const findFirst = prisma.channel.findFirst as ReturnType<typeof vi.fn>;
-const createCh  = prisma.channel.create as ReturnType<typeof vi.fn>;
+const createCh = prisma.channel.create as ReturnType<typeof vi.fn>;
 
-describe("createChannel — LIVE singleton", () => {
+describe("createChannel — channel CRUD (v2)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     createCh.mockResolvedValue({ id: "c1" });
     (prisma.auditLog.create as ReturnType<typeof vi.fn>).mockResolvedValue({});
   });
 
-  it("LIVE суваг байхгүй үед LIVE үүсгэж болно", async () => {
-    findFirst.mockResolvedValue(null);
+  it("LIVE event-ийг олон удаа үүсгэж болно (нэг event = нэг LIVE channel)", async () => {
     await expect(createChannel("admin1", {
-      name: "МНБ Live", slug: "mnb-live", kind: "LIVE",
+      name: "Match 1", slug: "match-1", kind: "LIVE", price: 5000,
+    })).resolves.toBeDefined();
+    await expect(createChannel("admin1", {
+      name: "Match 2", slug: "match-2", kind: "LIVE", price: 7000,
     })).resolves.toBeDefined();
   });
 
-  it("Хоёр дахь LIVE үүсгэхийг хориглоно", async () => {
-    findFirst.mockResolvedValue({ id: "live-1" }); /* Аль хэдийн нэг LIVE бий */
-    await expect(createChannel("admin1", {
-      name: "Хоёр дахь", slug: "second-live", kind: "LIVE",
-    })).rejects.toThrow();
-  });
-
   it("TV суваг олон удаа үүсгэж болно", async () => {
-    findFirst.mockResolvedValue(null);
     await expect(createChannel("admin1", {
       name: "МНБ 1", slug: "mnb-1", kind: "TV",
     })).resolves.toBeDefined();
@@ -47,7 +41,6 @@ describe("createChannel — LIVE singleton", () => {
   });
 
   it("Олон RADIO үүсгэж болно", async () => {
-    findFirst.mockResolvedValue(null);
     await expect(createChannel("admin1", {
       name: "Radio 1", slug: "radio-1", kind: "RADIO",
     })).resolves.toBeDefined();

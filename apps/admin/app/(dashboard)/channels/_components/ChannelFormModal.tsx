@@ -13,10 +13,14 @@ export interface ChannelFormData {
   thumbnailUrl: string;
   isActive:     boolean;
   orderIndex:   string;
+  /* LIVE event-д л хэрэглэгдэнэ — PPV үнэ ₮ + дуусах хугацаа (datetime-local) */
+  price:        string;
+  endsAt:       string;
 }
 
 export const EMPTY_FORM: ChannelFormData = {
-  name: "", slug: "", streamUrl: "", thumbnailUrl: "", isActive: true, orderIndex: "0",
+  name: "", slug: "", streamUrl: "", thumbnailUrl: "", isActive: true,
+  orderIndex: "0", price: "", endsAt: "",
 };
 
 const KIND_LABEL: Record<ChannelKind, string> = {
@@ -132,6 +136,19 @@ export function LiveCreateModal({
           <Input value={form.streamUrl}
             onChange={(e) => onFieldChange({ streamUrl: e.target.value })}
             placeholder="https://stream.mnb.mn/live/index.m3u8" />
+        </Field>
+
+        {/* LIVE event PPV — үнэ + дуусах огноо */}
+        <Field label="PPV үнэ (₮) — хоосон бол үнэгүй"
+          hint="Хэрэглэгч худалдан авч 24 цагт хүртэл үзнэ">
+          <Input type="number" value={form.price}
+            onChange={(e) => onFieldChange({ price: e.target.value })}
+            placeholder="5000" />
+        </Field>
+        <Field label="Дуусах огноо (заавал биш)"
+          hint="LIVE event дуусах огноо. Тогтоосон бол энэ хүртэл live status харагдана.">
+          <Input type="datetime-local" value={form.endsAt}
+            onChange={(e) => onFieldChange({ endsAt: e.target.value })} />
         </Field>
 
         {error && (

@@ -63,6 +63,9 @@ export interface Channel {
   thumbnailUrl: string | null;
   isActive: boolean;
   orderIndex: number;
+  /* LIVE PPV — admin LIVE event үүсгэхэд үнэ + дуусах хугацаа тавина */
+  price: number | null;
+  endsAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

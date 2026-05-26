@@ -6,15 +6,24 @@ import * as payment from "../services/payment";
 
 export const paymentRouter = Router();
 
-/* SVOD plan invoice — сар/7 хоног */
+/* SVOD plan invoice — шинэ загварт зөвхөн VOD plan боломжтой */
 paymentRouter.post("/invoice", requireAuth, async (req, res, next) => {
   try {
     const { planType, period } = z.object({
-      planType: z.enum(["TV", "VOD", "COMBO"]),
+      planType: z.literal("VOD"),
       period:   z.enum(["monthly", "weekly"]),
     }).parse(req.body);
 
     const data = await payment.createPlanInvoice(req.user!.userId, planType, period);
+    res.json({ success: true, data });
+  } catch (e) { next(e); }
+});
+
+/* LIVE event PPV — Channel.id-аар худалдан авна (24 цаг) */
+paymentRouter.post("/live-invoice", requireAuth, async (req, res, next) => {
+  try {
+    const { channelId } = z.object({ channelId: z.string() }).parse(req.body);
+    const data = await payment.createLiveInvoice(req.user!.userId, channelId);
     res.json({ success: true, data });
   } catch (e) { next(e); }
 });
