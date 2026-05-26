@@ -45,6 +45,9 @@ export function VodPlayer({
   const [skipHint, setSkipHint] = useState<"back" | "fwd" | null>(null);
   const lastTapRef = useRef<{ t: number; side: "left" | "right" } | null>(null);
   const skipHintTimer = useRef<ReturnType<typeof setTimeout>>();
+  /* Single-tap-ийг 280ms хүлээж дараагийн tap ирвэл double-tap-аар авна.
+     Энэ ref нь deferred togglePlay-ийн timer-ийг хадгална. */
+  const singleTapTimer = useRef<ReturnType<typeof setTimeout>>();
 
   /* Явц хадгалах — 3 сек debounce. user + vodId stale closure-аас зайлсхийнэ */
   const userRef  = useRef(user);
@@ -127,6 +130,7 @@ export function VodPlayer({
       clearTimeout(saveTimer.current);
       clearTimeout(hideTimer.current);
       clearTimeout(skipHintTimer.current);
+      clearTimeout(singleTapTimer.current);
       playerRef.current?.destroy();
     };
   }, []);
@@ -198,10 +202,12 @@ export function VodPlayer({
     else playerRef.current.playVideo();
   }
 
-  /* YouTube-маяг double-tap seek + single tap toggle.
-     - 1 tap: play/pause + controls reveal
-     - 2 tap on same side within 300ms: seek ±10s + visual badge
-     Зүүн талд → -10s, баруун талд → +10s. */
+  /* YouTube-маяг tap handler — single vs double-tap зөв ялгана:
+     - Эхний tap → 280ms хүлээгээд togglePlay (хэрэв 2-р tap ирэхгүй бол)
+     - 2-р tap зүүн талд → −10s seek
+     - 2-р tap баруун талд → +10s seek
+     2-р tap нэгдүгээр-ийн pending toggle-ийг clearTimeout-аар цуцлана,
+     тиймээс double-tap-аас togglePlay давхар ажиллахгүй. */
   function handleTap(e: React.MouseEvent<HTMLDivElement>) {
     if (!playerRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -210,8 +216,9 @@ export function VodPlayer({
     const now  = Date.now();
     const last = lastTapRef.current;
 
-    if (last && last.side === side && now - last.t < 300) {
-      /* Double-tap → seek ±10s */
+    if (last && now - last.t < 300) {
+      /* Double-tap → pending togglePlay-ийг цуцалж seek хийнэ */
+      clearTimeout(singleTapTimer.current);
       const cur  = playerRef.current.getCurrentTime();
       const next = Math.max(0, Math.min(total, cur + (side === "right" ? 10 : -10)));
       playerRef.current.seekTo(next, true);
@@ -223,10 +230,15 @@ export function VodPlayer({
       return;
     }
 
-    /* Single tap — togglePlay + controls reveal */
+    /* Эхний tap — togglePlay-ийг 280ms-аар хойшлуулна.
+       Хэрэв энэ хугацаанд 2-р tap ирвэл дээрх блокт цуцлагдана. */
     lastTapRef.current = { t: now, side };
-    togglePlay();
-    revealControls();
+    clearTimeout(singleTapTimer.current);
+    singleTapTimer.current = setTimeout(() => {
+      togglePlay();
+      revealControls();
+      lastTapRef.current = null;
+    }, 280);
   }
 
   function toggleMute() {

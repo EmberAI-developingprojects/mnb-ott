@@ -28,7 +28,8 @@ export function PosterCard({ v }: { v: Video }) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
         <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-accent text-white text-[10px] font-bold uppercase tracking-wider">VOD</span>
 
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* Mobile-д үргэлж visible, desktop-д hover-ээр reveal. */}
+        <div className="absolute inset-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200">
           <button onClick={toggleSave} aria-label="Save"
             className={cn(
               "absolute top-2 right-2 w-9 h-9 rounded-full backdrop-blur flex items-center justify-center transition-colors",

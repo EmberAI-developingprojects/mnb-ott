@@ -58,7 +58,8 @@ export default function WatchlistPage() {
                       {formatDuration(item.duration)}
                     </span>
                   )}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Mobile-д үргэлж visible, desktop-д hover */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                     <div className="w-10 h-10 rounded-full bg-accent/90 flex items-center justify-center shadow-xl">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="white" className="translate-x-0.5">
                         <path d="M8 5v14l11-7z"/>
@@ -74,7 +75,7 @@ export default function WatchlistPage() {
               <button
                 onClick={() => remove(item.id)}
                 className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-black/70 text-white text-[11px] font-semibold
-                  opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--danger)]"
+                  opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity hover:bg-[var(--danger)]"
                 title={t("cancel")}
               >
                 {lang === "mn" ? "Хасах" : "Remove"}

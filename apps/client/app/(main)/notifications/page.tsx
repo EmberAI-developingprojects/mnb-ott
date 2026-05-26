@@ -194,7 +194,7 @@ export default function NotificationsPage() {
                 {lang === "mn" ? "Болих" : "Cancel"}
               </button>
               <button onClick={() => remove(confirmDel)}
-                className="flex-1 py-2.5 rounded-xl bg-app text-bg text-sm font-semibold hover:opacity-90 transition-opacity">
+                className="flex-1 py-2.5 rounded-xl bg-app text-sub text-sm font-semibold hover:opacity-90 transition-opacity">
                 {lang === "mn" ? "Устгах" : "Delete"}
               </button>
             </div>
@@ -262,7 +262,7 @@ function NotificationRow({
 
       {/* Delete — soft, hover-д харагдана */}
       <button onClick={() => onAskDelete(n.id)}
-        className="absolute top-2 right-2 sm:opacity-0 group-hover:opacity-100 transition-opacity
+        className="absolute top-2 right-2 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity
           w-7 h-7 rounded-full text-muted hover:text-app hover:bg-card-hover flex items-center justify-center"
         aria-label={lang === "mn" ? "Устгах" : "Delete"}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
