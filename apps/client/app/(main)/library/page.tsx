@@ -53,7 +53,7 @@ function LibraryContent() {
   /* Flat list (нэг ангилал) — banner байхгүй */
   if (genreFilter) {
     return (
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+24px)] pb-16">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 pt-[calc(var(--header-h)+24px)] pb-16">
         <h1 className="text-2xl md:text-3xl font-bold text-app mb-6">{genreFilter}</h1>
         {loading ? (
           <PosterGrid>
@@ -81,7 +81,7 @@ function LibraryContent() {
   }
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+24px)] pb-16 space-y-12">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 pt-[calc(var(--header-h)+24px)] pb-16 space-y-12">
       {loading
         ? Array.from({ length: 3 }).map((_, i) => <SectionSkeleton key={i} />)
         : sections.map((s) => (

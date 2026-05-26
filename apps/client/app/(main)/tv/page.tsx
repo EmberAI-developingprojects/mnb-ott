@@ -107,7 +107,7 @@ function TvContent() {
   /* Loading / empty state */
   if (!channelsLoaded || channels.length === 0 || !active) {
     return (
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+16px)] pb-12 space-y-5">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 pt-[calc(var(--header-h)+16px)] pb-12 space-y-5">
         {!channelsLoaded ? (
           <>
             <Skeleton className="aspect-video w-full rounded-xl" />
@@ -134,7 +134,7 @@ function TvContent() {
   const activeLogo = active.thumbnailUrl || FALLBACK_LOGO;
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+16px)] pb-12 space-y-5">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 pt-[calc(var(--header-h)+16px)] pb-12 space-y-5">
 
       {!mobileShowPlayer && (
         <MobileChannelList

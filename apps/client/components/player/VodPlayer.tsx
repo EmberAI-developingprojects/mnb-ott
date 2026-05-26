@@ -41,6 +41,10 @@ export function VodPlayer({
   const [showControls, setShowControls] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [qualities, setQualities] = useState<string[]>([]);
+  /* Double-tap seek визуал feedback ба state — YouTube-style */
+  const [skipHint, setSkipHint] = useState<"back" | "fwd" | null>(null);
+  const lastTapRef = useRef<{ t: number; side: "left" | "right" } | null>(null);
+  const skipHintTimer = useRef<ReturnType<typeof setTimeout>>();
 
   /* Явц хадгалах — 3 сек debounce. user + vodId stale closure-аас зайлсхийнэ */
   const userRef  = useRef(user);
@@ -122,9 +126,63 @@ export function VodPlayer({
       clearInterval(progressTimer.current);
       clearTimeout(saveTimer.current);
       clearTimeout(hideTimer.current);
+      clearTimeout(skipHintTimer.current);
       playerRef.current?.destroy();
     };
   }, []);
+
+  /* Keyboard shortcuts — desktop хэрэглэгчдэд YouTube-маяг.
+     ← / → : ±10 сек seek + skipHint badge
+     Space : play/pause
+     m     : mute toggle
+     f     : fullscreen toggle
+     Input/textarea-д бичиж байгаа үед ажиллахгүй (typing-ийг тасалдуулахгүйн тулд). */
+  useEffect(() => {
+    if (!started || !ready) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      const yt = playerRef.current;
+      if (!yt) return;
+
+      switch (e.key) {
+        case "ArrowLeft": {
+          e.preventDefault();
+          const next = Math.max(0, yt.getCurrentTime() - 10);
+          yt.seekTo(next, true); setCurrent(next);
+          setSkipHint("back");
+          clearTimeout(skipHintTimer.current);
+          skipHintTimer.current = setTimeout(() => setSkipHint(null), 500);
+          break;
+        }
+        case "ArrowRight": {
+          e.preventDefault();
+          const next = Math.min(total || yt.getDuration(), yt.getCurrentTime() + 10);
+          yt.seekTo(next, true); setCurrent(next);
+          setSkipHint("fwd");
+          clearTimeout(skipHintTimer.current);
+          skipHintTimer.current = setTimeout(() => setSkipHint(null), 500);
+          break;
+        }
+        case " ":
+        case "k":
+          e.preventDefault();
+          togglePlay();
+          break;
+        case "m":
+          e.preventDefault();
+          toggleMute();
+          break;
+        case "f":
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [started, ready, total]);
 
   function revealControls() {
     setShowControls(true);
@@ -138,6 +196,37 @@ export function VodPlayer({
     if (!playerRef.current) return;
     if (playing) playerRef.current.pauseVideo();
     else playerRef.current.playVideo();
+  }
+
+  /* YouTube-маяг double-tap seek + single tap toggle.
+     - 1 tap: play/pause + controls reveal
+     - 2 tap on same side within 300ms: seek ±10s + visual badge
+     Зүүн талд → -10s, баруун талд → +10s. */
+  function handleTap(e: React.MouseEvent<HTMLDivElement>) {
+    if (!playerRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x    = e.clientX - rect.left;
+    const side: "left" | "right" = x < rect.width / 2 ? "left" : "right";
+    const now  = Date.now();
+    const last = lastTapRef.current;
+
+    if (last && last.side === side && now - last.t < 300) {
+      /* Double-tap → seek ±10s */
+      const cur  = playerRef.current.getCurrentTime();
+      const next = Math.max(0, Math.min(total, cur + (side === "right" ? 10 : -10)));
+      playerRef.current.seekTo(next, true);
+      setCurrent(next);
+      setSkipHint(side === "right" ? "fwd" : "back");
+      clearTimeout(skipHintTimer.current);
+      skipHintTimer.current = setTimeout(() => setSkipHint(null), 500);
+      lastTapRef.current = null;
+      return;
+    }
+
+    /* Single tap — togglePlay + controls reveal */
+    lastTapRef.current = { t: now, side };
+    togglePlay();
+    revealControls();
   }
 
   function toggleMute() {
@@ -209,14 +298,46 @@ export function VodPlayer({
       )}
 
       {/* Click overlay + controls — pause/end үед бүтэн дарагдсан → YouTube
-          "More videos" гарахгүй. Play үед бүх mouse interaction-ийг шингээнэ. */}
+          "More videos" гарахгүй. Play үед бүх mouse interaction-ийг шингээнэ.
+          handleTap нь single-tap → toggle, double-tap → seek ±10s (YouTube-маяг). */}
       {started && ready && (
         <div className="absolute inset-0 z-[22] cursor-pointer"
-          onClick={togglePlay}
+          onClick={handleTap}
           onMouseMove={revealControls}
           onMouseLeave={() => playing && setShowControls(false)}>
 
           {ended && <ReplayButton onReplay={handleReplay} />}
+
+          {/* Mobile center play/pause — товч голд тод харагдана. Single-tap
+              хийхэд togglePlay-тай parent overlay шууд handle хийнэ. */}
+          {!playing && !ended && !skipHint && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-16 h-16 rounded-full bg-black/55 backdrop-blur flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white" className="translate-x-0.5">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
+          )}
+
+          {/* Double-tap seek feedback — 500ms badge */}
+          {skipHint && (
+            <div className={cn(
+              "absolute top-0 bottom-0 flex items-center justify-center pointer-events-none",
+              skipHint === "back" ? "left-0 w-1/2" : "right-0 w-1/2",
+            )}>
+              <div className="flex flex-col items-center gap-1 px-4 py-3 rounded-2xl bg-black/55 backdrop-blur text-white animate-fade-in">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                  {skipHint === "back"
+                    ? <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" transform="scale(-1,1) translate(-24,0)"/>
+                    : <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>}
+                </svg>
+                <span className="text-[12px] font-bold tabular-nums">
+                  {skipHint === "back" ? "−10 сек" : "+10 сек"}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className={cn(
             "absolute inset-x-0 bottom-0 transition-opacity duration-300",

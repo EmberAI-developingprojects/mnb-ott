@@ -84,7 +84,7 @@ export default function LivePage() {
   const next = programs.find((p) => new Date(p.startTime) > now);
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+24px)] pb-12 space-y-5">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 pt-[calc(var(--header-h)+24px)] pb-12 space-y-5">
 
       {/* Player */}
       {!loaded || canPlay === null ? (

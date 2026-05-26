@@ -33,7 +33,7 @@ export default function BundleDetailPage() {
   }, [id]);
 
   if (loading) return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+24px)] pb-16">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 pt-[calc(var(--header-h)+24px)] pb-16">
       <Skeleton className="h-8 w-72 mb-6" />
       <Grid>
         {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="aspect-video rounded-xl" />)}
@@ -43,7 +43,7 @@ export default function BundleDetailPage() {
   if (!bundle) return null;
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+24px)] pb-16">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 pt-[calc(var(--header-h)+24px)] pb-16">
       <h1 className="text-2xl md:text-3xl font-bold text-app mb-6">{bundle.title}</h1>
 
       <Grid>

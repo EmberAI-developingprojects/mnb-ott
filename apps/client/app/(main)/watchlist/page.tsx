@@ -16,7 +16,7 @@ export default function WatchlistPage() {
   const [visible, setVisible] = useState(PAGE_SIZE);
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+24px)] pb-16">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 pt-[calc(var(--header-h)+24px)] pb-16">
 
       {items.length === 0 ? (
         <div className="py-24 flex flex-col items-center gap-4 text-center">

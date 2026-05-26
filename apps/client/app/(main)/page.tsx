@@ -51,7 +51,7 @@ export default function HomePage() {
 
       <ChannelStrip channels={channels} />
 
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-10 space-y-12">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 py-10 space-y-12">
         <Section title={lang === "mn" ? "Видео багц" : "Bundles"} href="/bundles" t={t}
           loading={loading} skeleton="wide">
           {bundles.map((b) => <BundleCard key={b.id} bundle={b} />)}

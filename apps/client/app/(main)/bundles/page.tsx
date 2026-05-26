@@ -31,7 +31,7 @@ export default function BundlesPage() {
   }, []);
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+24px)] pb-16 space-y-12">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 pt-[calc(var(--header-h)+24px)] pb-16 space-y-12">
       {loading
         ? Array.from({ length: 3 }).map((_, i) => <SectionSkeleton key={i} />)
         : bundles.map((b) => (

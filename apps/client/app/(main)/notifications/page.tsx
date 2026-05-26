@@ -123,7 +123,7 @@ export default function NotificationsPage() {
   }, [items]);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 md:px-6 pt-[calc(var(--header-h)+32px)] pb-16">
+    <div className="max-w-2xl mx-auto px-4 md:px-6 lg:px-10 xl:px-16 pt-[calc(var(--header-h)+32px)] pb-16">
       {/* Header */}
       <header className="mb-8 flex items-center justify-between gap-4">
         <h1 className="text-2xl md:text-[28px] font-bold text-app tracking-tight">

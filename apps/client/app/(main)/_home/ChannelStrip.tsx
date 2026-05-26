@@ -10,7 +10,7 @@ export function ChannelStrip({ channels }: { channels: ApiChannel[] }) {
   if (channels.length === 0) return null;
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-8">
+    <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 pt-8">
       <ScrollRow center step={320}>
         {channels.map((ch) => {
           const isRadio = ch.kind === "RADIO";
