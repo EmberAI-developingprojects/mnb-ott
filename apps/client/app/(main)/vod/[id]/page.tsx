@@ -266,8 +266,9 @@ function ActionPill({ icon, label, active, onClick }: {
     <button onClick={onClick}
       className={cn(
         "inline-flex items-center gap-2 px-4 py-2 rounded-full border text-[13px] font-semibold transition-colors",
+        /* Active: brand цэнхэр highlight (өмнө `bg-app text-bg` нь хоёулаа var(--bg) болж текст харагдахгүй байсан). */
         active
-          ? "bg-app text-bg border-app"
+          ? "bg-brand text-white border-brand hover:bg-brand-hover"
           : "bg-card border-app text-app hover:bg-card-hover",
       )}>
       {icon}

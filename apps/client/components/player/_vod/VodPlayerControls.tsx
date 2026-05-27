@@ -4,8 +4,9 @@ import Image from "next/image";
 import { useState } from "react";
 import { cn, formatDuration } from "@/lib/utils";
 
-/* Player controls bar — progress bar (hover preview + seek), play/pause,
-   time, volume, quality select, fullscreen. */
+/* Player controls bar — progress bar (hover preview + seek), play/pause
+   (desktop only), time, volume, quality select, fullscreen. Mobile дээр
+   play/pause-ийг зөвхөн голын товч + double-tap-аар удирдана. */
 export function VodPlayerControls({
   current, total, playing, muted, volume, fullscreen, qualities, thumbnailUrl,
   onTogglePlay, onToggleMute, onVolumeChange, onSeek, onQuality, onToggleFullscreen,
@@ -71,8 +72,8 @@ export function VodPlayerControls({
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Play/Pause */}
-        <button onClick={onTogglePlay} className="text-white hover:text-primary transition-colors shrink-0">
+        {/* Play/Pause — зөвхөн desktop (lg+). Mobile-д голын товч ажиллана. */}
+        <button onClick={onTogglePlay} className="hidden lg:block text-white hover:text-primary transition-colors shrink-0">
           {playing ? (
             <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
               <rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" />

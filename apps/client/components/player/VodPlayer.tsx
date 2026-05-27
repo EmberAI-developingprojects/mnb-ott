@@ -196,18 +196,26 @@ export function VodPlayer({
     }
   }
 
+  /* YT.PlayerState-аас шууд унших нь react state stale closure-аас зайлсхийнэ.
+     Хурдан давхар tap үед `playing` state хараахан шинэчлэгдээгүй байж,
+     эсрэг үйлдэл хийх (давхар pause / давхар resume) бэрхшээлийг арилгана. */
   function togglePlay() {
-    if (!playerRef.current) return;
-    if (playing) playerRef.current.pauseVideo();
-    else playerRef.current.playVideo();
+    const yt = playerRef.current;
+    if (!yt) return;
+    const PLAYING = 1;
+    const state = yt.getPlayerState();
+    if (state === PLAYING) yt.pauseVideo();
+    else yt.playVideo();
   }
 
   /* YouTube-маяг tap handler — single vs double-tap зөв ялгана:
-     - Эхний tap → 280ms хүлээгээд togglePlay (хэрэв 2-р tap ирэхгүй бол)
+     - Эхний tap → DOUBLE_TAP_MS хүлээгээд togglePlay (хэрэв 2-р tap ирэхгүй бол)
      - 2-р tap зүүн талд → −10s seek
      - 2-р tap баруун талд → +10s seek
-     2-р tap нэгдүгээр-ийн pending toggle-ийг clearTimeout-аар цуцлана,
-     тиймээс double-tap-аас togglePlay давхар ажиллахгүй. */
+     Window = delay (ижил тогтмол) — энэ нь "double-tap гэж ялгасан" мөч ба
+     "single-tap гэж бууруулж toggle хийсэн" мөч хоёрын хооронд цоорхой
+     үүсэхээс сэргийлнэ (өмнө 300 vs 280 болж буггүй давхар toggle гарч байсан). */
+  const DOUBLE_TAP_MS = 280;
   function handleTap(e: React.MouseEvent<HTMLDivElement>) {
     if (!playerRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -216,7 +224,7 @@ export function VodPlayer({
     const now  = Date.now();
     const last = lastTapRef.current;
 
-    if (last && now - last.t < 300) {
+    if (last && now - last.t < DOUBLE_TAP_MS) {
       /* Double-tap → pending togglePlay-ийг цуцалж seek хийнэ */
       clearTimeout(singleTapTimer.current);
       const cur  = playerRef.current.getCurrentTime();
@@ -226,11 +234,12 @@ export function VodPlayer({
       setSkipHint(side === "right" ? "fwd" : "back");
       clearTimeout(skipHintTimer.current);
       skipHintTimer.current = setTimeout(() => setSkipHint(null), 500);
+      revealControls();
       lastTapRef.current = null;
       return;
     }
 
-    /* Эхний tap — togglePlay-ийг 280ms-аар хойшлуулна.
+    /* Эхний tap — togglePlay-ийг DOUBLE_TAP_MS-аар хойшлуулна.
        Хэрэв энэ хугацаанд 2-р tap ирвэл дээрх блокт цуцлагдана. */
     lastTapRef.current = { t: now, side };
     clearTimeout(singleTapTimer.current);
@@ -238,7 +247,7 @@ export function VodPlayer({
       togglePlay();
       revealControls();
       lastTapRef.current = null;
-    }, 280);
+    }, DOUBLE_TAP_MS);
   }
 
   function toggleMute() {
