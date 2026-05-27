@@ -114,8 +114,26 @@ export function LivePlayer({
           index: i,
         }));
         setQualities(qs);
-        video.play().catch(() => setIsMuted(true));
+        /* Autoplay-ийн орчин үеийн browser policy:
+             - Muted video: autoplay зөвшөөрнө
+             - Unmuted video: хэрэглэгчийн interaction шаардана
+           Хэрэв play() reject хийвэл (autoplay блоклогдсон), бид өөрсдөө
+           video-г mute хийгээд retry хийнэ. Өмнө зөвхөн React state-ийг
+           setIsMuted(true) хийдэг байсан — video.muted шинэчлэгдэхгүй
+           учраас UI muted icon харуулж байж, видео хэсэг хугацааны дараа
+           ДУУТАЙ тоглодог desync асуудал гардаг байсан. */
+        video.play().catch(() => {
+          video.muted = true;
+          setIsMuted(true);
+          video.play().catch(() => { /* still blocked, give up */ });
+        });
       });
+
+      /* Video element-ийн mute төлвийг React state-тэй ямагт sync байлгана.
+         Browser-аас (keyboard shortcut, system mute гэх мэт)-аар mute солигдсон
+         ч UI зөв харагдана. */
+      const onVolumeChange = () => setIsMuted(video.muted);
+      video.addEventListener("volumechange", onVolumeChange);
 
       /* Auto-recovery — fatal алдааг шууд recover хийх оролдоно */
       hls.on(Hls.Events.ERROR, (_e, data) => {
@@ -136,11 +154,23 @@ export function LivePlayer({
         }
       });
 
-      return () => { hls.destroy(); };
+      return () => {
+        video.removeEventListener("volumechange", onVolumeChange);
+        hls.destroy();
+      };
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       // Safari native HLS
       video.src = streamUrl;
       video.addEventListener("loadedmetadata", () => setLoading(false));
+      /* Safari дээр ч ижил sync хадгална */
+      const onVolumeChange = () => setIsMuted(video.muted);
+      video.addEventListener("volumechange", onVolumeChange);
+      video.play().catch(() => {
+        video.muted = true;
+        setIsMuted(true);
+        video.play().catch(() => { /* still blocked */ });
+      });
+      return () => video.removeEventListener("volumechange", onVolumeChange);
     }
   }, [streamUrl, mounted, user, router]);
 
