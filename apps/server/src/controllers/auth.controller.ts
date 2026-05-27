@@ -248,7 +248,7 @@ export async function removeSession(req: Request, res: Response, next: NextFunct
 
 // ── Refresh / Logout / Me ─────────────────────────────
 
-export async function refresh(req: Request, res: Response, next: NextFunction) {
+export async function refresh(req: Request, res: Response, _next: NextFunction) {
   try {
     const token = req.cookies?.refreshToken as string | undefined;
     if (!token) {
@@ -258,7 +258,14 @@ export async function refresh(req: Request, res: Response, next: NextFunction) {
     const tokens = await authService.refreshTokens(token);
     setRefreshCookie(res, tokens.refreshToken);
     res.json({ success: true, data: { accessToken: tokens.accessToken } });
-  } catch (e) { next(e); }
+  } catch (e) {
+    const code = e instanceof Error && "code" in e ? (e as { code?: string }).code : "REFRESH_FAILED";
+    res.status(401).json({
+      success: false,
+      message: "Дахин нэвтэрнэ үү",
+      code:    code ?? "REFRESH_FAILED",
+    });
+  }
 }
 
 export async function logout(req: Request, res: Response, next: NextFunction) {

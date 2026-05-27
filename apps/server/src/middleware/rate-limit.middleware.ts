@@ -56,3 +56,11 @@ export const adminLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit:    60,
 });
+
+/* Search endpoint — YouTube API quota-ийг хамгаалах + scraping bot-оос сэргийлнэ.
+   30 req/min/IP — type-as-you-search debounce 350ms тул хэвийн хэрэглэгч хүрэхгүй. */
+export const searchLimiter = rateLimit({
+  ...baseConfig,
+  windowMs: 60 * 1000,
+  limit:    30,
+});

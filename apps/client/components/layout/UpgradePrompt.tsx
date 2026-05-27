@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useSettingsStore } from "@/store/settingsStore";
+import { useAuthStore } from "@/store/authStore";
 import api, { getApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -25,8 +27,8 @@ interface Props {
 
 const KIND_TEXT = {
   "live-tv": {
-    mn: { title: "Шууд цацалт үзэхийн тулд",  sub: "Нэвтэрсэн ч уу шалгана уу" },
-    en: { title: "To watch live TV",          sub: "Please log in" },
+    mn: { title: "Бүртгэлтэй хэрэглэгчид үзэх боломжтой",  sub: "(үнэгүй)" },
+    en: { title: "To watch live TV",          sub: "Please log in (free)" },
   },
   "library": {
     mn: { title: "Энэ видеог үзэхийн тулд",   sub: "VOD захиалга шаардлагатай" },
@@ -53,7 +55,12 @@ interface InvoiceData {
 
 export function UpgradePrompt({ kind, vodId, channelId, price, title, backdrop }: Props) {
   const { lang } = useSettingsStore();
+  const { user } = useAuthStore();
+  const pathname = usePathname();
   const text = KIND_TEXT[kind][lang];
+  /* TV/Radio болон Архив нь нэвтэрсэн бүхэнд free. Тиймээс энэ prompt нь зөвхөн
+     "нэвтрэлт хэрэгтэй" утгатай — "Багц авах" биш "Нэвтрэх"-ийн товч харуулна. */
+  const isLoginPrompt = !user && kind === "live-tv";
 
   const [qpay, setQpay]     = useState<InvoiceData | null>(null);
   const [paying, setPaying] = useState(false);
@@ -119,31 +126,35 @@ export function UpgradePrompt({ kind, vodId, channelId, price, title, backdrop }
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/40" />
 
-        <div className="relative h-full flex flex-col items-center justify-center text-center px-6 py-10">
-          <div className="w-14 h-14 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center mb-4">
+        <div className="relative h-full flex flex-col items-center justify-center text-center px-4 sm:px-6 py-4 sm:py-10">
+          {/* Lock icon — mobile-д зай багатай тул нуугдана */}
+          <div className="hidden sm:flex w-14 h-14 rounded-full bg-accent/20 border border-accent/40 items-center justify-center mb-4">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
           </div>
 
+          <h2 className="text-white text-sm sm:text-lg font-bold line-clamp-2 px-2">{text.title}</h2>
+          <p className="text-white/70 text-[11px] sm:text-sm mt-0.5 sm:mt-1">{text.sub}</p>
+
           {(kind === "bundle" || kind === "live") && price ? (
-            <p className="mt-4 text-3xl font-bold text-accent">
-              {price.toLocaleString("mn-MN")}<span className="text-base text-white/60 font-normal ml-1">₮</span>
+            <p className="mt-2 sm:mt-4 text-xl sm:text-3xl font-bold text-accent">
+              {price.toLocaleString("mn-MN")}<span className="text-xs sm:text-base text-white/60 font-normal ml-1">₮</span>
             </p>
           ) : null}
 
           {error && (
-            <p className="mt-3 text-sm text-[var(--danger)]">{error}</p>
+            <p className="mt-2 text-xs sm:text-sm text-[var(--danger)]">{error}</p>
           )}
 
-          <div className="flex items-center gap-2.5 mt-6 flex-wrap justify-center">
+          <div className="flex items-center gap-2.5 mt-3 sm:mt-6 flex-wrap justify-center">
             {kind === "bundle" || kind === "live" ? (
               <button
                 onClick={purchase}
                 disabled={paying || (kind === "bundle" ? (!vodId || !price) : !channelId)}
                 className={cn(
-                  "px-6 py-3 rounded-full bg-accent hover:bg-accent-hover text-white text-sm font-bold transition-colors",
+                  "px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-accent hover:bg-accent-hover text-white text-xs sm:text-sm font-bold transition-colors",
                   "disabled:opacity-50 disabled:cursor-not-allowed",
                 )}>
                 {paying ? (
@@ -155,9 +166,14 @@ export function UpgradePrompt({ kind, vodId, channelId, price, title, backdrop }
                   ? (lang === "mn" ? "Түрээслэх" : "Rent video")
                   : (lang === "mn" ? "Худалдан авч үзэх" : "Purchase to watch")}
               </button>
+            ) : isLoginPrompt ? (
+              <Link href={`/login?callbackUrl=${encodeURIComponent(pathname ?? "/")}`}
+                className="px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-accent hover:bg-accent-hover text-white text-xs sm:text-sm font-bold transition-colors">
+                {lang === "mn" ? "Нэвтрэх" : "Log in"}
+              </Link>
             ) : (
               <Link href="/profile/subscription"
-                className="px-6 py-3 rounded-full bg-accent hover:bg-accent-hover text-white text-sm font-bold transition-colors">
+                className="px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-accent hover:bg-accent-hover text-white text-xs sm:text-sm font-bold transition-colors">
                 {lang === "mn" ? "Багц авах" : "Subscribe"}
               </Link>
             )}
