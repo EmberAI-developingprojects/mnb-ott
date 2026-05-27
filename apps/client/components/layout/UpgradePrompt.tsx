@@ -31,11 +31,11 @@ const KIND_TEXT = {
     en: { title: "To watch live TV",          sub: "Please log in (free)" },
   },
   "library": {
-    mn: { title: "Энэ видеог үзэхийн тулд",   sub: "VOD захиалга шаардлагатай" },
+    mn: { title: "Видео санг идэвхжүүлнэ үү",   sub: "Сан доторх бүх видеог үзэх боломжтой" },
     en: { title: "To watch this video",       sub: "VOD subscription required" },
   },
   "bundle": {
-    mn: { title: "Энэ видеог үзэхийн тулд",   sub: "72 цагаар түрээслэнэ" },
+    mn: { title: "Та контентыг 72 цагийн турш үзэх боломжтой",   sub: "" },
     en: { title: "To watch this video",       sub: "Rent for 72 hours" },
   },
   "live": {

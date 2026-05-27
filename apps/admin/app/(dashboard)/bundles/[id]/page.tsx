@@ -99,7 +99,7 @@ export default function BundleItemsPage() {
         <p className="text-sm text-muted">Уншиж байна...</p>
       ) : items.length === 0 ? (
         <div className="bg-surface border border-dashed border-border rounded-lg py-12 text-center text-sm text-muted">
-          Багц хоосон. "Видео нэмэх" товчоор контент нэмнэ үү.
+          Багц хоосон. &quot;Видео нэмэх&quot; товчоор контент нэмнэ үү.
         </div>
       ) : (
         <div className="bg-surface border border-border rounded-lg shadow-card divide-y divide-border">

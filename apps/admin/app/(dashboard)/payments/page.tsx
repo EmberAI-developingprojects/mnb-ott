@@ -156,7 +156,7 @@ export default function PaymentsPage() {
               placeholder="Жишээ: Хэрэглэгчийн хүсэлтээр" />
           </Field>
           <p className="text-xs text-muted">
-            Энэ үйлдэл гүйлгээний төлвийг "Буцаагдсан" болгож тэмдэглэнэ. Мөнгөн дүнгийн буцаалтыг QPay-ээр тусад нь гүйцэтгэнэ.
+            Энэ үйлдэл гүйлгээний төлвийг &quot;Буцаагдсан&quot; болгож тэмдэглэнэ. Мөнгөн дүнгийн буцаалтыг QPay-ээр тусад нь гүйцэтгэнэ.
           </p>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" onClick={() => { setRefundOpen(null); setReason(""); }}>Болих</Button>

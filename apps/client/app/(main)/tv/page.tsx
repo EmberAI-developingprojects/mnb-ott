@@ -35,6 +35,17 @@ function TvContent() {
      эс үгүй бол суваг сонгох grid. Desktop-д үргэлж player + sidebar 2-уулаа. */
   const [mobileShowPlayer, setMobileShowPlayer] = useState<boolean>(!!initialSlug);
 
+  /* Viewport detect — LivePlayer-ийг mobile grid mode үед бүрэн unmount хийхэд
+     ашиглана (CSS hidden ашиглавал HLS auto-play хэвээр audio тоглодог). */
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   const active = channels.find((c) => c.slug === activeSlug) ?? channels[0];
   const streamUrl = active?.streamUrl ?? null;
 
@@ -146,44 +157,48 @@ function TvContent() {
         />
       )}
 
-      {/* PLAYER + sidebar — desktop үргэлж, mobile зөвхөн суваг сонгосон үед */}
-      <section className={cn("grid lg:grid-cols-[1fr_320px] gap-5", !mobileShowPlayer && "hidden lg:grid")}>
-        <div className="space-y-0">
-          <button onClick={backToGrid}
-            className="lg:hidden inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub hover:text-app transition-colors mb-4">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-            {lang === "mn" ? "Бүх суваг" : "All channels"}
-          </button>
+      {/* PLAYER + sidebar — desktop үргэлж, mobile зөвхөн суваг сонгосон үед.
+          Conditional render — CSS hidden ашиглавал HLS auto-play хэвээр audio
+          тоглодог тул mobile grid mode үед LivePlayer-ийг бүрэн unmount хийнэ. */}
+      {(isDesktop || mobileShowPlayer) && (
+        <section className="grid lg:grid-cols-[1fr_320px] gap-5">
+          <div className="space-y-0">
+            <button onClick={backToGrid}
+              className="lg:hidden inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub hover:text-app transition-colors mb-4">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+              {lang === "mn" ? "Бүх суваг" : "All channels"}
+            </button>
 
-          {canPlay === null ? (
-            <Skeleton className="aspect-video w-full rounded-xl" />
-          ) : canPlay && streamUrl ? (
-            <LivePlayer
-              streamUrl={streamUrl}
-              channelName={active.name}
-              channelLogo={activeLogo}
-              poster={active.thumbnailUrl ?? undefined}
-              programTitle={currentProgram?.title}
-              programLabel={currentProgram
-                ? `${fmtTime(currentProgram.startTime)} – ${fmtTime(currentProgram.endTime)}`
-                : undefined}
-              programProgress={currentProgram ? progressPct(currentProgram) : undefined}
-              programStartTime={currentProgram?.startTime}
-              programEndTime={currentProgram?.endTime}
-            />
-          ) : (
-            <UpgradePrompt kind="live-tv" backdrop={active.thumbnailUrl ?? undefined} />
-          )}
-        </div>
+            {canPlay === null ? (
+              <Skeleton className="aspect-video w-full rounded-xl" />
+            ) : canPlay && streamUrl ? (
+              <LivePlayer
+                streamUrl={streamUrl}
+                channelName={active.name}
+                channelLogo={activeLogo}
+                poster={active.thumbnailUrl ?? undefined}
+                programTitle={currentProgram?.title}
+                programLabel={currentProgram
+                  ? `${fmtTime(currentProgram.startTime)} – ${fmtTime(currentProgram.endTime)}`
+                  : undefined}
+                programProgress={currentProgram ? progressPct(currentProgram) : undefined}
+                programStartTime={currentProgram?.startTime}
+                programEndTime={currentProgram?.endTime}
+              />
+            ) : (
+              <UpgradePrompt kind="live-tv" backdrop={active.thumbnailUrl ?? undefined} />
+            )}
+          </div>
 
-        <ChannelSidebar
-          channels={channels}
-          epgChannels={epgChannels}
-          activeSlug={activeSlug}
-          lang={lang}
-          onSelect={selectChannel}
-        />
-      </section>
+          <ChannelSidebar
+            channels={channels}
+            epgChannels={epgChannels}
+            activeSlug={activeSlug}
+            lang={lang}
+            onSelect={selectChannel}
+          />
+        </section>
+      )}
 
       {/* TABS: Өнөөдрийн хөтөлбөр / EPG (mobile-д grid view үед нуугдана) */}
       <section className={cn(!mobileShowPlayer && "hidden lg:block")}>

@@ -6,10 +6,15 @@ on:
   pull_request:
     branches: [main]
 
+# Шинэ push ирвэл өмнөх ажиллаж буй run-ыг автоматаар зогсооно (resource хэмнэнэ)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  # ─── Backend: typecheck + tests ─────────────────────────
+  # ─── Backend: typecheck + tests + build ─────────────────
   server:
-    name: Server (typecheck + tests)
+    name: Server
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,16 +24,24 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
       - name: Prisma generate
         run: pnpm --filter=@mnb-ott/server exec prisma generate
+
       - name: TypeScript check
         run: pnpm --filter=@mnb-ott/server type-check
+
       - name: Run tests
         run: pnpm --filter=@mnb-ott/server test
 
-  # ─── Client: typecheck only (test нэмэхэд эндээ нэм) ──
+      # Build нь TypeScript-ийг бодит .js файл болгож compile хийнэ. Type-check
+      # барьдаггүй config/missing module асуудлуудыг олно (production-ийн өмнө catch).
+      - name: Build
+        run: pnpm --filter=@mnb-ott/server build
+
+  # ─── Client: typecheck + lint + build ───────────────────
   client:
-    name: Client (typecheck)
+    name: Client
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,12 +51,23 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --filter=@mnb-ott/client lint
+
       - name: TypeScript check
         run: pnpm --filter=@mnb-ott/client type-check
 
-  # ─── Admin: typecheck + tests ───────────────────────────
+      # next build нь type-check биш — image optimization, route conflict, missing
+      # env (NEXT_PUBLIC_*), dynamic import гэх мэт production-only асуудлыг олно.
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+        run: pnpm --filter=@mnb-ott/client build
+
+  # ─── Admin: typecheck + lint + tests + build ────────────
   admin:
-    name: Admin (typecheck + tests)
+    name: Admin
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +77,17 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --filter=@mnb-ott/admin lint
+
       - name: TypeScript check
         run: pnpm --filter=@mnb-ott/admin type-check
+
       - name: Run tests
         run: pnpm --filter=@mnb-ott/admin test
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+        run: pnpm --filter=@mnb-ott/admin build
