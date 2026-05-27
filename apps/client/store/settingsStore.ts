@@ -35,6 +35,7 @@ const dict: Record<string, [string, string]> = {
   home:         ["Нүүр",               "Home"],
   tv:           ["TV",                 "TV"],
   live:         ["Шууд",               "Live"],
+  menu:         ["Цэс",                "Menu"],
   search_ph:    ["Хайх...",            "Search..."],
 
   // Auth

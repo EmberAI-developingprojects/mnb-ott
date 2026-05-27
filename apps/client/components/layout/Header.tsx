@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { LangThemeMenu } from "./_header/LangThemeMenu";
 import { UserMenu } from "./_header/UserMenu";
-import { MobileDrawer } from "./_header/MobileDrawer";
 
 const NAV_KEYS = [
   { label: "home", href: "/",    live: false },
@@ -24,7 +23,6 @@ export function Header() {
   const { user, clearAuth } = useAuthStore();
   const t = useT();
 
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [q, setQ] = useState("");
   /* Уншаагүй мэдэгдлийн тоо — shared store. /notifications хуудаснаас read үед
      store шууд шинэчлэгдэх → header dot шууд алга болно. */
@@ -66,10 +64,6 @@ export function Header() {
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [user?.id]);
 
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
-
   async function handleLogout() {
     try { await api.post("/api/auth/logout"); } finally {
       clearAuth(); router.push("/");
@@ -82,7 +76,6 @@ export function Header() {
     if (v) {
       if (isSearchPage) router.replace(`/search?q=${encodeURIComponent(v)}`);
       else              router.push(`/search?q=${encodeURIComponent(v)}`);
-      setMobileOpen(false);
     }
   }
 
@@ -239,19 +232,15 @@ export function Header() {
             </Link>
           )}
 
-          {/* Hamburger — mobile-ийн баруун талд хамгийн сүүл */}
-          <button onClick={() => setMobileOpen(!mobileOpen)} aria-label="Menu"
-            className="lg:hidden w-10 h-10 flex items-center justify-center rounded-full hover:bg-card-hover transition-colors text-app">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          {/* Search icon — mobile only. Desktop-д header center-д nav-аас хойш inline pill бий. */}
+          <Link href="/search" aria-label="Search"
+            className="lg:hidden w-10 h-10 flex items-center justify-center rounded-full text-sub hover:text-app hover:bg-card-hover transition-colors">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
-          </button>
+          </Link>
         </div>
       </div>
-
-      {mobileOpen && (
-        <MobileDrawer navKeys={NAV_KEYS} onClose={() => setMobileOpen(false)} t={t} user={user} />
-      )}
     </header>
   );
 }

@@ -5,7 +5,7 @@ import { ScrollRow } from "@/components/layout/ScrollRow";
 import type { ApiChannel } from "./types";
 
 /* Сувгийн pill — "МНБ News" гэх мэт нэртэй pill хэлбэрийн карт.
-   TV/LIVE үед улаан LIVE dot, RADIO үед чанга яригчны icon байна. */
+   TV/Radio суваг (24/7 broadcast) л харагдана. LIVE event (PPV) нь /live хуудаст. */
 export function ChannelStrip({ channels }: { channels: ApiChannel[] }) {
   if (channels.length === 0) return null;
 
