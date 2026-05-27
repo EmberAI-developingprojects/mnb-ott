@@ -48,7 +48,7 @@ export default function DashboardPage() {
       <PageHeader
         title="Тойм"
         subtitle="Системийн ерөнхий мэдээлэл"
-        action={stats ? <LiveBadge channels={stats.content.channels} /> : undefined}
+        action={stats ? <LiveBadge liveEvents={stats.content.live} /> : undefined}
       />
 
       {loading || !stats ? (
@@ -109,11 +109,17 @@ export default function DashboardPage() {
           </section>
 
           {/* Content + blocked */}
-          <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard icon={Film}    label="VOD контент"       value={stats.content.vod.toLocaleString("mn-MN")} />
-            <StatCard icon={Tv}      label="Live суваг"        value={stats.content.channels.toLocaleString("mn-MN")} />
-            <StatCard icon={Package} label="Видео багц"        value={stats.content.bundles.toLocaleString("mn-MN")} />
-            <StatCard icon={UserX}   label="Блоктой хэрэглэгч"  value={stats.users.blocked.toLocaleString("mn-MN")} tone="danger" />
+          <section className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <StatCard icon={Film}    label="VOD контент"  value={stats.content.vod.toLocaleString("mn-MN")} />
+            <StatCard icon={Package} label="Видео багц"   value={stats.content.bundles.toLocaleString("mn-MN")} />
+            <StatCard icon={UserX}   label="Блоктой хэрэглэгч" value={stats.users.blocked.toLocaleString("mn-MN")} tone="danger" />
+          </section>
+
+          {/* Channel breakdown — TV/Radio/LIVE event тус тусдаа */}
+          <section className="grid grid-cols-3 gap-4">
+            <StatCard icon={Tv}    label="TV суваг"     value={stats.content.tv.toLocaleString("mn-MN")} />
+            <StatCard icon={Radio} label="Радио"        value={stats.content.radio.toLocaleString("mn-MN")} />
+            <StatCard icon={Radio} label="LIVE event"   value={stats.content.live.toLocaleString("mn-MN")} hint="PPV event" />
           </section>
         </div>
       )}
@@ -121,15 +127,15 @@ export default function DashboardPage() {
   );
 }
 
-/* ── Live system badge (static) ── */
-function LiveBadge({ channels }: { channels: number }) {
+/* ── LIVE event badge — зөвхөн kind=LIVE (PPV event) сувгийн тоо ── */
+function LiveBadge({ liveEvents }: { liveEvents: number }) {
   return (
     <div className="inline-flex items-center gap-2.5 rounded-full border border-border bg-surface px-3.5 py-1.5">
       <span className="h-2 w-2 rounded-full bg-success" aria-hidden="true" />
       <Radio size={13} className="text-success" aria-hidden="true" />
-      <span className="text-xs font-medium text-fg">Шууд</span>
+      <span className="text-xs font-medium text-fg">LIVE event</span>
       <span className="h-3 w-px bg-border-strong" aria-hidden="true" />
-      <span className={`${NUM} text-xs text-muted`}>{channels} суваг</span>
+      <span className={`${NUM} text-xs text-muted`}>{liveEvents}</span>
     </div>
   );
 }

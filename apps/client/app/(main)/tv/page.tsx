@@ -186,8 +186,24 @@ function TvContent() {
                 programStartTime={currentProgram?.startTime}
                 programEndTime={currentProgram?.endTime}
               />
-            ) : (
+            ) : !user ? (
+              /* Нэвтрээгүй — "Нэвтрэх" товчтой prompt */
               <UpgradePrompt kind="live-tv" backdrop={active.thumbnailUrl ?? undefined} />
+            ) : (
+              /* Нэвтэрсэн боловч stream URL байхгүй (admin config дутуу) эсвэл
+                 API алдаа. "Багц авах" биш — TV/Radio нь нэвтэрсэн бүхэнд үнэгүй. */
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-card flex items-center justify-center text-center px-6">
+                <div className="space-y-2">
+                  <p className="text-app font-semibold">
+                    {lang === "mn" ? "Дамжуулалт түр зогссон" : "Stream temporarily unavailable"}
+                  </p>
+                  <p className="text-sm text-muted">
+                    {lang === "mn"
+                      ? "Энэ сувгийн дамжуулалт одоогоор боломжгүй байна. Хэсэг хүлээгээд дахин оролдоно уу."
+                      : "This channel is temporarily unavailable. Please try again shortly."}
+                  </p>
+                </div>
+              </div>
             )}
           </div>
 

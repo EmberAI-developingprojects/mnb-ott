@@ -121,7 +121,14 @@ export interface AuditLog {
 export interface DashboardStats {
   users: { total: number; blocked: number; activeSubs: number };
   revenue: { total: number; today: number; todayCount: number };
-  content: { vod: number; channels: number; bundles: number };
+  content: {
+    vod:      number;
+    bundles:  number;
+    tv:       number;
+    radio:    number;
+    live:     number;
+    channels: number;  /* legacy — tv+radio+live нийлбэр */
+  };
   plans: Array<{ plan: PlanType; count: number }>;
 }
 
