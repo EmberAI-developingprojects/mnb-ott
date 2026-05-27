@@ -9,6 +9,8 @@ import type { Bundle } from "./types";
 export function BundleCard({ bundle }: { bundle: Bundle }) {
   return (
     <Link href={`/bundles/${bundle.id}`}
+      /* prefetch={false}: row дотор олон bundle, click хийх магадлал бага. */
+      prefetch={false}
       className="group shrink-0 w-[320px] sm:w-[360px] block">
       <div className="relative aspect-[16/10] rounded-xl overflow-hidden bg-card ring-1 ring-transparent group-hover:ring-2 group-hover:ring-accent ring-inset transition-all duration-200">
         <Image src={bundle.thumbnailUrl} alt={bundle.title} fill

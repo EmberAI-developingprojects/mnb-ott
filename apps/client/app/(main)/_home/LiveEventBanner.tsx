@@ -6,14 +6,11 @@ import { useEffect, useState } from "react";
 import { useSettingsStore } from "@/store/settingsStore";
 import type { ApiChannel } from "./types";
 
-/* LIVE event-той суваг (kind=LIVE). endsAt-аар идэвхтэй эсэхийг шалгана.
-   Home page-ийн хамгийн дээр идэвхтэй event байх үед banner харуулна. */
 interface LiveEvent extends ApiChannel {
   endsAt?: string | null;
   price?:  number | null;
 }
 
-/* mm:ss countdown */
 function fmtCountdown(ms: number): string {
   if (ms <= 0) return "0:00";
   const total = Math.floor(ms / 1000);

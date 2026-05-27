@@ -11,12 +11,20 @@ export const channelRouter = Router();
 /* Public: бүх идэвхтэй суваг буцаана (browse үед нэвтрэхгүй ч харагдана).
    TV/RADIO: нэвтэрсэн л бол streamUrl буцаана (үнэгүй).
    LIVE event: PPV — streamUrl зөвхөн худалдан авсан хэрэглэгчид. Энэ check-ийг
-   олон concurrent DB call-аар хийхгүйгээр нэг batch query-аар хийнэ. */
+   олон concurrent DB call-аар хийхгүйгээр нэг batch query-аар хийнэ.
+   Cache: streamUrl нь user-аас хамаардаг (LIVE PPV) тул private, 60с. */
 channelRouter.get("/", async (req, res, next) => {
   try {
+    /* `select`: зөвхөн frontend-д хэрэгтэй field-ийг буцаах. epgUrl, createdAt,
+       updatedAt зэрэг internal field-ийг network-ээр явуулахгүй. */
     const channels = await prisma.channel.findMany({
       where:   { isActive: true },
       orderBy: [{ kind: "asc" }, { orderIndex: "asc" }],
+      select: {
+        id: true, name: true, slug: true, kind: true,
+        thumbnailUrl: true, streamUrl: true, orderIndex: true,
+        isActive: true, price: true, startsAt: true, endsAt: true,
+      },
     });
 
     /* Optional auth — token байгаа бол userId */
@@ -69,6 +77,9 @@ channelRouter.get("/", async (req, res, next) => {
       };
     });
 
+    /* User-specific (streamUrl нь Purchase-ээс хамаарна) тул `private`.
+       60с TTL — channel мэдээлэл хурдан өөрчлөгддөггүй. */
+    res.setHeader("Cache-Control", "private, max-age=60");
     res.json({
       success: true,
       data: {
@@ -81,15 +92,18 @@ channelRouter.get("/", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-/* EPG — public (хөтөлбөрийн жагсаалт хэн ч үзэж болно) */
+/* EPG — public (хөтөлбөрийн жагсаалт хэн ч үзэж болно).
+   Cache: бүх хэрэглэгчид нэг л response, 5 мин TTL — CDN/browser хоёуланд cache. */
 channelRouter.get("/epg", (_req, res) => {
   const channels = getEpg(3, 5);
+  res.setHeader("Cache-Control", "public, max-age=300");
   res.json({ success: true, data: { channels } });
 });
 
 channelRouter.get("/:slug/epg", (req, res) => {
   const ch = getChannelEpg(req.params.slug);
   if (!ch) return res.status(404).json({ success: false, message: "Суваг олдсонгүй", code: "NOT_FOUND" });
+  res.setHeader("Cache-Control", "public, max-age=300");
   res.json({ success: true, data: ch });
 });
 

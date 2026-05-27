@@ -260,6 +260,9 @@ model Channel {
   updatedAt    DateTime    @updatedAt
 
   purchases Purchase[]
+
+  // Hot path: GET /api/channels (isActive=true, order by kind+orderIndex) — нүүр + tv + live хуудсуудаас.
+  @@index([isActive, kind, orderIndex])
 }
 
 model VodContent {
@@ -317,6 +320,10 @@ model Purchase {
   // Нэг хэрэглэгч нэг видео/channel-ыг 1 удаа active байх — хоёр unique index
   @@unique([userId, vodId])
   @@unique([userId, channelId])
+
+  // Hot path: checkContentAccess дотор {userId, channelId/vodId, status=ACTIVE, expiresAt > now} batch шалгалт.
+  // /api/channels (LIVE Purchase batch query)-аас 1 query per request шуурхай хайна.
+  @@index([userId, status, expiresAt])
 }
 
 model Payment {

@@ -18,6 +18,9 @@ export function ChannelStrip({ channels }: { channels: ApiChannel[] }) {
           const label = ch.name.replace(/^МНБ\s*/i, "").trim() || ch.name;
           return (
             <Link key={ch.slug} href={ch.kind === "LIVE" ? "/live" : `/tv?ch=${ch.slug}`}
+              /* prefetch={false}: бүх суваг (5+ pill)-ийг автоматаар prefetch
+                 хийх нь дэмий ачаалал. Хэрэглэгч хааш орохыг мэдэхгүй. */
+              prefetch={false}
               className="group relative shrink-0 w-[140px] sm:w-[160px] aspect-[16/9] rounded-xl
                 bg-card border border-app flex flex-col items-center justify-center
                 hover:border-strong hover:bg-card-hover transition-colors duration-200 overflow-hidden">

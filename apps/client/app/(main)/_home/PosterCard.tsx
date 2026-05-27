@@ -20,6 +20,9 @@ export function PosterCard({ v }: { v: Video }) {
 
   return (
     <Link href={`/vod/${v.youtubeId}`}
+      /* prefetch={false}: row дотор олон карт байдаг, бүгдийг автомат prefetch
+         хийх нь server-д дэмий ачаалал. Click дээр шууд load болно. */
+      prefetch={false}
       className="group shrink-0 w-[150px] sm:w-[170px] md:w-[200px] block">
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden bg-card ring-1 ring-transparent group-hover:ring-2 group-hover:ring-accent ring-inset transition-all duration-200">
         <Image src={v.thumbnailUrl} alt={v.title} fill

@@ -48,7 +48,9 @@ export function Header() {
     return () => clearTimeout(id);
   }, [q, isSearchPage, router]);
 
-  /* Unread count — 60s polling + initial fetch */
+  /* Unread count — нэг удаа load + tab focus үед refresh.
+     Notification нь шууд realtime биш, polling нь 50k user-ийн scale-д
+     server-д хэт их ачаалал тавьдаг (60с тутамд бүгд DB-руу). */
   useEffect(() => {
     if (!user) { setUnread(0); return; }
     let stop = false;
@@ -59,8 +61,11 @@ export function Header() {
       } catch {}
     };
     load();
-    const iv = setInterval(load, 60_000);
-    return () => { stop = true; clearInterval(iv); };
+    /* User tab-руу буцаж ороход (өөр tab-аас, эсвэл компьютер унтсаны дараа)
+       шинэчилнэ. Polling биш — зөвхөн идэвхтэй чухал мөчид. */
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    return () => { stop = true; window.removeEventListener("focus", onFocus); };
     /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [user?.id]);
 

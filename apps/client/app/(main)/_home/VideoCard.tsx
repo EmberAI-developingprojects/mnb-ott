@@ -20,6 +20,8 @@ export function VideoCard({ v }: { v: Video }) {
 
   return (
     <Link href={`/vod/${v.youtubeId}`}
+      /* prefetch={false}: row дотор олон карт, бүгдийг prefetch хийх дэмий. */
+      prefetch={false}
       className="group shrink-0 w-[220px] sm:w-[250px] md:w-[280px] block">
       <div className="relative aspect-video rounded-xl overflow-hidden bg-card ring-1 ring-transparent group-hover:ring-2 group-hover:ring-accent ring-inset transition-all duration-200">
         <Image src={v.thumbnailUrl} alt={v.title} fill
