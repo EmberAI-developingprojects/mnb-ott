@@ -124,10 +124,12 @@ export interface DashboardStats {
   content: {
     vod:      number;
     bundles:  number;
-    tv:       number;
-    radio:    number;
-    live:     number;
-    channels: number;  /* legacy — tv+radio+live нийлбэр */
+    /* Шинэ server response-д ирнэ. Хуучин server (deploy-эгдээгүй) үед undefined.
+       Frontend дээр `?? 0` хэрэглэж safely default-руу буулгана. */
+    tv?:       number;
+    radio?:    number;
+    live?:     number;
+    channels?: number;  /* legacy — tv+radio+live нийлбэр */
   };
   plans: Array<{ plan: PlanType; count: number }>;
 }

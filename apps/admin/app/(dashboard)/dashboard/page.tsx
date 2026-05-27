@@ -48,7 +48,7 @@ export default function DashboardPage() {
       <PageHeader
         title="Тойм"
         subtitle="Системийн ерөнхий мэдээлэл"
-        action={stats ? <LiveBadge liveEvents={stats.content.live} /> : undefined}
+        action={stats ? <LiveBadge liveEvents={stats.content.live ?? 0} /> : undefined}
       />
 
       {loading || !stats ? (
@@ -110,16 +110,17 @@ export default function DashboardPage() {
 
           {/* Content + blocked */}
           <section className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            <StatCard icon={Film}    label="VOD контент"  value={stats.content.vod.toLocaleString("mn-MN")} />
-            <StatCard icon={Package} label="Видео багц"   value={stats.content.bundles.toLocaleString("mn-MN")} />
-            <StatCard icon={UserX}   label="Блоктой хэрэглэгч" value={stats.users.blocked.toLocaleString("mn-MN")} tone="danger" />
+            <StatCard icon={Film}    label="VOD контент"  value={(stats.content.vod ?? 0).toLocaleString("mn-MN")} />
+            <StatCard icon={Package} label="Видео багц"   value={(stats.content.bundles ?? 0).toLocaleString("mn-MN")} />
+            <StatCard icon={UserX}   label="Блоктой хэрэглэгч" value={(stats.users.blocked ?? 0).toLocaleString("mn-MN")} tone="danger" />
           </section>
 
-          {/* Channel breakdown — TV/Radio/LIVE event тус тусдаа */}
+          {/* Channel breakdown — TV/Radio/LIVE event тус тусдаа. Backend хуучин
+             хариу буцаавал (.tv/.radio/.live undefined) `?? 0` хамгаална. */}
           <section className="grid grid-cols-3 gap-4">
-            <StatCard icon={Tv}    label="TV суваг"     value={stats.content.tv.toLocaleString("mn-MN")} />
-            <StatCard icon={Radio} label="Радио"        value={stats.content.radio.toLocaleString("mn-MN")} />
-            <StatCard icon={Radio} label="LIVE event"   value={stats.content.live.toLocaleString("mn-MN")} hint="PPV event" />
+            <StatCard icon={Tv}    label="TV суваг"     value={(stats.content.tv    ?? 0).toLocaleString("mn-MN")} />
+            <StatCard icon={Radio} label="Радио"        value={(stats.content.radio ?? 0).toLocaleString("mn-MN")} />
+            <StatCard icon={Radio} label="LIVE event"   value={(stats.content.live  ?? 0).toLocaleString("mn-MN")} hint="PPV event" />
           </section>
         </div>
       )}
