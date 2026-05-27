@@ -252,7 +252,9 @@ model Channel {
   orderIndex   Int         @default(0)
   // LIVE event-ийн PPV үнэ (₮). TV/RADIO үед хоосон — тэдгээр нь үнэгүй.
   price        Int?
-  // LIVE event-ийн дуусах хугацаа — null бол байнгын live (24 цагийн catch-up).
+  // LIVE event эхлэх хугацаа — past/now/upcoming-ийг ялгахад ашиглана. null бол одоо явагдаж буй.
+  startsAt     DateTime?
+  // LIVE event-ийн дуусах хугацаа — null бол байнгын live.
   endsAt       DateTime?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt

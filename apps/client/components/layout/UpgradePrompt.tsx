@@ -39,7 +39,7 @@ const KIND_TEXT = {
     en: { title: "To watch this video",       sub: "Rent for 72 hours" },
   },
   "live": {
-    mn: { title: "Энэ LIVE-ыг үзэхийн тулд",  sub: "24 цагийн дотор үзнэ" },
+    mn: { title: "",  sub: "24 цагийн дотор үзнэ" },
     en: { title: "To watch this LIVE",        sub: "Access for 24 hours" },
   },
 };

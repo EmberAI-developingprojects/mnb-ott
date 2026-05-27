@@ -9,13 +9,28 @@ import { formatDuration, cn } from "@/lib/utils";
 import type { Video } from "./types";
 
 /* Wrap-around hero carousel — нэр + thumbnail цуг шилждэг.
-   7 секунд тутамд автоматаар дараагийн slide руу шилжих + manual arrows. */
+   7 секунд тутамд автоматаар дараагийн slide руу шилжих + manual arrows.
+   lg+ дээр adjacent slide-ууд хоёр талд peek хийнэ (active slide-аас 12% inset). */
 export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolean }) {
   const t = useT();
   const { lang } = useSettingsStore();
   const { has, add, remove } = useWatchlistStore();
   const [heroIdx, setHeroIdx] = useState(0);
   const heroTimer = useRef<ReturnType<typeof setInterval>>();
+
+  /* Viewport-аас хамаарч adjacent slide-ийн translate offset өөрчилнө:
+       Mobile (<lg): 102% — slides бүрэн off-screen
+       Desktop (lg+): 100% — slides active slide-тай хажуу-хажууд butt-аар тавигдана
+     Active slide-ийг lg+-д lg:inset-x-[12%] нарийсгасан тул хоёр талд 12% peek харагдана. */
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  const offsetPct = isDesktop ? 100 : 102;
 
   useEffect(() => {
     if (hero.length < 2) return;
@@ -32,7 +47,9 @@ export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolea
   const current = hero[heroIdx];
 
   return (
-    <section className="max-w-[1440px] mx-auto pt-3 md:pt-6 overflow-hidden">
+    /* Mobile (<lg): pt-0 — header-тэй нийлсэн, дээд буланд radius байхгүй.
+       Desktop (lg+): pt-6 — card шиг, бүх 4 буланд radius. */
+    <section className="max-w-[1440px] mx-auto pt-0 lg:pt-6 overflow-hidden">
       <div className="relative max-w-[1240px] mx-auto aspect-[4/3] xs:aspect-[16/10] sm:aspect-[16/9] md:aspect-[21/9] min-h-[200px] xs:min-h-[240px] sm:min-h-[300px] md:min-h-[360px] lg:min-h-[420px]">
 
         {hero.map((v, i) => {
@@ -46,10 +63,10 @@ export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolea
           return (
             <div key={v.youtubeId}
               className={cn(
-                "absolute inset-0 rounded-2xl overflow-hidden transition-all duration-700 ease-out",
+                "absolute inset-0 lg:inset-x-[2.5%] xl:inset-x-[4%] 2xl:inset-x-[6%] rounded-none lg:rounded-2xl overflow-hidden transition-all duration-700 ease-out",
                 isActive ? "opacity-100 z-10" : "opacity-90 z-0",
               )}
-              style={{ transform: `translateX(${offset * 102}%) scale(${isActive ? 1 : 0.95})` }}>
+              style={{ transform: `translateX(${offset * offsetPct}%) scale(${isActive ? 1 : 0.95})` }}>
               {/* Responsive YouTube thumbnail:
                   - mobile (< 640px) : mqdefault 320x180  ~10-20KB
                   - tablet (< 1280px): hqdefault 480x360  ~30-50KB
@@ -132,7 +149,7 @@ export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolea
         })}
 
         {(loading || !current) && (
-          <div className="absolute inset-0 rounded-2xl bg-card flex items-end p-6 md:p-10">
+          <div className="absolute inset-0 lg:inset-x-[2.5%] xl:inset-x-[4%] 2xl:inset-x-[6%] rounded-none lg:rounded-2xl bg-card flex items-end p-6 md:p-10">
             <div className="space-y-3 max-w-xl">
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-10 sm:h-14 w-72 max-w-full" />

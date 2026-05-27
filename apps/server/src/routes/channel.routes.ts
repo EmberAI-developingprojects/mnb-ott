@@ -47,29 +47,35 @@ channelRouter.get("/", async (req, res, next) => {
       }
     }
 
+    /* Frontend бүх хуудсуудад тус тусдаа category хэрэглэгддэг тул response-ийг
+       3 групп болгож буцаана (frontend-д filter хийх хэрэггүй). Хуучин `channels`
+       key нь backward compat-ийн тулд бүх сувгийг flat үлдээнэ. */
+    const mapped = channels.map((c) => {
+      const allowed =
+        (c.kind === "TV" || c.kind === "RADIO") ? !!userId :
+        c.kind === "LIVE" ? livePurchaseIds.has(c.id) : false;
+      return {
+        id:           c.id,
+        name:         c.name,
+        slug:         c.slug,
+        kind:         c.kind,
+        thumbnailUrl: c.thumbnailUrl,
+        orderIndex:   c.orderIndex,
+        isActive:     c.isActive,
+        price:        c.price,
+        startsAt:     c.startsAt,
+        endsAt:       c.endsAt,
+        streamUrl:    allowed ? c.streamUrl : null,
+      };
+    });
+
     res.json({
       success: true,
       data: {
-        channels: channels.map((c) => {
-          /* Access logic:
-           *  - TV/RADIO  → нэвтэрсэн хэрэглэгчид free
-           *  - LIVE      → Purchase шалгана (24 цаг) */
-          const allowed =
-            (c.kind === "TV" || c.kind === "RADIO") ? !!userId :
-            c.kind === "LIVE" ? livePurchaseIds.has(c.id) : false;
-          return {
-            id:           c.id,
-            name:         c.name,
-            slug:         c.slug,
-            kind:         c.kind,
-            thumbnailUrl: c.thumbnailUrl,
-            orderIndex:   c.orderIndex,
-            isActive:     c.isActive,
-            price:        c.price,
-            endsAt:       c.endsAt,
-            streamUrl:    allowed ? c.streamUrl : null,
-          };
-        }),
+        tv:       mapped.filter((c) => c.kind === "TV"),
+        radio:    mapped.filter((c) => c.kind === "RADIO"),
+        live:     mapped.filter((c) => c.kind === "LIVE"),
+        channels: mapped,  /* legacy — устгахдаа /api/channels хэрэглэгчдийг шалга */
       },
     });
   } catch (e) { next(e); }

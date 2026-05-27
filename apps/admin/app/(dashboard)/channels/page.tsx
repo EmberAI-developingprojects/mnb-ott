@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Radio as RadioIcon, Tv as TvIcon, Wifi } from "lucide-react";
+import { Plus, Radio as RadioIcon, Tv as TvIcon } from "lucide-react";
 import api, { getApiError } from "@/lib/api";
 import type { ApiResponse, Channel, ChannelKind } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
@@ -10,20 +10,15 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/components/ui/Toast";
 import { slugify } from "@/lib/slugify";
 import { SectionCard } from "./_components/SectionCard";
-import { LiveForm } from "./_components/LiveForm";
-import { LiveBroadcastToggle } from "./_components/LiveBroadcastToggle";
 import { ChannelTable } from "./_components/ChannelTable";
 import {
   ChannelFormModal,
-  LiveCreateModal,
   EMPTY_FORM,
   type ChannelFormData,
 } from "./_components/ChannelFormModal";
 
-/* /channels — 3 хэсэгтэй:
-   1. LIVE — нэг бичлэг (МНБ үндсэн live), зөвхөн нэр + URL + on/off
-   2. TV — олон суваг, full CRUD + thumbnail
-   3. RADIO — олон радио, thumbnail хэрэгтэй */
+/* /channels — TV + Radio суваг (24/7 broadcast) удирдлага.
+   LIVE event PPV нь /admin/live-д тусдаа удирдагдана. */
 export default function ChannelsPage() {
   const confirmDialog = useConfirm();
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -115,20 +110,12 @@ export default function ChannelsPage() {
   async function handleSave() {
     setError(""); setSaving(true);
     const kind: ChannelKind = editing?.kind ?? creating ?? "TV";
-    /* price + endsAt нь зөвхөн LIVE-д хэрэглэгдэнэ — бусдад илгээхгүй */
-    const liveExtra = kind === "LIVE"
-      ? {
-          price:  form.price ? Number(form.price) : null,
-          endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : null,
-        }
-      : {};
     const payload = {
       name: form.name, slug: form.slug, kind,
       streamUrl:    form.streamUrl || undefined,
       thumbnailUrl: form.thumbnailUrl || undefined,
       isActive:     form.isActive,
       orderIndex:   Number(form.orderIndex) || 0,
-      ...liveExtra,
     };
     try {
       if (editing) await api.patch(`/api/admin/channels/${editing.id}`, payload);
@@ -156,19 +143,17 @@ export default function ChannelsPage() {
     }
   }
 
-  const live    = channels.find((c) => c.kind === "LIVE");
   const tvList  = channels.filter((c) => c.kind === "TV");
   const radList = channels.filter((c) => c.kind === "RADIO");
 
   const modalKind: ChannelKind = editing?.kind ?? creating ?? "TV";
-  const tvRadioOpen = (creating === "TV" || creating === "RADIO") || (editing !== null && editing.kind !== "LIVE");
-  const liveOpen    = creating === "LIVE" || (editing?.kind === "LIVE");
+  const modalOpen = creating !== null || editing !== null;
 
   return (
     <div>
       <PageHeader
-        title="Дамжуулалт"
-        subtitle="Шууд дамжуулалт, ТВ суваг, радио — нэгдсэн удирдлага"
+        title="Сувгууд"
+        subtitle="TV болон радио сувгууд (24/7 broadcast). LIVE event-ийг /live хуудаст удирдана."
       />
 
       {loading ? (
@@ -176,31 +161,12 @@ export default function ChannelsPage() {
       ) : (
         <div className="space-y-8">
 
-          {/* ─── 1. LIVE ──────────────────────── */}
-          <SectionCard
-            icon={Wifi}
-            title="LIVE — Үндсэн дамжуулалт"
-            subtitle="Зөвхөн нэг бичлэг — нэр (тайлбар), HLS stream URL, унтраах/асаах"
-            action={live && <LiveBroadcastToggle channel={live} onChanged={load} />}
-          >
-            {live ? (
-              <LiveForm channel={live} onSaved={load} />
-            ) : (
-              <div className="flex items-center justify-between gap-4 p-3 bg-bg rounded-md">
-                <p className="text-sm text-muted">LIVE бичлэг үүсээгүй байна.</p>
-                <Button size="sm" onClick={() => openCreate("LIVE")}>
-                  <Plus size={14} /> LIVE үүсгэх
-                </Button>
-              </div>
-            )}
-          </SectionCard>
-
-          {/* ─── 2. TV сувгууд ────────────────── */}
+          {/* ─── TV сувгууд ────────────────────── */}
           <SectionCard
             collapsible
             icon={TvIcon}
-            title={`Сувгууд (${tvList.length})`}
-            subtitle="TV сувгууд — нэмэх, хасах, эрэмбэлэх, stream URL засах"
+            title={`TV сувгууд (${tvList.length})`}
+            subtitle="24/7 дамжуулагдах TV сувгууд — нэмэх, хасах, эрэмбэлэх, stream URL засах"
             action={<Button size="sm" onClick={() => openCreate("TV")}><Plus size={14} /> Шинэ суваг</Button>}
           >
             {tvList.length === 0 ? (
@@ -210,7 +176,7 @@ export default function ChannelsPage() {
             )}
           </SectionCard>
 
-          {/* ─── 3. Радио ─────────────────────── */}
+          {/* ─── Радио ─────────────────────────── */}
           <SectionCard
             collapsible
             icon={RadioIcon}
@@ -228,7 +194,7 @@ export default function ChannelsPage() {
       )}
 
       <ChannelFormModal
-        open={tvRadioOpen}
+        open={modalOpen}
         kind={modalKind}
         editing={!!editing}
         form={form}
@@ -238,16 +204,6 @@ export default function ChannelsPage() {
         onSave={handleSave}
         onNameChange={handleNameChange}
         onSlugChange={handleSlugChange}
-        onFieldChange={handleFieldChange}
-      />
-
-      <LiveCreateModal
-        open={liveOpen}
-        form={form}
-        error={error}
-        saving={saving}
-        onClose={closeModal}
-        onSave={handleSave}
         onFieldChange={handleFieldChange}
       />
     </div>

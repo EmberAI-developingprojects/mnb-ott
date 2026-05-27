@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, Users, Film, Tv, Package, CreditCard,
+  LayoutDashboard, Users, Film, Tv, Radio as RadioIcon, Package, CreditCard,
   Bell, Settings, Shield, LogOut, ChevronRight,
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
@@ -22,6 +22,7 @@ const NAV: NavItem[] = [
   { href: "/users",         label: "Хэрэглэгчид",    icon: Users,           roles: ["ADMIN", "SUPER_ADMIN"] },
   { href: "/vod",           label: "Видео (Архив + Сан)", icon: Film,        roles: ["EDITOR", "ADMIN", "SUPER_ADMIN"] },
   { href: "/channels",      label: "Сувгууд",        icon: Tv,              roles: ["EDITOR", "OPERATOR", "ADMIN", "SUPER_ADMIN"] },
+  { href: "/live",          label: "LIVE event",     icon: RadioIcon,       roles: ["EDITOR", "OPERATOR", "ADMIN", "SUPER_ADMIN"] },
   { href: "/bundles",       label: "Видео багц",     icon: Package,         roles: ["EDITOR", "ADMIN", "SUPER_ADMIN"] },
   { href: "/payments",      label: "Төлбөр",          icon: CreditCard,      roles: ["ADMIN", "SUPER_ADMIN"] },
   { href: "/notifications", label: "Мэдэгдэл",       icon: Bell,            roles: ["EDITOR", "ADMIN", "SUPER_ADMIN"] },

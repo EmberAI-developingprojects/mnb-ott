@@ -5,11 +5,20 @@ import { useSettingsStore, useT } from "@/store/settingsStore";
 import api from "@/lib/api";
 import { HeroCarousel } from "./_home/HeroCarousel";
 import { ChannelStrip } from "./_home/ChannelStrip";
+import { LiveEventBanner } from "./_home/LiveEventBanner";
 import { Section } from "./_home/Section";
 import { VideoCard } from "./_home/VideoCard";
 import { PosterCard } from "./_home/PosterCard";
 import { BundleCard } from "./_home/BundleCard";
 import type { ApiChannel, Video, Bundle } from "./_home/types";
+
+interface LiveEvent extends ApiChannel { endsAt?: string | null; price?: number | null }
+
+interface ChannelsResponse {
+  tv:    ApiChannel[];
+  radio: ApiChannel[];
+  live:  LiveEvent[];
+}
 
 /* HOME — Wavve-inspired layout
    1. SOLID HEADER (separate layout)
@@ -24,6 +33,7 @@ export default function HomePage() {
   const [library,  setLibrary] = useState<Video[]>([]);
   const [bundles,  setBundles] = useState<Bundle[]>([]);
   const [channels, setChannels] = useState<ApiChannel[]>([]);
+  const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [hero,     setHero]    = useState<Video[]>([]);
   const [loading,  setLoading] = useState(true);
 
@@ -32,10 +42,12 @@ export default function HomePage() {
       api.get<{ success: true; data: { videos: Video[] } }>("/api/vod/archive", { params: { limit: 8 } }),
       api.get<{ success: true; data: { videos: Video[] } }>("/api/vod/library", { params: { limit: 8 } }),
       api.get<{ success: true; data: { bundles: Bundle[] } }>("/api/vod/bundles"),
-      api.get<{ success: true; data: { channels: ApiChannel[] } }>("/api/channels"),
+      api.get<{ success: true; data: ChannelsResponse }>("/api/channels"),
     ]).then(([a, l, b, c]) => {
-      /* LIVE төрлийг хасна — /live тусдаа хуудастай, ChannelStrip-д TV/RADIO л үлдэнэ. */
-      setChannels(c.data.data.channels.filter((ch) => ch.kind !== "LIVE"));
+      const ch = c.data.data;
+      /* Backend нь tv/radio/live групп болгож буцаадаг — frontend filter хэрэггүй. */
+      setLiveEvents(ch.live ?? []);
+      setChannels([...(ch.tv ?? []), ...(ch.radio ?? [])]);
       setArchive(a.data.data.videos);
       setLibrary(l.data.data.videos);
       setBundles(b.data.data.bundles);
@@ -48,6 +60,8 @@ export default function HomePage() {
   return (
     <div className="pt-[var(--header-h)]">
       <HeroCarousel hero={hero} loading={loading} />
+
+      <LiveEventBanner events={liveEvents} />
 
       <ChannelStrip channels={channels} />
 

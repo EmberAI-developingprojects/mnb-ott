@@ -51,9 +51,10 @@ function TvContent() {
 
   const [channelsLoaded, setChannelsLoaded] = useState(false);
   useEffect(() => {
-    api.get<{ success: true; data: { channels: Channel[] } }>("/api/channels")
+    api.get<{ success: true; data: { tv: Channel[]; radio: Channel[] } }>("/api/channels")
       .then((r) => {
-        const list = (r.data.data?.channels ?? []).filter((c) => c.kind !== "LIVE");
+        /* TV + Radio = "/tv" хуудсанд харагдах суваг. Backend бүлэглэж өгсөн. */
+        const list = [...(r.data.data?.tv ?? []), ...(r.data.data?.radio ?? [])];
         setChannels(list);
         if (!initialSlug && list.length > 0) setActiveSlug(list[0].slug);
         if (process.env.NODE_ENV === "development") {

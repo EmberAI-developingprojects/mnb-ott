@@ -150,8 +150,9 @@ adminRouter.post("/channels", requireAuth, requireRole(...CONTENT_ROLES), (req, 
     thumbnailUrl: z.string().url().optional(),
     isActive:     z.boolean().optional(),
     orderIndex:   z.number().int().optional(),
-    /* LIVE PPV — үнэ ₮ + дуусах огноо (ISO string) */
+    /* LIVE PPV — үнэ ₮ + эхлэх/дуусах огноо (ISO string) */
     price:        z.number().int().min(0).nullable().optional(),
+    startsAt:     z.string().datetime().nullable().optional(),
     endsAt:       z.string().datetime().nullable().optional(),
   }).parse(req.body);
   return send(admin.createChannel(req.user!.userId, body, ip(req)), res, next);
@@ -168,6 +169,7 @@ adminRouter.patch("/channels/:id", requireAuth, requireRole(...CONTENT_ROLES, "O
     isActive:     z.boolean().optional(),
     orderIndex:   z.number().int().optional(),
     price:        z.number().int().min(0).nullable().optional(),
+    startsAt:     z.string().datetime().nullable().optional(),
     endsAt:       z.string().datetime().nullable().optional(),
   }).parse(req.body);
   return send(admin.updateChannel(req.user!.userId, req.params.id, body, ip(req)), res, next);

@@ -34,18 +34,19 @@ export default function LivePage() {
   const [programs, setPrograms] = useState<EpgProgram[]>([]);
   const [canPlay, setCanPlay]   = useState<boolean | null>(null);
 
-  /* LIVE төрөлтэй сувгийг сонгож татна (admin-аас үүсгэсэн).
-     LIVE байхгүй бол fallback: эхний TV channel (хуучин үндсэн live broadcast-аар).
-     Бүх channel хоосон бол `live` нь null хэвээр → empty state. */
+  /* LIVE event сувгийг авна (admin-аас үүсгэсэн PPV event).
+     LIVE event байхгүй бол fallback: эхний TV channel (хуучин үндсэн live broadcast).
+     Хоёулаа хоосон бол `live` нь null хэвээр → empty state. */
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-    api.get<{ success: true; data: { channels: LiveChannel[] } }>("/api/channels")
+    api.get<{ success: true; data: { tv: LiveChannel[]; live: LiveChannel[] } }>("/api/channels")
       .then((r) => {
-        const list = r.data.data?.channels ?? [];
-        const liveCh = list.find((c) => c.kind === "LIVE") ?? list[0];
+        const liveEvents = r.data.data?.live ?? [];
+        const tvChannels = r.data.data?.tv   ?? [];
+        const liveCh = liveEvents[0] ?? tvChannels[0];
         setLive(liveCh ?? null);
         if (process.env.NODE_ENV === "development") {
-          console.log("[live page] channels:", list.length, "selected:", liveCh?.slug);
+          console.log("[live page] live events:", liveEvents.length, "selected:", liveCh?.slug);
         }
       })
       .catch((e) => {

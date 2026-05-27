@@ -18,6 +18,7 @@ export async function createChannel(actorUserId: string, data: {
   isActive?:     boolean;
   orderIndex?:   number;
   price?:        number | null;
+  startsAt?:     string | Date | null;
   endsAt?:       string | Date | null;
 }, ip?: string) {
   /* Шинэ загвар (v2): LIVE event-үүд олон удаа үүсгэх боломжтой — нэг event нэг
@@ -25,7 +26,8 @@ export async function createChannel(actorUserId: string, data: {
   const ch = await prisma.channel.create({
     data: {
       ...data,
-      endsAt: data.endsAt ? new Date(data.endsAt) : null,
+      startsAt: data.startsAt ? new Date(data.startsAt) : null,
+      endsAt:   data.endsAt   ? new Date(data.endsAt)   : null,
     },
   });
   await audit({ actorUserId, targetType: "channel", targetId: ch.id, action: "CREATE", after: data, ip });
@@ -41,6 +43,7 @@ export async function updateChannel(actorUserId: string, id: string, data: Parti
   isActive:     boolean;
   orderIndex:   number;
   price:        number | null;
+  startsAt:     string | Date | null;
   endsAt:       string | Date | null;
 }>, ip?: string) {
   const before = await prisma.channel.findUnique({ where: { id } });
@@ -49,7 +52,8 @@ export async function updateChannel(actorUserId: string, id: string, data: Parti
     where: { id },
     data: {
       ...data,
-      ...(data.endsAt !== undefined && { endsAt: data.endsAt ? new Date(data.endsAt) : null }),
+      ...(data.startsAt !== undefined && { startsAt: data.startsAt ? new Date(data.startsAt) : null }),
+      ...(data.endsAt   !== undefined && { endsAt:   data.endsAt   ? new Date(data.endsAt)   : null }),
     },
   });
   await audit({ actorUserId, targetType: "channel", targetId: id, action: "UPDATE", before, after, ip });
