@@ -33,7 +33,10 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/** Refresh-ийг нэг удаа дуудаж бусад concurrent request-уудад дахин ашиглах */
+/** Refresh-ийг нэг удаа дуудаж бусад concurrent request-уудад дахин ашиглах.
+ * Promise-ийг await хийсэн ч буцах хүртэл refreshPromise null болохгүй —
+ * бүх concurrent retry-ууд нэг л үр дүн авна. Promise resolve болсны дараа
+ * (амжилттай эсвэл fail) null болгож шинэ refresh-ийг боломжтой болгоно. */
 async function refresh(): Promise<string | null> {
   if (refreshPromise) return refreshPromise;
   refreshPromise = (async () => {
@@ -52,11 +55,12 @@ async function refresh(): Promise<string | null> {
       return null;
     } catch {
       return null;
-    } finally {
-      /* Дараагийн event tick-д concurrent retry-нуудад нэг хариу үлдээдэг */
-      setTimeout(() => { refreshPromise = null; }, 0);
     }
   })();
+  /* Promise settle-ийн дараа л null болгоно — concurrent retry-ууд бүгд адил
+     үр дүнг хүлээж авна. Өмнө setTimeout(0) нь macrotask, promise чейн
+     дотор fast-path race нь stale token retry үүсгэдэг байсан. */
+  refreshPromise.finally(() => { refreshPromise = null; });
   return refreshPromise;
 }
 

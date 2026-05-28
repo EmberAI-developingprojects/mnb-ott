@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
@@ -27,6 +27,14 @@ export function LoginForm() {
   const [showPw, setShowPw]         = useState(false);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState("");
+
+  /* OAuth callback-аас `?error=...` ирж магадгүй (Google нэвтрэлт fail). URL-аас
+     уншиж эхний render-д error харуулна. Дараа нь хэрэглэгч form-ийг хэрэглэх
+     үед setError("") хийдэг. */
+  useEffect(() => {
+    const urlError = params.get("error");
+    if (urlError) setError(decodeURIComponent(urlError));
+  }, [params]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

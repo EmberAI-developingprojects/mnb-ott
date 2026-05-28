@@ -19,24 +19,35 @@ export async function checkPaymentStatus(userId: string, invoiceId: string) {
 
   const paid = await qpay.checkPayment(payment.qpayInvoiceId);
   if (paid) {
-    await prisma.payment.update({
-      where: { id: payment.id },
+    /* Idempotency: updateMany нь where status=PENDING шалгалттай — өөр request
+       аль хэдийн PAID болгосон бол count=0 буцаана, success handler ажиллахгүй. */
+    const updated = await prisma.payment.updateMany({
+      where: { id: payment.id, status: { not: "PAID" } },
       data:  { status: "PAID", paidAt: new Date() },
     });
-    await handlePaymentSuccess(payment);
+    if (updated.count > 0) {
+      await handlePaymentSuccess(payment);
+    }
   }
   return { paid, status: paid ? "PAID" as const : "PENDING" as const };
 }
 
 /* QPay webhook — paid signal-ыг push хэлбэрээр хүлээж авна.
-   verifyCallback() route түвшинд хийгдсэн байх ёстой. */
+   verifyCallback() route түвшинд хийгдсэн байх ёстой.
+   Idempotency: updateMany нь atomic conditional update — нэг л request "winner"
+   болж handlePaymentSuccess-ийг дуудна, бусад нь skip. SERIALIZABLE transaction
+   шаардлагагүй учир compare-and-swap үйлдэл DB level-д атом хийгдэнэ. */
 export async function handleQpayCallback(qpayInvoiceId: string) {
   const payment = await prisma.payment.findFirst({ where: { qpayInvoiceId } });
-  if (payment && payment.status !== "PAID") {
-    await prisma.payment.update({
-      where: { id: payment.id },
-      data:  { status: "PAID", paidAt: new Date() },
-    });
+  if (!payment) return;
+
+  const updated = await prisma.payment.updateMany({
+    where: { id: payment.id, status: { not: "PAID" } },
+    data:  { status: "PAID", paidAt: new Date() },
+  });
+  /* count > 0 → бид анх өөрчилсөн (winner). Зөвхөн winner success handler дуудна
+     → duplicate Purchase үүсэхгүй. */
+  if (updated.count > 0) {
     await handlePaymentSuccess(payment);
   }
 }

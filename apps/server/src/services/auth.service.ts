@@ -55,11 +55,15 @@ export async function registerInit(data: {
 
   let user;
   if (existing) {
-    // OTP-ээр урьд үүссэн (password байхгүй) → бүртгүүлж болно
-    if (existing.password) {
+    /* Дараах хоёр тохиолдолд update хийж шинэ OTP илгээхийг зөвшөөрнө:
+       1. Password байхгүй (OTP-ээр л үүссэн хуучин хэрэглэгч)
+       2. Verify хийгдээгүй (өмнөх register оролдлого OTP fail хийсэн —
+          email-ийн алдаа гэх мэт). Хэрэглэгч дахин оролдох эрхтэй.
+       Зөвхөн VERIFIED + password-той хэрэглэгчид л дахин register хийх боломжгүй. */
+    if (existing.password && existing.isVerified) {
       throw new AppError("Энэ хаяг бүртгэлтэй байна. Нэвтрэх хуудсаас нэвтэрнэ үү.", 409, "ALREADY_EXISTS");
     }
-    // Password байхгүй user-ийг шинэчилнэ
+    /* Password шинэчилж, isVerified=false хадгална. OTP дахин явна. */
     user = await prisma.user.update({
       where: { id: existing.id },
       data: { name: data.name, password: hashed, isVerified: false },
@@ -142,6 +146,16 @@ export async function loginWithPassword(
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) throw new AppError("Нэвтрэх мэдээлэл буруу байна", 401, "INVALID_CREDENTIALS");
 
+  /* SECURITY: isVerified шалгалт — OTP-аар email/phone-аа баталгаажуулаагүй
+     хэрэглэгч password зөв ч нэвтэрч болохгүй. Энэ нь register-ийн OTP fail-
+     лах үед үлдсэн "хагас бүртгэлтэй" хаягуудыг блоклоно. */
+  if (!user.isVerified) {
+    throw new AppError(
+      "Бүртгэлээ баталгаажуулж дуусгана уу. Бүртгүүлэх хуудаснаас дахин код авна уу.",
+      403, "EMAIL_NOT_VERIFIED",
+    );
+  }
+
   await prisma.subscription.upsert({ where: { userId: user.id }, create: { userId: user.id, planType: "BASIC" }, update: {} });
   return createSession(user.id, user.role, device);
 }
@@ -219,7 +233,17 @@ export async function googleAuth(idToken: string, device: { deviceId: string; de
     user = await prisma.user.create({ data: { email: payload.email, name: payload.name, avatar: payload.picture, isVerified: true, role: "USER" } });
     await prisma.subscription.create({ data: { userId: user.id, planType: "BASIC" } });
   } else {
-    await prisma.user.update({ where: { id: user.id }, data: { name: user.name ?? payload.name, avatar: user.avatar ?? payload.picture } });
+    /* Google OAuth-аар нэвтэрсэн нь email-ийг verify хийсэнтэй адил тул
+       isVerified: true болгоно (өмнөх failed register-ийн "хагас бүртгэлтэй"
+       user-ийг ч complete хийнэ). */
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        name: user.name ?? payload.name,
+        avatar: user.avatar ?? payload.picture,
+        isVerified: true,
+      },
+    });
   }
   return createSession(user.id, user.role, device);
 }
@@ -237,7 +261,17 @@ export async function refreshTokens(oldRefreshToken: string): Promise<TokenPair>
   const payload: JwtPayload = { userId: session.userId, role: session.user.role, sessionId: session.id };
   const accessToken  = signAccess(payload);
   const refreshToken = signRefresh(payload);
-  await prisma.userSession.update({ where: { id: session.id }, data: { refreshToken, lastActive: new Date() } });
+  /* Атом rotation — зөвхөн refreshToken === oldRefreshToken-той session-ийг
+     update хийнэ. Concurrent refresh race үед нэг л request амжилтад хүрнэ
+     (count=1), бусад нь count=0 → SESSION_NOT_FOUND throw. Token reuse attack-
+     ийг хаана. */
+  const result = await prisma.userSession.updateMany({
+    where: { id: session.id, refreshToken: oldRefreshToken, isActive: true },
+    data:  { refreshToken, lastActive: new Date() },
+  });
+  if (result.count === 0) {
+    throw new AppError("Session олдсонгүй", 401, "SESSION_NOT_FOUND");
+  }
   return { accessToken, refreshToken };
 }
 

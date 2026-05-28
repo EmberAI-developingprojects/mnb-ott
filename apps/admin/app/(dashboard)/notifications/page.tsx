@@ -8,6 +8,7 @@ import type { ApiResponse } from "@/types";
 /* v2 plan загвар — broadcast зорилтот үед зөвхөн идэвхтэй plan-ууд */
 type ActivePlan = "BASIC" | "VOD";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { useRoleGuard } from "@/components/admin/AuthGate";
 import { Button } from "@/components/ui/Button";
 import { Input, Field, Textarea } from "@/components/ui/Input";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -29,6 +30,7 @@ interface SentBroadcast {
 }
 
 export default function NotificationsPage() {
+  useRoleGuard(["EDITOR", "ADMIN", "SUPER_ADMIN"]);
   const confirmDialog = useConfirm();
   const [title, setTitle]       = useState("");
   const [body, setBody]         = useState("");

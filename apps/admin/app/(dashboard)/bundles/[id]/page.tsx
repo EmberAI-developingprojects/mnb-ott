@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, X } from "lucide-react";
 import api, { getApiError } from "@/lib/api";
 import type { ApiResponse, BundleItem, VodContent, PaginatedResponse } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { useRoleGuard } from "@/components/admin/AuthGate";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -20,6 +21,7 @@ function formatDuration(s: number | null): string {
 }
 
 export default function BundleItemsPage() {
+  useRoleGuard(["EDITOR", "ADMIN", "SUPER_ADMIN"]);
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 

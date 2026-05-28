@@ -12,21 +12,16 @@ interface SettingsStore {
   toggleTheme: ()         => void;
 }
 
-/* layout.tsx-ийн inline script-ээс OS prefers-color-scheme + navigator.language-ийг
-   уншиж window-д хадгалсан байна. Үүнийг store-ийн default-руу унш — first-visit
-   хэрэглэгчид зөв (OS-аас уламжилж) default авна. SSR үед undefined тул "dark"/"mn". */
-function getInitial(): { theme: Theme; lang: Lang } {
-  if (typeof window !== "undefined") {
-    const w = (window as { __MNB_INIT__?: { theme?: Theme; lang?: Lang } }).__MNB_INIT__;
-    if (w?.theme && w?.lang) return { theme: w.theme, lang: w.lang };
-  }
-  return { theme: "dark", lang: "mn" };
-}
-
+/* ВНИМАНИЕ: initial state нь SSR + client first paint аль алинд ижил байх ёстой
+   (React hydration mismatch error 425/422-аас сэргийлэх). Тиймээс window дотроос
+   уншихгүй — тогтсон default. localStorage-аас Zustand persist аль хэдийн hydrate
+   хийдэг. First-time visitor-ийн OS detect нь дараах useDetectInitialPrefs hook
+   дотор useEffect-ээр явагдана (mismatch үүсгэхгүй). */
 export const useSettingsStore = create<SettingsStore>()(
   persist(
     (set, get) => ({
-      ...getInitial(),
+      lang:  "mn" as Lang,
+      theme: "dark" as Theme,
       setLang:     (lang)  => set({ lang }),
       setTheme:    (theme) => set({ theme }),
       toggleTheme: ()      => set({ theme: get().theme === "dark" ? "light" : "dark" }),

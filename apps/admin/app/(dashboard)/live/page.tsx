@@ -5,6 +5,7 @@ import { Plus, Radio as RadioIcon, Clock, CheckCircle2, AlertTriangle } from "lu
 import api, { getApiError } from "@/lib/api";
 import type { ApiResponse, Channel } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { useRoleGuard } from "@/components/admin/AuthGate";
 import { Button } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/components/ui/Toast";
@@ -74,6 +75,7 @@ function findOverlaps(events: Channel[]): Array<[Channel, Channel]> {
 }
 
 export default function LivePage() {
+  useRoleGuard(["EDITOR", "OPERATOR", "ADMIN", "SUPER_ADMIN"]);
   const confirmDialog = useConfirm();
   const [events, setEvents] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);

@@ -53,16 +53,34 @@ describe("auth.service.refreshTokens", () => {
       id: "s1", userId: "u1", isActive: true, refreshToken: token,
       user: { id: "u1", role: "USER" },
     });
-    (prisma.userSession.update as ReturnType<typeof vi.fn>).mockResolvedValue({});
+    /* Атом updateMany — count=1 буцаах (rotation амжилттай) */
+    (prisma.userSession.updateMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 });
 
     const result = await refreshTokens(token);
 
     expect(result.accessToken).toBeTruthy();
     expect(result.refreshToken).toBeTruthy();
-    /* Refresh token rotation — DB-д шинэчилэгдэх ёстой */
-    expect(prisma.userSession.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "s1" } }),
+    /* Refresh token rotation — атом updateMany-аар */
+    expect(prisma.userSession.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: "s1", refreshToken: token, isActive: true }),
+      }),
     );
+  });
+
+  it("Concurrent refresh race — нэг л request амжилтад хүрнэ", async () => {
+    const token = jwt.sign(
+      { userId: "u1", role: "USER", sessionId: "s1" },
+      process.env.JWT_SECRET!,
+    );
+    (prisma.userSession.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "s1", userId: "u1", isActive: true, refreshToken: token,
+      user: { id: "u1", role: "USER" },
+    });
+    /* Хоёр дахь request: updateMany count=0 — өөр request аль хэдийн rotate хийсэн */
+    (prisma.userSession.updateMany as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 });
+
+    await expect(refreshTokens(token)).rejects.toThrow("Session олдсонгүй");
   });
 });
 

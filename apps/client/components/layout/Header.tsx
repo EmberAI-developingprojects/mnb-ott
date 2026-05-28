@@ -71,14 +71,15 @@ export function Header() {
   }, [user?.id]);
 
   async function handleLogout() {
-    /* clearAuth() дуудсаны дараа private хуудас (/profile, /notifications)-ийн
-       useEffect нь user=null детектлээд `/login` руу redirect хийдэг — энэ нь
-       handleLogout-ийн `router.push("/")`-аас түрүүн ажилладаг тул хэрэглэгч
-       `/login` хуудсанд буудаг. Шийдэл: hard navigate — page бүрэн reload болж
-       state цэвэрлэгдэнэ. */
+    /* Эхэлж "/" руу navigate (private page-ийн useEffect activate хийгдэхээс
+       өмнө). Дараа нь clearAuth() — server state цэвэр болов. router.refresh()
+       нь Server Component-ийн cache-ийг reset хийнэ. */
     try { await api.post("/api/auth/logout"); } catch { /* silent */ }
-    clearAuth();
-    window.location.href = "/";
+    router.push("/");
+    router.refresh();
+    /* Жижиг delay нь navigate trigger болсны дараа state цэвэрлэх — race
+       condition үүсгэхгүй (private page-ийн useEffect-ийг late-evaluating). */
+    setTimeout(() => clearAuth(), 50);
   }
 
   function submitSearch(e: React.FormEvent) {

@@ -55,12 +55,14 @@ export default function VodDetailPage() {
   const [video, setVideo]     = useState<VideoDetail | null>(null);
   const [related, setRelated] = useState<RelatedVideo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [access, setAccess]   = useState<AccessDecision | null>(null);
   const [descExpanded, setDescExpanded] = useState(false);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setLoadError(false);
       try {
         const [vRes, rRes] = await Promise.all([
           api.get<{ success: true; data: VideoDetail }>(`/api/vod/${id}`),
@@ -83,7 +85,9 @@ export default function VodDetailPage() {
           setAccess({ allowed: !!user });
         }
       } catch {
-        router.push("/archive");
+        /* Silent redirect-аас зайлсхийнэ — хэрэглэгчид error UI харуулна.
+           Тэгснээр "юу болов" мэдэгдэх, manual back навигацийн сонголттой. */
+        setLoadError(true);
       } finally {
         setLoading(false);
       }
@@ -111,6 +115,34 @@ export default function VodDetailPage() {
   }
 
   if (loading) return <LoadingState />;
+  /* loadError үед хэрэглэгчид silent redirect биш, юу болсон + back товч */
+  if (loadError) {
+    return (
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 pt-[calc(var(--header-h)+48px)]">
+        <div className="text-center space-y-4 py-16">
+          <div className="w-16 h-16 mx-auto rounded-full bg-card border border-app flex items-center justify-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-muted">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <div className="space-y-1">
+            <p className="text-app font-semibold">{lang === "mn" ? "Видео ачаалж чадсангүй" : "Failed to load video"}</p>
+            <p className="text-sm text-muted">{lang === "mn" ? "Видео олдсонгүй эсвэл сүлжээний алдаа гарлаа" : "Video not found or network error"}</p>
+          </div>
+          <div className="flex items-center gap-2 justify-center pt-2">
+            <button onClick={() => router.back()}
+              className="px-5 py-2 rounded-full bg-card border border-app text-app text-sm font-semibold hover:bg-card-hover transition-colors">
+              {lang === "mn" ? "Буцах" : "Go back"}
+            </button>
+            <button onClick={() => router.push("/archive")}
+              className="px-5 py-2 rounded-full bg-brand hover:bg-brand-hover text-white text-sm font-semibold transition-colors">
+              {lang === "mn" ? "Архив руу" : "Browse archive"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (!video)  return null;
 
   const date = new Date(video.publishedAt).toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US", {

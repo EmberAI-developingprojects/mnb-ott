@@ -5,6 +5,7 @@ import { Plus, Radio as RadioIcon, Tv as TvIcon } from "lucide-react";
 import api, { getApiError } from "@/lib/api";
 import type { ApiResponse, Channel, ChannelKind } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { useRoleGuard } from "@/components/admin/AuthGate";
 import { Button } from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { toast } from "@/components/ui/Toast";
@@ -20,6 +21,7 @@ import {
 /* /channels — TV + Radio суваг (24/7 broadcast) удирдлага.
    LIVE event PPV нь /admin/live-д тусдаа удирдагдана. */
 export default function ChannelsPage() {
+  useRoleGuard(["EDITOR", "OPERATOR", "ADMIN", "SUPER_ADMIN"]);
   const confirmDialog = useConfirm();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading]   = useState(true);

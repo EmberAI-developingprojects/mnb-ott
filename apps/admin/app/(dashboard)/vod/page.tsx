@@ -5,6 +5,7 @@ import { Plus, Search, Edit, Trash2, ImageOff } from "lucide-react";
 import api, { getApiError } from "@/lib/api";
 import type { ApiResponse, PaginatedResponse, VodContent } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { useRoleGuard } from "@/components/admin/AuthGate";
 import { Button } from "@/components/ui/Button";
 import { Input, Field, Textarea } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/Table";
@@ -32,6 +33,7 @@ const EMPTY_FORM: FormData = {
 };
 
 export default function VodPage() {
+  useRoleGuard(["EDITOR", "ADMIN", "SUPER_ADMIN"]);
   const confirmDialog = useConfirm();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"" | VodType>("");

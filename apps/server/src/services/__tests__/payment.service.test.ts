@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("../../lib/prisma", () => ({
   prisma: {
-    payment:    { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
+    payment:    { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     purchase:   { findUnique: vi.fn(), upsert: vi.fn() },
     vodContent: { findUnique: vi.fn(), upsert: vi.fn() },
     channel:    { findUnique: vi.fn() },
@@ -49,10 +49,11 @@ import { createPlanInvoice } from "../payment/invoice.service";
 import { prisma } from "../../lib/prisma";
 import * as qpay from "../qpay.service";
 
-const findFirstPayment = prisma.payment.findFirst as ReturnType<typeof vi.fn>;
-const updatePayment    = prisma.payment.update    as ReturnType<typeof vi.fn>;
-const createPayment    = prisma.payment.create    as ReturnType<typeof vi.fn>;
-const qpayCreateInvoice = qpay.createInvoice      as ReturnType<typeof vi.fn>;
+const findFirstPayment   = prisma.payment.findFirst  as ReturnType<typeof vi.fn>;
+const updateManyPayment  = prisma.payment.updateMany as ReturnType<typeof vi.fn>;
+const updatePayment      = prisma.payment.update     as ReturnType<typeof vi.fn>;
+const createPayment      = prisma.payment.create     as ReturnType<typeof vi.fn>;
+const qpayCreateInvoice  = qpay.createInvoice        as ReturnType<typeof vi.fn>;
 
 describe("handleQpayCallback (idempotency + safety)", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -60,7 +61,7 @@ describe("handleQpayCallback (idempotency + safety)", () => {
   it("Payment олдохгүй үед gracefully буцна (throw хийхгүй)", async () => {
     findFirstPayment.mockResolvedValue(null);
     await expect(handleQpayCallback("unknown-qpay-id")).resolves.toBeUndefined();
-    expect(updatePayment).not.toHaveBeenCalled();
+    expect(updateManyPayment).not.toHaveBeenCalled();
   });
 
   it("Аль хэдийн PAID payment-ийг дахин trigger хийхгүй (idempotent)", async () => {
@@ -68,12 +69,14 @@ describe("handleQpayCallback (idempotency + safety)", () => {
       id: "p1", userId: "u1", amount: 12900, invoiceId: "inv-1",
       status: "PAID", qpayInvoiceId: "qp1", metadata: { planType: "VOD", period: "monthly" },
     });
+    /* updateMany conditional: status != "PAID" нөхцөлд taarchgüй тул count=0.
+       handlePaymentSuccess дуудагдахгүй. */
+    updateManyPayment.mockResolvedValue({ count: 0 });
 
     await handleQpayCallback("qp1");
 
-    /* PAID payment дээр давтаж update хийгдэх ёсгүй (handlePaymentSuccess-ийг
-       trigger хийх нь purchase / subscription-ийг хоёр давхар үүсгэхэд хүргэнэ). */
-    expect(updatePayment).not.toHaveBeenCalled();
+    /* updateMany нь дуудагдах боловч count=0 буцаах тул success handler skip */
+    expect(updateManyPayment).toHaveBeenCalled();
   });
 
   it("PENDING payment-ийг PAID болгоод handlePaymentSuccess дуудна", async () => {
@@ -81,12 +84,13 @@ describe("handleQpayCallback (idempotency + safety)", () => {
       id: "p2", userId: "u2", amount: 12900, invoiceId: "inv-2",
       status: "PENDING", qpayInvoiceId: "qp2", metadata: { planType: "VOD", period: "monthly" },
     });
-    updatePayment.mockResolvedValue({ id: "p2", status: "PAID" });
+    /* Атом updateMany — нэг row update болсон гэж buцaana (winner) */
+    updateManyPayment.mockResolvedValue({ count: 1 });
 
     await handleQpayCallback("qp2");
 
-    expect(updatePayment).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "p2" },
+    expect(updateManyPayment).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: "p2", status: { not: "PAID" } }),
       data:  expect.objectContaining({ status: "PAID" }),
     }));
   });
