@@ -6,6 +6,7 @@ import Image from "next/image";
 import Hls from "hls.js";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
+import { useT } from "@/store/settingsStore";
 
 interface LivePlayerProps {
   streamUrl:        string;
@@ -32,6 +33,7 @@ export function LivePlayer({
   programStartTime, programEndTime,
 }: LivePlayerProps) {
   const { user } = useAuthStore();
+  const t = useT();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -149,7 +151,7 @@ export function LivePlayer({
             break;
           default:
             /* Recoverable биш — UI-д алдаа харуулна */
-            setError("Stream ачаалахад алдаа гарлаа");
+            setError(t("stream_load_failed"));
             setLoading(false);
         }
       });

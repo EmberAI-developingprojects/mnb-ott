@@ -2,11 +2,13 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { useT } from "@/store/settingsStore";
 
 /* App-wide error boundary — Component-д unhandled error гарвал blank screen биш
    цэвэр UI харагдана. Хэрэглэгчид reload эсвэл нүүр рүү буцах сонголт өгнө.
    Sentry-д error captured хийгдэнэ (production-д DSN тохируулсан бол). */
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const t = useT();
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       console.error("[GlobalError]", error);
@@ -24,22 +26,20 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           </svg>
         </div>
         <div className="space-y-2">
-          <h1 className="text-xl font-bold">Алдаа гарлаа</h1>
-          <p className="text-muted text-sm">
-            Үйлдэл амжилтгүй боллоо. Хэсэг хүлээгээд дахин оролдоно уу.
-          </p>
+          <h1 className="text-xl font-bold">{t("error_title")}</h1>
+          <p className="text-muted text-sm">{t("error_subtitle")}</p>
           {error.digest && (
-            <p className="text-xs text-muted-strong font-mono mt-2">Алдааны ID: {error.digest}</p>
+            <p className="text-xs text-muted-strong font-mono mt-2">{t("error_id")}: {error.digest}</p>
           )}
         </div>
         <div className="flex items-center gap-2 justify-center pt-2">
           <button onClick={reset}
             className="px-5 py-2.5 rounded-full bg-brand hover:bg-brand-hover text-white text-sm font-semibold transition-colors">
-            Дахин оролдох
+            {t("try_again")}
           </button>
           <Link href="/"
             className="px-5 py-2.5 rounded-full bg-card hover:bg-card-hover text-app text-sm font-semibold border border-app transition-colors">
-            Нүүр хуудас
+            {t("go_to_home")}
           </Link>
         </div>
       </div>

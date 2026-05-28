@@ -337,6 +337,16 @@ const dict: Record<string, Record<Lang, string>> = {
   // ─── Common labels for sections ────────────────────
   go_to_home:        { mn: "Нүүр",                     en: "Home" },
 
+  // ─── Player ───
+  stream_load_failed: { mn: "Stream ачаалахад алдаа гарлаа", en: "Failed to load stream" },
+
+  // ─── Error boundary ───
+  error_title:    { mn: "Алдаа гарлаа",                                    en: "Something went wrong" },
+  error_subtitle: { mn: "Үйлдэл амжилтгүй боллоо. Хэсэг хүлээгээд дахин оролдоно уу.",
+                    en: "Action failed. Please wait a moment and try again." },
+  error_id:       { mn: "Алдааны ID",                                      en: "Error ID" },
+  try_again:      { mn: "Дахин оролдох",                                   en: "Try again" },
+
   // ─── Subscription confirm — {label} + {price} + period ──
   sub_confirm_title:  { mn: "{label} багц",            en: "{label} plan" },
   sub_confirm_body_monthly: {

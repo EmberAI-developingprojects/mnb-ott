@@ -182,6 +182,15 @@ export async function forgotPassword(emailOrPhone: string): Promise<void> {
 
 // ── RESET PASSWORD ────────────────────────────────────
 
+/* OTP-ийг password шинэчлэхгүйгээр зөвхөн validate хийх — UX: хэрэглэгч "code"
+   алхамд буруу OTP оруулбал шууд харагдана, "new password" алхамд хүргэлгүй. */
+export async function verifyResetOtp(emailOrPhone: string, otp: string): Promise<void> {
+  const cached = await redis.get(`otp:reset:${emailOrPhone}`);
+  if (!cached || cached !== otp) {
+    throw new AppError("Код буруу эсвэл хугацаа дууссан", 400, "INVALID_OTP");
+  }
+}
+
 export async function resetPassword(emailOrPhone: string, otp: string, newPassword: string): Promise<void> {
   const cached = await redis.get(`otp:reset:${emailOrPhone}`);
   if (!cached || cached !== otp) throw new AppError("Код буруу эсвэл хугацаа дууссан", 400, "INVALID_OTP");

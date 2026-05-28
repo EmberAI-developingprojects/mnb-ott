@@ -1,5 +1,7 @@
 import axios, { AxiosError } from "axios";
 import type { ApiError } from "@/types";
+import { translateError } from "./errorMessages";
+import { useSettingsStore } from "@/store/settingsStore";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -97,11 +99,29 @@ api.interceptors.response.use(
   },
 );
 
+/* Backend error-ийг хэрэглэгчийн хэлэнд орчуулж буцаана. Server `code` field
+   ашиглаж `errorMessages.ts`-аас орчуулга хайна. Code dict-д байхгүй бол server-
+   ийн default message (Mongolian)-ийг fallback болгоно.
+   Network error / unknown error үед зөв localized "An error occurred" буцаана. */
 export function getApiError(error: unknown): ApiError {
+  const lang = useSettingsStore.getState().lang;
+
   if (axios.isAxiosError(error) && error.response?.data) {
-    return error.response.data as ApiError;
+    const data = error.response.data as Partial<ApiError>;
+    const fallback = data.message ?? translateError("UNKNOWN_ERROR", lang, "");
+    return {
+      success: false,
+      code:    data.code    ?? "UNKNOWN_ERROR",
+      message: translateError(data.code, lang, fallback),
+    };
   }
-  return { success: false, message: "Алдаа гарлаа", code: "UNKNOWN_ERROR" };
+
+  /* Network error эсвэл backend response байхгүй (timeout, ECONNREFUSED) */
+  return {
+    success: false,
+    code:    "UNKNOWN_ERROR",
+    message: translateError("UNKNOWN_ERROR", lang, "Алдаа гарлаа"),
+  };
 }
 
 export default api;

@@ -90,6 +90,19 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
   } catch (e) { next(e); }
 }
 
+/* OTP-only validation — UX: forgot-password flow дотор хэрэглэгч "code" алхамд
+   буруу OTP оруулсныг шууд мэдэхэд тус болно. Password шинэчлэхгүй. */
+export async function verifyResetOtp(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { emailOrPhone, otp } = z.object({
+      emailOrPhone: z.string().min(1),
+      otp:          z.string().length(6),
+    }).parse(req.body);
+    await authService.verifyResetOtp(emailOrPhone, otp);
+    res.json({ success: true, data: { valid: true } });
+  } catch (e) { next(e); }
+}
+
 // ── OTP (phone only) ──────────────────────────────────
 
 export async function sendOtp(req: Request, res: Response, next: NextFunction) {

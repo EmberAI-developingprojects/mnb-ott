@@ -19,8 +19,9 @@ authRouter.get("/google/url",       ctrl.googleAuthUrl);
 authRouter.get("/google/callback",  ctrl.googleCallback);
 
 // Нууц үг сэргээх
-authRouter.post("/forgot-password", otpSendLimiter,   ctrl.forgotPassword);
-authRouter.post("/reset-password",  otpVerifyLimiter, ctrl.resetPassword);
+authRouter.post("/forgot-password",        otpSendLimiter,   ctrl.forgotPassword);
+authRouter.post("/verify-reset-otp",       otpVerifyLimiter, ctrl.verifyResetOtp);
+authRouter.post("/reset-password",         otpVerifyLimiter, ctrl.resetPassword);
 
 // OTP (утас)
 authRouter.post("/send-otp",        otpSendLimiter,   ctrl.sendOtp);

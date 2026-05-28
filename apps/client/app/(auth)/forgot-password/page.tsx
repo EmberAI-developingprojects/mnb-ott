@@ -52,8 +52,17 @@ function ForgotForm() {
     finally { setLoading(false); }
   }
 
-  function handleOtpComplete(code: string) {
-    setOtp(code); setStep("newpw");
+  async function handleOtpComplete(code: string) {
+    /* OTP-ийг backend дээр шалгана — хэрэв буруу бол энэ алхамд л алдаа гарна,
+       password бөглөсний дараа биш. UX илүү цэвэр. */
+    setError(""); setLoading(true);
+    try {
+      await api.post("/api/auth/verify-reset-otp", { emailOrPhone: identifier, otp: code });
+      setOtp(code); setStep("newpw");
+    } catch (e) {
+      setError(getApiError(e).message);
+      otpRef.current?.reset();
+    } finally { setLoading(false); }
   }
 
   async function handleReset(e: React.FormEvent) {
