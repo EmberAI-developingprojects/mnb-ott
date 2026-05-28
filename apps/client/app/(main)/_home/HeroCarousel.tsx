@@ -2,35 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useSettingsStore, useT } from "@/store/settingsStore";
+import { useT } from "@/store/settingsStore";
 import { useWatchlistStore } from "@/store/watchlistStore";
 import { formatDuration, cn } from "@/lib/utils";
 import type { Video } from "./types";
 
 /* Wrap-around hero carousel — нэр + thumbnail цуг шилждэг.
    7 секунд тутамд автоматаар дараагийн slide руу шилжих + manual arrows.
-   lg+ дээр adjacent slide-ууд хоёр талд peek хийнэ (active slide-аас 12% inset). */
+   lg+ дээр adjacent slide-ууд хоёр талд peek хийнэ. */
 export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolean }) {
   const t = useT();
-  const { lang } = useSettingsStore();
   const { has, add, remove } = useWatchlistStore();
   const [heroIdx, setHeroIdx] = useState(0);
   const heroTimer = useRef<ReturnType<typeof setInterval>>();
-
-  /* Viewport-аас хамаарч adjacent slide-ийн translate offset өөрчилнө:
-       Mobile (<lg): 102% — slides бүрэн off-screen
-       Desktop (lg+): 100% — slides active slide-тай хажуу-хажууд butt-аар тавигдана
-     Active slide-ийг lg+-д lg:inset-x-[12%] нарийсгасан тул хоёр талд 12% peek харагдана. */
-  const [isDesktop, setIsDesktop] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    setIsDesktop(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-  const offsetPct = isDesktop ? 100 : 102;
 
   useEffect(() => {
     if (hero.length < 2) return;
@@ -58,33 +44,38 @@ export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolea
           if (offset > hero.length / 2)  offset -= hero.length;
           if (offset < -hero.length / 2) offset += hero.length;
           const isActive = offset === 0;
+          /* Зөвхөн идэвхтэй + дэргэдэх slide-уудад transition. Алс slide
+             (wrap-аар идэвхтэй болж байгаа slide-ийн "хуучин" position-аас)
+             transition хийвэл бусдын дундуур "ski" хийж glitchy харагдана. */
+          const isAdjacent = Math.abs(offset) <= 1;
           const saved = has(v.youtubeId);
 
           return (
             <div key={v.youtubeId}
               className={cn(
-                "absolute inset-0 lg:inset-x-[2.5%] xl:inset-x-[4%] 2xl:inset-x-[6%] rounded-none lg:rounded-2xl overflow-hidden transition-all duration-700 ease-out",
+                "absolute inset-0 lg:inset-x-[2.5%] xl:inset-x-[4%] 2xl:inset-x-[6%] rounded-none lg:rounded-2xl overflow-hidden",
+                /* transition-all биш — зөвхөн transform + opacity. Inset (resize)
+                   эсвэл бусад property animate болохгүй. */
+                isAdjacent
+                  ? "transition-[transform,opacity] duration-700 ease-out"
+                  : "duration-0",
                 isActive ? "opacity-100 z-10" : "opacity-90 z-0",
               )}
-              style={{ transform: `translateX(${offset * offsetPct}%) scale(${isActive ? 1 : 0.95})` }}>
-              {/* Responsive YouTube thumbnail:
-                  - mobile (< 640px) : mqdefault 320x180  ~10-20KB
-                  - tablet (< 1280px): hqdefault 480x360  ~30-50KB
-                  - desktop          : maxresdefault 1280x720 ~150-300KB
-                  fetchPriority="high" зөвхөн visible slide-д. */}
-              <img
-                src={`https://i.ytimg.com/vi/${v.youtubeId}/hqdefault.jpg`}
-                srcSet={[
-                  `https://i.ytimg.com/vi/${v.youtubeId}/mqdefault.jpg 320w`,
-                  `https://i.ytimg.com/vi/${v.youtubeId}/hqdefault.jpg 480w`,
-                  `https://i.ytimg.com/vi/${v.youtubeId}/maxresdefault.jpg 1280w`,
-                ].join(", ")}
-                sizes="(max-width: 640px) 100vw, (max-width: 1280px) 80vw, 1240px"
+              /* offset 100% — slide width-тэйгээ яг таарна (mobile-д edge-to-edge,
+                 desktop-д inset-аас үүссэн peek харагдана). Өмнө 102% байсан нь
+                 hydration-ийн дараа 100%-руу үсэрч "jump" үүсгэдэг байсан. */
+              style={{ transform: `translateX(${offset * 100}%) scale(${isActive ? 1 : 0.95})` }}>
+              {/* YouTube thumbnail — next/image responsive sizing.
+                  priority нь зөвхөн ЭХНИЙ slide-д (i===0) тогтмол өгнө — энэ нь
+                  page load-ийн LCP image. Active slide шилжих үед priority алддаг
+                  бол Next.js "add priority to LCP" warning гаргадаг. */}
+              <Image
+                src={`https://i.ytimg.com/vi/${v.youtubeId}/maxresdefault.jpg`}
                 alt={v.title}
-                className="absolute inset-0 w-full h-full object-cover"
-                loading={isActive ? "eager" : "lazy"}
-                fetchPriority={isActive ? "high" : "auto"}
-                decoding="async" />
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1280px) 80vw, 1240px"
+                priority={i === 0}
+                className="object-cover" />
 
               <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -93,7 +84,7 @@ export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolea
                 <div className="max-w-xl">
                   <div className="hidden xs:inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-white/15 backdrop-blur-sm mb-2 sm:mb-3 md:mb-5">
                     <span className="text-[10px] font-bold tracking-wider uppercase text-white">
-                      {lang === "mn" ? "Онцлох" : "Featured"}
+                      {t("sub_featured")}
                     </span>
                   </div>
 
@@ -124,21 +115,23 @@ export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolea
                         if (saved) remove(v.youtubeId);
                         else add({ id: v.youtubeId, title: v.title, thumbnailUrl: v.thumbnailUrl, duration: v.duration });
                       }}
+                      aria-label={saved ? "Жагсаалтаас хасах" : "Жагсаалтад хадгалах"}
+                      aria-pressed={saved}
                       className={cn(
                         "flex items-center gap-1.5 sm:gap-2 px-3 xs:px-4 sm:px-4 py-1.5 xs:py-2 sm:py-2.5 rounded-full backdrop-blur-md border text-[11px] xs:text-xs sm:text-sm font-semibold transition-all",
                         saved ? "bg-white/10 border-accent text-white" : "bg-white/10 border-white/25 text-white hover:bg-white/20",
                       )}>
                       {saved ? (
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="sm:w-3.5 sm:h-3.5">
+                        <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="sm:w-3.5 sm:h-3.5">
                           <polyline points="20 6 9 17 4 12"/>
                         </svg>
                       ) : (
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="sm:w-3.5 sm:h-3.5">
+                        <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="sm:w-3.5 sm:h-3.5">
                           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                         </svg>
                       )}
                       <span>
-                        {saved ? (lang === "mn" ? "Хадгалсан" : "Saved") : (lang === "mn" ? "Хадгалах" : "Save")}
+                        {saved ? t("saved") : t("save")}
                       </span>
                     </button>
                   </div>
@@ -160,13 +153,13 @@ export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolea
 
         {hero.length > 1 && (
           <>
-            <button onClick={() => goHero(-1)} aria-label="prev"
+            <button onClick={() => goHero(-1)} aria-label="Өмнөх"
               className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 z-40 w-9 h-9 md:w-11 md:h-11 rounded-full bg-black/50 backdrop-blur hover:bg-black/80 text-white flex items-center justify-center transition-colors shadow-lg">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
-            <button onClick={() => goHero(1)} aria-label="next"
+            <button onClick={() => goHero(1)} aria-label="Дараах"
               className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 z-40 w-9 h-9 md:w-11 md:h-11 rounded-full bg-black/50 backdrop-blur hover:bg-black/80 text-white flex items-center justify-center transition-colors shadow-lg">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
             </button>
 
             <div className="absolute bottom-3 right-3 md:bottom-5 md:right-5 z-40 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur text-white/70 text-[11px] font-mono tabular-nums">

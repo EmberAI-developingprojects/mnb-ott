@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 export const metadata: Metadata = {
   title: "МҮОНРТ OTT — Admin",
   description: "MNB OTT удирдлагын самбар",
+  icons: { icon: "/logo.png" },
 };
 
 /* Hydration-аас ӨМНӨ theme-ийг тогтоох blocking script — light flash-аас сэргийлнэ.

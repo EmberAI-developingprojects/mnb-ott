@@ -7,7 +7,7 @@ export type { EnrichedAuditLog } from "./audit.service";
 export { getDashboardStats, getRevenueTrend } from "./stats.service";
 
 export {
-  listUsers, getUserDetail, changeUserRole, setUserBlocked,
+  listUsers, getUserDetail, changeUserRole, setUserBlocked, deleteUser,
 } from "./users.service";
 
 export {

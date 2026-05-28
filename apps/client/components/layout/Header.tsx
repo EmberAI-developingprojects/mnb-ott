@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
@@ -97,30 +98,33 @@ export function Header() {
     return (
       <header className="fixed top-0 left-0 right-0 z-50 bg-elevated border-b border-app">
         <div className="max-w-[1440px] mx-auto px-3 md:px-8 h-[var(--header-h)] flex items-center gap-2">
-          <button onClick={() => router.back()} aria-label="Back"
+          <button onClick={() => router.back()} aria-label="Буцах"
             className="w-11 h-11 -ml-1 flex items-center justify-center rounded-full text-app hover:bg-card-hover transition-colors shrink-0">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 18l-6-6 6-6"/>
             </svg>
           </button>
 
-          <form onSubmit={submitSearch} className="flex-1">
+          <form onSubmit={submitSearch} className="flex-1" role="search">
+            <label htmlFor="header-search-input" className="sr-only">Хайх</label>
             <div className="relative">
-              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted"
+              <svg aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted"
                 width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
               </svg>
               <input
+                id="header-search-input"
                 autoFocus
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={t("search_ph")}
+                aria-label="Хайх"
                 className="w-full pl-10 pr-4 py-2.5 rounded-full text-[15px] input-base focus:outline-none"
               />
               {q && (
-                <button type="button" onClick={() => setQ("")}
+                <button type="button" onClick={() => setQ("")} aria-label="Цэвэрлэх"
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-muted hover:text-app hover:bg-card-hover">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
                 </button>
@@ -137,8 +141,8 @@ export function Header() {
       <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-[var(--header-h)] flex items-center gap-3">
 
         {/* Brand logo — mobile-д зүүн талд ганцаар */}
-        <Link href="/" className="shrink-0 flex items-center mr-4">
-          <img src="/logo.png" alt="" className="w-9 h-9 object-cover rounded" />
+        <Link href="/" aria-label="Нүүр хуудас" className="shrink-0 flex items-center mr-4">
+          <Image src="/logo.png" alt="" width={36} height={36} priority className="w-9 h-9 object-cover rounded" />
         </Link>
 
         {/* Desktop nav */}
@@ -175,26 +179,29 @@ export function Header() {
 
         {/* Desktop search — үргэлж нээлттэй pill, nav-ийн дараа center-thru.
             Lg-аас доош хураагдсан хэвээр (mobile-аас Header-ийн search route ашиглана). */}
-        <form onSubmit={submitSearch} className="hidden lg:flex flex-1 justify-center px-6">
+        <form onSubmit={submitSearch} className="hidden lg:flex flex-1 justify-center px-6" role="search">
+          <label htmlFor="header-search-desktop" className="sr-only">Хайх</label>
           <div className="relative w-full max-w-md">
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted"
+            <svg aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted"
               width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
             <input
+              id="header-search-desktop"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={t("search_ph")}
+              aria-label="Хайх"
               className="w-full h-10 pl-11 pr-9 rounded-full text-[14px]
                 bg-card border border-app
                 focus:outline-none focus:border-strong focus:bg-bg-elevated transition-colors
                 placeholder:text-muted"
             />
             {q && (
-              <button type="button" onClick={() => setQ("")} aria-label="Clear"
+              <button type="button" onClick={() => setQ("")} aria-label="Цэвэрлэх"
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full
                   flex items-center justify-center text-muted hover:text-app hover:bg-card-hover transition-colors">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
@@ -212,14 +219,14 @@ export function Header() {
 
           {/* Notifications — desktop + mobile. Уншаагүй бол зөвхөн жижиг dot. */}
           {user && (
-            <Link href="/notifications" aria-label="Notifications"
+            <Link href="/notifications" aria-label={unread > 0 ? `Мэдэгдэл (${unread} шинэ)` : "Мэдэгдэл"}
               className={cn(
                 "relative w-10 h-10 flex items-center justify-center rounded-full transition-colors",
                 isActive("/notifications")
                   ? "bg-card-hover text-app"
                   : "text-sub hover:text-app hover:bg-card-hover",
               )}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
               </svg>
@@ -243,9 +250,9 @@ export function Header() {
           )}
 
           {/* Search icon — mobile only. Desktop-д header center-д nav-аас хойш inline pill бий. */}
-          <Link href="/search" aria-label="Search"
+          <Link href="/search" aria-label="Хайх"
             className="lg:hidden w-10 h-10 flex items-center justify-center rounded-full text-sub hover:text-app hover:bg-card-hover transition-colors">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
           </Link>

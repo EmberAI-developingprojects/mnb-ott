@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSettingsStore } from "@/store/settingsStore";
+import { useSettingsStore, useT } from "@/store/settingsStore";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
 import api from "@/lib/api";
@@ -35,7 +35,10 @@ const TYPE_LABEL: Record<HistoryItem["type"], [string, string]> = {
 };
 
 export default function PurchasesPage() {
+  /* lang нь зөвхөн toLocaleDateString + TYPE_LABEL tuple index-д хэрэгтэй —
+     UI string-ууд дict-руу шилжсэн */
   const { lang } = useSettingsStore();
+  const t = useT();
   const [items, setItems]     = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(PAGE_SIZE);
@@ -49,9 +52,7 @@ export default function PurchasesPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <h1 className="text-xl font-bold text-app">
-        {lang === "mn" ? "Худалдан авалтын түүх" : "Purchase history"}
-      </h1>
+      <h1 className="text-xl font-bold text-app">{t("purchases_history")}</h1>
 
       {loading ? (
         <div className="space-y-2">
@@ -66,12 +67,8 @@ export default function PurchasesPage() {
               <path d="M16 10a4 4 0 11-8 0"/>
             </svg>
           </div>
-          <p className="text-app font-semibold">
-            {lang === "mn" ? "Худалдан авалт байхгүй" : "No purchases yet"}
-          </p>
-          <p className="text-[13px] text-muted">
-            {lang === "mn" ? "Эхний захиалга энд харагдана" : "Your first purchase will appear here"}
-          </p>
+          <p className="text-app font-semibold">{t("purchase_empty")}</p>
+          <p className="text-[13px] text-muted">{t("purchase_empty_sub")}</p>
         </div>
       ) : (
         <ul className="space-y-1.5">
@@ -100,7 +97,7 @@ export default function PurchasesPage() {
                       year: "numeric", month: "long", day: "numeric",
                     })}
                     {it.expiresAt && !isExpired && (
-                      <> · {lang === "mn" ? "Дуусах" : "expires"} {new Date(it.expiresAt).toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US", { month: "short", day: "numeric" })}</>
+                      <> · {t("purchase_expires")} {new Date(it.expiresAt).toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US", { month: "short", day: "numeric" })}</>
                     )}
                   </p>
                 </div>
@@ -114,9 +111,9 @@ export default function PurchasesPage() {
                     isExpired || !isActive ? "text-muted" : "text-sub",
                   )}>
                     {isExpired
-                      ? (lang === "mn" ? "Дууссан" : "Expired")
+                      ? t("purchase_expired")
                       : isActive
-                        ? (lang === "mn" ? "Идэвхтэй" : "Active")
+                        ? t("purchase_active")
                         : it.status}
                   </p>
                 </div>

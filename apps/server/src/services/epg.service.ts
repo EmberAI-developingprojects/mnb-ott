@@ -1,6 +1,9 @@
-// EPG Service
-// Одоогоор mock өгөгдөл ашиглана.
-// МНБ-ийн бодит EPG XML/API ирэхэд fetchRealEpg() функцийг солих.
+/* EPG Service — Хөтөлбөрийн жагсаалт.
+   Provider abstraction:
+     EPG_PROVIDER=mock (default) — энд бичсэн procedural mock өгөгдөл
+     EPG_PROVIDER=xml             — fetchRealEpg() → МНБ XML/JSON feed
+   Provider switch нь нэг л газар (доорх provider-ийн объект). Бодит EPG
+   ирэхэд зөвхөн fetchRealEpg()-ийн implementation бичих хэрэгтэй. */
 
 export interface EpgProgram {
   id: string;
@@ -17,6 +20,14 @@ export interface EpgChannel {
   name: string;
   slug: string;
   programs: EpgProgram[];
+}
+
+/* EpgProvider interface — XML feed, JSON API, эсвэл бусад source-аас
+   ижил shape-тай өгөгдөл буцаах ёстой. Хэдэн хоног back/forward буцаахыг
+   нэгдсэн форматаар хүлээж авна. */
+export interface EpgProvider {
+  getAll: (daysBack: number, daysForward: number) => Promise<EpgChannel[]> | EpgChannel[];
+  getOne: (slug: string, daysBack: number, daysForward: number) => Promise<EpgChannel | null> | EpgChannel | null;
 }
 
 const CHANNELS = [
@@ -147,25 +158,52 @@ function buildPrograms(
   return programs;
 }
 
-export function getEpg(
-  daysBack = 3,
-  daysForward = 5
-): EpgChannel[] {
-  return CHANNELS.map((ch, idx) => {
+/* ─── Mock provider — procedural өгөгдөл ─────────────────────── */
+const mockProvider: EpgProvider = {
+  getAll(daysBack, daysForward) {
+    return CHANNELS.map((ch, idx) => {
+      const programs: EpgProgram[] = [];
+      for (let d = -daysBack; d <= daysForward; d++) {
+        programs.push(...buildPrograms(idx, d));
+      }
+      return { ...ch, programs };
+    });
+  },
+  getOne(slug, daysBack, daysForward) {
+    const idx = CHANNELS.findIndex((c) => c.slug === slug);
+    if (idx === -1) return null;
     const programs: EpgProgram[] = [];
     for (let d = -daysBack; d <= daysForward; d++) {
       programs.push(...buildPrograms(idx, d));
     }
-    return { ...ch, programs };
-  });
+    return { id: CHANNELS[idx].id, name: CHANNELS[idx].name, slug, programs };
+  },
+};
+
+/* ─── XML provider stub — МНБ-ээс бодит feed ирэхэд бичих ────────
+   ENV: EPG_FEED_URL — XMLTV/JSON endpoint
+   Implementation:
+     1. axios.get(EPG_FEED_URL)
+     2. xml2js эсвэл JSON.parse
+     3. Channel-уудыг slug-аар map хийж EpgChannel[] буцаах
+     4. Redis cache 1 цаг (request бүрд татахгүйн тулд)
+   Одоохондоо throw — mock-руу буцаахаар үндсэн router default-аар.        */
+const xmlProvider: EpgProvider = {
+  getAll: () => { throw new Error("EPG XML provider бэлэн биш — fetchRealEpg() implement хийнэ"); },
+  getOne: () => { throw new Error("EPG XML provider бэлэн биш — fetchRealEpg() implement хийнэ"); },
+};
+
+/* ENV-ээс provider сонгоно. Default mock. */
+function getProvider(): EpgProvider {
+  return process.env.EPG_PROVIDER === "xml" ? xmlProvider : mockProvider;
 }
 
-export function getChannelEpg(slug: string): EpgChannel | null {
-  const idx = CHANNELS.findIndex((c) => c.slug === slug);
-  if (idx === -1) return null;
-  const programs: EpgProgram[] = [];
-  for (let d = -3; d <= 5; d++) {
-    programs.push(...buildPrograms(idx, d));
-  }
-  return { ...CHANNELS[idx], programs };
+/* Public API — route-аас энэ 2 функц л дуудна. Provider солих нь ENV-ээр. */
+export function getEpg(daysBack = 3, daysForward = 5): EpgChannel[] | Promise<EpgChannel[]> {
+  return getProvider().getAll(daysBack, daysForward);
 }
+
+export function getChannelEpg(slug: string, daysBack = 3, daysForward = 5): EpgChannel | null | Promise<EpgChannel | null> {
+  return getProvider().getOne(slug, daysBack, daysForward);
+}
+

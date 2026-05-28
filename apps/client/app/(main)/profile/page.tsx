@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { useSettingsStore, useT } from "@/store/settingsStore";
+import { useT } from "@/store/settingsStore";
 import api from "@/lib/api";
 
 /* /profile — iOS Settings маягийн menu list page
@@ -12,7 +13,6 @@ import api from "@/lib/api";
 export default function ProfileMenuPage() {
   const router = useRouter();
   const { user, clearAuth } = useAuthStore();
-  const { lang } = useSettingsStore();
   const t = useT();
 
   useEffect(() => {
@@ -36,9 +36,9 @@ export default function ProfileMenuPage() {
   ];
 
   const SUPPORT_MENU: MenuItem[] = [
-    { href: "/profile/help",    label: lang === "mn" ? "Түгээмэл асуулт"     : "Help & FAQ",       icon: ICON.help },
-    { href: "/profile/terms",   label: lang === "mn" ? "Үйлчилгээний нөхцөл" : "Terms of Service", icon: ICON.terms },
-    { href: "/profile/privacy", label: lang === "mn" ? "Нууцлалын бодлого"   : "Privacy Policy",   icon: ICON.privacy },
+    { href: "/profile/help",    label: t("help_faq"),      icon: ICON.help    },
+    { href: "/profile/terms",   label: t("terms_short"),   icon: ICON.terms   },
+    { href: "/profile/privacy", label: t("privacy_short"), icon: ICON.privacy },
   ];
 
   return (
@@ -46,7 +46,7 @@ export default function ProfileMenuPage() {
       {/* Хэрэглэгч карт */}
       <div className="flex items-center gap-4 p-5 rounded-2xl bg-card border border-app">
         {user.avatar ? (
-          <img src={user.avatar} alt="" className="w-14 h-14 rounded-full object-cover" />
+          <Image src={user.avatar} alt="" width={56} height={56} className="w-14 h-14 rounded-full object-cover" />
         ) : (
           <div className="w-14 h-14 rounded-full bg-grad-brand flex items-center justify-center text-white font-bold text-xl">
             {(user.name ?? user.phone ?? "U")[0]?.toUpperCase()}
@@ -59,12 +59,12 @@ export default function ProfileMenuPage() {
       </div>
 
       {/* БҮРТГЭЛ */}
-      <Section title={lang === "mn" ? "Бүртгэл" : "Account"}>
+      <Section title={t("account_section")}>
         {ACCOUNT_MENU.map((m) => <Row key={m.href} item={m} />)}
       </Section>
 
       {/* ТУСЛАМЖ */}
-      <Section title={lang === "mn" ? "Тусламж" : "Support"}>
+      <Section title={t("support_section")}>
         {SUPPORT_MENU.map((m) => <Row key={m.href} item={m} />)}
       </Section>
 

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PosterCard } from "@/components/layout/PosterCard";
-import { useSettingsStore } from "@/store/settingsStore";
+import { useT } from "@/store/settingsStore";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 
@@ -19,7 +19,7 @@ interface Bundle {
 }
 
 export default function BundlesPage() {
-  const { lang } = useSettingsStore();
+  const t = useT();
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,14 +35,14 @@ export default function BundlesPage() {
       {loading
         ? Array.from({ length: 3 }).map((_, i) => <SectionSkeleton key={i} />)
         : bundles.map((b) => (
-            <BundleRow key={b.id} bundle={b} lang={lang} />
+            <BundleRow key={b.id} bundle={b} seeAllLabel={t("see_all_short")} />
           ))
       }
     </div>
   );
 }
 
-function BundleRow({ bundle, lang }: { bundle: Bundle; lang: "mn" | "en" }) {
+function BundleRow({ bundle, seeAllLabel }: { bundle: Bundle; seeAllLabel: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const scroll = (d: "l" | "r") => ref.current?.scrollBy({ left: d === "r" ? 320 : -320, behavior: "smooth" });
 
@@ -52,7 +52,7 @@ function BundleRow({ bundle, lang }: { bundle: Bundle; lang: "mn" | "en" }) {
         <h2 className="text-xl md:text-2xl font-bold text-app">{bundle.title}</h2>
         <Link href={`/bundles/${bundle.id}`}
           className="text-[13px] font-semibold text-accent hover:underline">
-          {lang === "mn" ? "Бүгдийг" : "See all"}
+          {seeAllLabel}
         </Link>
       </div>
 

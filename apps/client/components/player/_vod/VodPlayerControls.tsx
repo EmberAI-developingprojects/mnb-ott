@@ -33,7 +33,13 @@ export function VodPlayerControls({
     <>
       {/* Progress bar + YouTube-style hover preview (thumbnail + цаг) */}
       <div className="mb-3 group/seek">
-        <div className="relative h-1 group-hover/seek:h-1.5 transition-all rounded-full bg-white/20 cursor-pointer"
+        <div role="slider"
+          aria-label="Тоглуулах байрлал"
+          aria-valuemin={0}
+          aria-valuemax={Math.max(0, Math.floor(total))}
+          aria-valuenow={Math.floor(current)}
+          tabIndex={0}
+          className="relative h-1 group-hover/seek:h-1.5 transition-all rounded-full bg-white/20 cursor-pointer"
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             onSeek(((e.clientX - rect.left) / rect.width) * total);
@@ -73,13 +79,14 @@ export function VodPlayerControls({
 
       <div className="flex items-center gap-3">
         {/* Play/Pause — зөвхөн desktop (lg+). Mobile-д голын товч ажиллана. */}
-        <button onClick={onTogglePlay} className="hidden lg:block text-white hover:text-primary transition-colors shrink-0">
+        <button onClick={onTogglePlay} aria-label={playing ? "Зогсоох" : "Тоглуулах"}
+          className="hidden lg:block text-white hover:text-primary transition-colors shrink-0">
           {playing ? (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
               <rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" />
             </svg>
           ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
               <path d="M8 5v14l11-7z" />
             </svg>
           )}
@@ -93,13 +100,14 @@ export function VodPlayerControls({
 
         {/* Volume */}
         <div className="flex items-center gap-2 shrink-0">
-          <button onClick={onToggleMute} className="text-white hover:text-primary transition-colors">
+          <button onClick={onToggleMute} aria-label={muted || volume === 0 ? "Дуу нээх" : "Дуугүй болгох"}
+            className="text-white hover:text-primary transition-colors">
             {muted || volume === 0 ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06A8.99 8.99 0 0 0 17.73 18L19 19.27 20.27 18 5.27 3 4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
               </svg>
             ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
               </svg>
             )}
@@ -107,6 +115,7 @@ export function VodPlayerControls({
           <input
             type="range" min={0} max={100} step={1} value={muted ? 0 : volume}
             onChange={(e) => onVolumeChange(Number(e.target.value))}
+            aria-label="Дууны түвшин"
             className="w-20 accent-primary cursor-pointer"
           />
         </div>
@@ -117,6 +126,7 @@ export function VodPlayerControls({
         {qualities.length > 1 && (
           <select
             onChange={(e) => onQuality(e.target.value)}
+            aria-label="Чанар сонгох"
             className="bg-black/60 text-white text-xs px-2 py-1 rounded border border-white/20 outline-none cursor-pointer"
             onClick={(e) => e.stopPropagation()}
           >
@@ -129,13 +139,14 @@ export function VodPlayerControls({
         )}
 
         {/* Fullscreen */}
-        <button onClick={onToggleFullscreen} className="text-white hover:text-primary transition-colors shrink-0">
+        <button onClick={onToggleFullscreen} aria-label={fullscreen ? "Дэлгэцээс гарах" : "Бүтэн дэлгэц"}
+          className="text-white hover:text-primary transition-colors shrink-0">
           {fullscreen ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
             </svg>
           ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
             </svg>
           )}
@@ -163,15 +174,15 @@ export function VodPlayerPoster({
         className="object-cover" priority />
       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
         {isLoggedIn ? (
-          <button onClick={onStart}
+          <button onClick={onStart} aria-label="Тоглуулах"
             className="w-20 h-20 rounded-full bg-accent/90 hover:bg-accent flex items-center justify-center
               shadow-2xl transition-transform hover:scale-110">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="white" className="translate-x-0.5">
+            <svg aria-hidden="true" width="32" height="32" viewBox="0 0 24 24" fill="white" className="translate-x-0.5">
               <path d="M8 5v14l11-7z" />
             </svg>
           </button>
         ) : (
-          <button onClick={onStart} className="flex flex-col items-center gap-2 group">
+          <button onClick={onStart} aria-label={loginLabel} className="flex flex-col items-center gap-2 group">
             <div className={cn(
               "w-20 h-20 rounded-full bg-black/60 border-2 border-white/20",
               "flex items-center justify-center group-hover:border-accent transition-colors",
@@ -202,9 +213,9 @@ export function ReplayButton({ onReplay }: { onReplay: () => void }) {
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center"
       onClick={(e) => e.stopPropagation()}>
-      <button onClick={onReplay}
+      <button onClick={onReplay} aria-label="Дахин үзэх"
         className="w-16 h-16 rounded-full bg-[var(--primary)]/90 hover:bg-[var(--primary)] flex items-center justify-center transition-all">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="white">
           <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
         </svg>
       </button>

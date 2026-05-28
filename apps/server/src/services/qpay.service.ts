@@ -1,4 +1,5 @@
 import axios from "axios";
+import { timingSafeEqual } from "node:crypto";
 import { redis } from "../lib/redis";
 import { AppError } from "../middleware/error.middleware";
 
@@ -79,10 +80,25 @@ export async function cancelInvoice(qpayInvoiceId: string): Promise<void> {
   await axios.delete(`${BASE}/invoice/${qpayInvoiceId}`, { headers: authHeaders(token) });
 }
 
-// HMAC webhook баталгаажуулах (QPay нь Basic Auth ашигладаг)
-export function verifyCallback(authHeader: string): boolean {
-  const expected = Buffer.from(
+/* Webhook signature баталгаажуулалт — QPay Basic Auth ашигладаг.
+   Timing-safe compare ашигласан нь string === шиг character-by-character early
+   return-гүй, attacker character-аар secret guess хийх боломжгүй (timing attack).
+   Auth header байхгүй эсвэл буруу формат бол шууд false. */
+export function verifyCallback(authHeader: string | undefined): boolean {
+  if (!authHeader || !authHeader.startsWith("Basic ")) return false;
+  if (!process.env.QPAY_USERNAME || !process.env.QPAY_PASSWORD) {
+    /* Production-д username/password зайвал тохируулсан байх ёстой. Тохируулаагүй
+       бол webhook идэвхгүй (reject) — env validation үндсэн нь шалгана. */
+    return false;
+  }
+  const expected = "Basic " + Buffer.from(
     `${process.env.QPAY_USERNAME}:${process.env.QPAY_PASSWORD}`
   ).toString("base64");
-  return authHeader === `Basic ${expected}`;
+
+  /* Урт ялгаатай байж болзошгүй (зөвхөн encoding format) тул эхлээд бус хэмжээ
+     шалгана. Дараа нь timingSafeEqual — байт-аар тогтмол хугацаатай compare. */
+  const a = Buffer.from(authHeader);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }

@@ -89,6 +89,19 @@ adminRouter.patch("/users/:id/block", requireAuth, requireRole(...ADMIN_PLUS), (
   }), res, next);
 });
 
+/* Хэрэглэгчийг бүрмөсөн устгах — ADMIN+ хийнэ. Service дотор зэрэглэлийн
+   шалгалт (зөвхөн өөрөөсөө бага), self-delete хориг. */
+adminRouter.delete("/users/:id", requireAuth, requireRole(...ADMIN_PLUS), (req, res, next) => {
+  const body = z.object({ reason: z.string().optional() }).safeParse(req.body);
+  return send(admin.deleteUser({
+    actorUserId:  req.user!.userId,
+    actorRole:    req.user!.role,
+    targetUserId: req.params.id,
+    reason:       body.success ? body.data.reason : undefined,
+    ip:           ip(req),
+  }), res, next);
+});
+
 /* ─── VOD CONTENT ───────────────────────────────────────── */
 adminRouter.get("/vod", requireAuth, requireRole(...CONTENT_ROLES), (req, res, next) => {
   const q = z.object({

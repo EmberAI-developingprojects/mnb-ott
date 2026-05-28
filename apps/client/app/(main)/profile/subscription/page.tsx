@@ -104,9 +104,7 @@ export default function ProfileSubscriptionPage() {
             </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold text-app">
-              {lang === "mn" ? "Идэвхжлээ" : "Activated"}
-            </p>
+            <p className="text-sm font-semibold text-app">{t("sub_activated")}</p>
             <p className="text-xs text-muted">{success}</p>
           </div>
         </div>
@@ -142,7 +140,7 @@ export default function ProfileSubscriptionPage() {
           {myPlan.type !== "BASIC" && data?.isActive && (
             <button onClick={() => setCancelConfirm(true)}
               className="text-xs font-medium text-muted hover:text-[var(--danger)] transition-colors">
-              {lang === "mn" ? "Цуцлах" : "Cancel"}
+              {t("cancel")}
             </button>
           )}
         </div>
@@ -210,10 +208,9 @@ export default function ProfileSubscriptionPage() {
               {/* Шинэ загварт зөвхөн premium VOD capability ялгаатай —
                   үлдсэн (TV/Radio/Archive) нь бүх plan-д free */}
               <div className="space-y-1.5">
-                <CapRow on label={lang === "mn" ? "TV суваг + Радио + DVR" : "TV channels + Radio + DVR"} />
-                <CapRow on label={lang === "mn" ? "YouTube архив" : "YouTube archive"} />
-                <CapRow on={plan.capabilities.premiumVod}
-                  label={lang === "mn" ? "Премиум VOD сан" : "Premium VOD library"} />
+                <CapRow on label={t("caps_tv_radio_dvr")} />
+                <CapRow on label={t("caps_yt_archive")} />
+                <CapRow on={plan.capabilities.premiumVod} label={t("caps_vod_lib")} />
               </div>
 
               <ul className="space-y-1.5 flex-1 pt-3 border-t border-app">
@@ -259,41 +256,36 @@ export default function ProfileSubscriptionPage() {
 
       {/* LIVE event PPV-ийн тайлбар */}
       <div className="rounded-2xl border border-app bg-card p-5 space-y-2">
-        <p className="text-[11px] font-bold text-muted uppercase tracking-[0.15em]">
-          {lang === "mn" ? "LIVE event" : "LIVE events"}
-        </p>
-        <p className="text-sm text-sub leading-relaxed">
-          {lang === "mn"
-            ? "Шууд цацалттай LIVE event-уудыг (футболын тоглолт, концерт, эфир) plan-аас гадуур тус бүрчлэн худалдан авч үзнэ. Худалдан авснаас хойш 24 цагийн дотор үзэх боломжтой."
-            : "LIVE events (matches, concerts, airings) are purchased individually outside plans — accessible for 24 hours after purchase."}
-        </p>
+        <p className="text-[11px] font-bold text-muted uppercase tracking-[0.15em]">{t("live_events")}</p>
+        <p className="text-sm text-sub leading-relaxed">{t("live_events_desc")}</p>
       </div>
 
-      {/* Confirm modal */}
-      {confirm && (
-        <ConfirmDialog
-          title={lang === "mn" ? `${confirm.label} багц` : `${confirm.label} plan`}
-          body={lang === "mn"
-            ? `${(period === "monthly" ? confirm.priceMonthly : confirm.priceWeekly).toLocaleString("mn-MN")}₮ үнэтэй ${period === "monthly" ? "сарын" : "7 хоногийн"} захиалга идэвхжих гэж байна. Үргэлжлүүлэх үү?`
-            : `You are about to activate the ${period} plan for ₮${(period === "monthly" ? confirm.priceMonthly : confirm.priceWeekly).toLocaleString()}. Continue?`}
-          confirmLabel={lang === "mn" ? "Идэвхжүүлэх" : "Activate"}
-          cancelLabel={lang === "mn" ? "Болих" : "Cancel"}
-          confirmDanger={false}
-          loading={pending === confirm.type}
-          onConfirm={() => activate(confirm)}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+      {/* Confirm modal — t() interpolation-аар {label} + {price} оруулдаг. */}
+      {confirm && (() => {
+        const priceN  = period === "monthly" ? confirm.priceMonthly : confirm.priceWeekly;
+        const price   = priceN.toLocaleString(lang === "mn" ? "mn-MN" : "en-US");
+        const bodyKey = period === "monthly" ? "sub_confirm_body_monthly" : "sub_confirm_body_weekly";
+        return (
+          <ConfirmDialog
+            title={t("sub_confirm_title", { label: confirm.label })}
+            body={t(bodyKey, { price })}
+            confirmLabel={t("activate")}
+            cancelLabel={t("cancel_short")}
+            confirmDanger={false}
+            loading={pending === confirm.type}
+            onConfirm={() => activate(confirm)}
+            onCancel={() => setConfirm(null)}
+          />
+        );
+      })()}
 
       {/* Cancel confirm */}
       {cancelConfirm && (
         <ConfirmDialog
-          title={lang === "mn" ? "Захиалга цуцлах" : "Cancel subscription"}
-          body={lang === "mn"
-            ? "Та одоогийн идэвхтэй захиалгаа цуцлах гэж байна. Та BASIC буюу үнэгүй plan руу буцна. Үргэлжлүүлэх үү?"
-            : "You are about to cancel your active subscription. You will be downgraded to BASIC. Continue?"}
-          confirmLabel={lang === "mn" ? "Цуцлах" : "Cancel plan"}
-          cancelLabel={lang === "mn" ? "Болих" : "Keep"}
+          title={t("sub_cancel_title")}
+          body={t("sub_cancel_body")}
+          confirmLabel={t("cancel_plan")}
+          cancelLabel={t("keep_plan")}
           confirmDanger
           loading={pending === "BASIC"}
           onConfirm={cancelSubscription}

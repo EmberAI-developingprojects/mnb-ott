@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -35,15 +36,18 @@ export function UserMenu({ user, t, onLogout }: {
   return (
     <div ref={ref} className="relative ml-1">
       <button onClick={() => setOpen(!open)}
+        aria-label="Хэрэглэгчийн цэс"
+        aria-expanded={open}
+        aria-haspopup="menu"
         className="flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full hover:bg-card-hover transition-colors">
         {user.avatar ? (
-          <img src={user.avatar} alt="" className="w-9 h-9 rounded-full object-cover ring-1 ring-[var(--border-strong)]" />
+          <Image src={user.avatar} alt="" width={36} height={36} className="w-9 h-9 rounded-full object-cover ring-1 ring-[var(--border-strong)]" />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-brand flex items-center justify-center text-white text-[13px] font-bold">
+          <div aria-hidden="true" className="w-9 h-9 rounded-full bg-brand flex items-center justify-center text-white text-[13px] font-bold">
             {(user.name ?? user.phone ?? user.email ?? "U")[0].toUpperCase()}
           </div>
         )}
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+        <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
           className={cn("hidden sm:block transition-transform text-muted", open && "rotate-180")}>
           <path d="M6 9l6 6 6-6"/>
         </svg>

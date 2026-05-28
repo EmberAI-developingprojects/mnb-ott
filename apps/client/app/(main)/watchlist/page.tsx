@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useWatchlistStore } from "@/store/watchlistStore";
-import { useSettingsStore, useT } from "@/store/settingsStore";
+import { useT } from "@/store/settingsStore";
 import { formatDuration } from "@/lib/utils";
 import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
 
@@ -11,7 +12,6 @@ const PAGE_SIZE = 8;
 
 export default function WatchlistPage() {
   const { items, remove } = useWatchlistStore();
-  const { lang } = useSettingsStore();
   const t = useT();
   const [visible, setVisible] = useState(PAGE_SIZE);
 
@@ -28,11 +28,7 @@ export default function WatchlistPage() {
           </div>
           <div>
             <p className="text-sub font-medium">{t("watchlist_empty")}</p>
-            <p className="text-sm text-muted mt-1">
-              {lang === "mn"
-                ? "Бичлэгийн дэлгэрэнгүй дээрх \"Хадгалах\" товчийг ашиглана уу"
-                : "Use the \"Save\" button on a video page to add it here"}
-            </p>
+            <p className="text-sm text-muted mt-1">{t("watchlist_hint_long")}</p>
           </div>
           <Link href="/"
             className="mt-2 px-6 py-2.5 bg-brand hover:bg-brand-hover text-white text-sm font-semibold rounded-lg transition-colors">
@@ -46,11 +42,12 @@ export default function WatchlistPage() {
               <Link href={item.id.startsWith("show-") ? `/vod/shows/${item.id.replace("show-", "")}` : `/vod/${item.id}`}
                 className="block space-y-2">
                 <div className="relative aspect-video rounded-xl overflow-hidden bg-surface">
-                  <img
+                  <Image
                     src={item.thumbnailUrl}
                     alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   {item.duration > 0 && (
@@ -78,7 +75,7 @@ export default function WatchlistPage() {
                   opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity hover:bg-[var(--danger)]"
                 title={t("cancel")}
               >
-                {lang === "mn" ? "Хасах" : "Remove"}
+                {t("remove")}
               </button>
             </div>
           ))}

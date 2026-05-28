@@ -1,6 +1,6 @@
 "use client";
 
-import { useSettingsStore } from "@/store/settingsStore";
+import { useT } from "@/store/settingsStore";
 import { cn } from "@/lib/utils";
 
 /* "Цааш үзэх" товч — server pagination-д ч, client slice-д ч хэрэглэгдэнэ.
@@ -13,7 +13,7 @@ export function LoadMoreButton({
   onMore:     () => void;
   className?: string;
 }) {
-  const { lang } = useSettingsStore();
+  const t = useT();
   if (!hasMore) return null;
 
   return (
@@ -25,7 +25,7 @@ export function LoadMoreButton({
         {loading && (
           <span className="w-3.5 h-3.5 border-2 border-app border-t-transparent rounded-full animate-spin" />
         )}
-        {lang === "mn" ? "Цааш үзэх" : "Load more"}
+        {t("load_more")}
       </button>
     </div>
   );

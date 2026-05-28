@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.middleware";
+import { webhookLimiter } from "../middleware/rate-limit.middleware";
+import { logger } from "../lib/logger";
 import * as qpay from "../services/qpay.service";
 import * as payment from "../services/payment";
 
@@ -37,17 +39,28 @@ paymentRouter.post("/check", requireAuth, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-/* QPay webhook (auth header-ээр шалгана) */
-paymentRouter.post("/callback", async (req, res, next) => {
+/* QPay webhook — push notification of payment status.
+   Hardening:
+     - Rate limit (webhookLimiter, 60/min/IP)
+     - Timing-safe auth (verifyCallback)
+     - Logging бүх webhook (audit trail — replay/probing анхааруулах)
+     - Idempotency: handleQpayCallback() дотор payment.status="PAID" шалгалттай */
+paymentRouter.post("/callback", webhookLimiter, async (req, res, next) => {
+  const ip = req.ip;
   try {
-    const auth = req.headers.authorization ?? "";
+    const auth = req.headers.authorization;
     if (!qpay.verifyCallback(auth)) {
+      logger.warn({ ip, body: req.body }, "[qpay-webhook] unauthorized callback");
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
     const { payment_id } = z.object({ payment_id: z.string() }).parse(req.body);
+    logger.info({ ip, paymentId: payment_id }, "[qpay-webhook] received");
     await payment.handleQpayCallback(payment_id);
     res.json({ success: true });
-  } catch (e) { next(e); }
+  } catch (e) {
+    logger.error({ ip, err: e }, "[qpay-webhook] error");
+    next(e);
+  }
 });
 
 /* TVOD — нэг VOD-ыг 72 цагаар түрээслэх */

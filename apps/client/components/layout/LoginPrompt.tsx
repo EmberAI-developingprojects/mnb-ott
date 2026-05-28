@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useSettingsStore } from "@/store/settingsStore";
+import { useSettingsStore, useT } from "@/store/settingsStore";
 
 interface Props {
   /** Backdrop болон гарчиг — VOD/Live дэлгэцтэй уялдсан байх */
@@ -15,7 +15,9 @@ interface Props {
    "Нэвтэрнэ үү" CTA-г харуулна. Одоогийн pathname-ийг callbackUrl болгож
    /login руу дамжуулна — login дараа буцаж тухайн видеогоо үзнэ. */
 export function LoginPrompt({ backdrop, title }: Props) {
+  /* lang нь зөвхөн title interpolation хийдэг template literal-д хэрэгтэй */
   const { lang } = useSettingsStore();
+  const t = useT();
   const pathname = usePathname();
   const params = useSearchParams();
 
@@ -43,26 +45,24 @@ export function LoginPrompt({ backdrop, title }: Props) {
         </div>
 
         <h2 className="text-lg md:text-2xl font-bold text-white max-w-md leading-tight">
-          {lang === "mn" ? "Үргэлжлүүлэхийн тулд нэвтэрнэ үү" : "Sign in to continue"}
+          {t("signin_continue")}
         </h2>
         <p className="text-sm text-white/65 mt-2 max-w-md line-clamp-2">
           {title
             ? (lang === "mn"
                 ? `"${title}" үзэхийн тулд бүртгэлээ ашиглаарай`
                 : `Sign in to watch "${title}"`)
-            : (lang === "mn"
-                ? "Бүртгэлтэй хаягаараа нэвтэрснээр контентыг үргэлжлүүлэн үзнэ"
-                : "Sign in with your account to keep watching")}
+            : t("signin_default_desc")}
         </p>
 
         <div className="flex items-center gap-2.5 mt-6 flex-wrap justify-center">
           <Link href={loginHref}
             className="px-6 py-3 rounded-full bg-accent hover:bg-accent-hover text-white text-sm font-bold transition-colors">
-            {lang === "mn" ? "Нэвтрэх" : "Sign in"}
+            {t("signin_short")}
           </Link>
           <Link href={registerHref}
             className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/25 text-white text-sm font-semibold transition-colors">
-            {lang === "mn" ? "Бүртгүүлэх" : "Register"}
+            {t("register_short")}
           </Link>
         </div>
       </div>

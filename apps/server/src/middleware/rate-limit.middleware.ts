@@ -64,3 +64,12 @@ export const searchLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit:    30,
 });
+
+/* QPay webhook — verifyCallback() Basic Auth-аар хамгаалагдсан, гэхдээ
+   spam/probing-оос сэргийлэхэд rate limit нэмэх нь зүйтэй. QPay нь нэг payment-д
+   нэг л webhook явуулна, олон удаа дуудах шалтгаан байхгүй. */
+export const webhookLimiter = rateLimit({
+  ...baseConfig,
+  windowMs: 60 * 1000,
+  limit:    60,  /* нэг IP-ээс 1 мин 60 webhook — QPay бодит ачаалал бараг үгүй */
+});

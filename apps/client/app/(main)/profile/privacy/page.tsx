@@ -1,23 +1,19 @@
 "use client";
 
-import { useSettingsStore } from "@/store/settingsStore";
+import { useSettingsStore, useT } from "@/store/settingsStore";
 
 export default function PrivacyPage() {
   const { lang } = useSettingsStore();
+  const t = useT();
 
   return (
     <div className="max-w-2xl space-y-6">
       <header>
-        <h1 className="text-xl font-bold text-app">
-          {lang === "mn" ? "Нууцлалын бодлого" : "Privacy Policy"}
-        </h1>
-        <p className="text-xs text-muted mt-1">
-          {lang === "mn"
-            ? "Сүүлд шинэчилсэн: 2026 оны 5 сарын 1"
-            : "Last updated: May 1, 2026"}
-        </p>
+        <h1 className="text-xl font-bold text-app">{t("privacy_title")}</h1>
+        <p className="text-xs text-muted mt-1">{t("privacy_updated")}</p>
       </header>
 
+      {/* lang-аас хамаарч өөр article (бүтэц/контент) сонгоно — content-switch logic */}
       {lang === "mn" ? <PrivacyMn /> : <PrivacyEn />}
     </div>
   );

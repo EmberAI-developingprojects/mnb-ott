@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSettingsStore, useT } from "@/store/settingsStore";
+import { useT } from "@/store/settingsStore";
 import api from "@/lib/api";
 import { HeroCarousel } from "./_home/HeroCarousel";
 import { ChannelStrip } from "./_home/ChannelStrip";
@@ -27,7 +27,6 @@ interface ChannelsResponse {
    4. CONTENT ROWS — bundles, library (poster), archive (landscape) */
 export default function HomePage() {
   const t = useT();
-  const { lang } = useSettingsStore();
 
   const [archive,  setArchive] = useState<Video[]>([]);
   const [library,  setLibrary] = useState<Video[]>([]);
@@ -66,19 +65,20 @@ export default function HomePage() {
       <ChannelStrip channels={channels} />
 
       <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 py-10 space-y-12">
-        <Section title={lang === "mn" ? "Видео багц" : "Bundles"} href="/bundles" t={t}
+        {/* Эхний эгнээний эхний карт — LCP candidate байж болзошгүй учир priority */}
+        <Section title={t("bundles")} href="/bundles" t={t}
           loading={loading} skeleton="wide">
-          {bundles.map((b) => <BundleCard key={b.id} bundle={b} />)}
+          {bundles.map((b, i) => <BundleCard key={b.id} bundle={b} priority={i === 0} />)}
         </Section>
 
-        <Section title={lang === "mn" ? "Видео сан" : "Library"} href="/library" t={t}
+        <Section title={t("library")} href="/library" t={t}
           loading={loading} skeleton="poster">
-          {library.map((v) => <PosterCard key={v.youtubeId} v={v} />)}
+          {library.map((v, i) => <PosterCard key={v.youtubeId} v={v} priority={i === 0} />)}
         </Section>
 
-        <Section title={lang === "mn" ? "Архив" : "Archive"} href="/archive" t={t}
+        <Section title={t("archive")} href="/archive" t={t}
           loading={loading} skeleton="landscape">
-          {archive.map((v) => <VideoCard key={v.youtubeId} v={v} />)}
+          {archive.map((v, i) => <VideoCard key={v.youtubeId} v={v} priority={i === 0} />)}
         </Section>
       </div>
     </div>

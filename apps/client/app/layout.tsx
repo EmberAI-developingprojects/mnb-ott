@@ -20,23 +20,46 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-/* FOUC сэргийлэх — React hydrate болохоос өмнө localStorage-ээс theme уншиж
-   <html>-д `light`/`dark` class шууд тавина. Эс бөгөөс initial render-д default
-   (dark) харагдаад React-аас зөв theme-руу шилждэг → flash. */
-const themeInitScript = `
+/* FOUC сэргийлэх — React hydrate-ээс ӨМНӨ <html>-д theme/lang class тавина.
+   Бус анх ороход OS-ийн prefers-color-scheme + browser navigator.language-аас
+   autodetect хийнэ. Хэрэглэгч UI-аас тодорхой сонгосон бол localStorage-аас
+   уншиж тэрхүү сонголтыг хүндлэнэ.
+
+   Энэ нь хоёр зорилго:
+     1. FOUC arилах (dark/light flash)
+     2. Анх орох хэрэглэгчид зөв default өгөх (OS + browser хэлээр) */
+const initScript = `
 (function() {
   try {
     var stored = localStorage.getItem('mnb-settings');
-    var theme = 'dark';
+    var theme = null;
+    var lang  = null;
     if (stored) {
       var parsed = JSON.parse(stored);
-      if (parsed && parsed.state && parsed.state.theme) theme = parsed.state.theme;
+      if (parsed && parsed.state) {
+        theme = parsed.state.theme || null;
+        lang  = parsed.state.lang  || null;
+      }
+    }
+    // Theme — fallback: OS preference (prefers-color-scheme)
+    if (!theme) {
+      theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark' : 'light';
+    }
+    // Lang — fallback: browser hэл (navigator.language). "mn-MN" → "mn".
+    if (!lang) {
+      var nav = navigator.language || 'mn';
+      lang = nav.toLowerCase().indexOf('mn') === 0 ? 'mn' : 'en';
     }
     document.documentElement.classList.add(theme);
     document.documentElement.style.colorScheme = theme;
+    document.documentElement.lang = lang;
+    // Window-д хадгалж store hydrate болохоос өмнө дамжуулна.
+    window.__MNB_INIT__ = { theme: theme, lang: lang, hasStored: !!stored };
   } catch (e) {
     document.documentElement.classList.add('dark');
     document.documentElement.style.colorScheme = 'dark';
+    document.documentElement.lang = 'mn';
   }
 })();
 `;
@@ -45,9 +68,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="mn" className={font.variable} suppressHydrationWarning>
       <head>
-        {/* color-scheme — browser native UI (scrollbar, form input) theme-тэй
-            sync байх. dangerouslySetInnerHTML л блок ийг render-ээс өмнө явуулна. */}
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* color-scheme + initial theme/lang — render-ээс ӨМНӨ ажилладаг. */}
+        <script dangerouslySetInnerHTML={{ __html: initScript }} />
       </head>
       <body className="antialiased">
         <ThemeProvider>{children}</ThemeProvider>

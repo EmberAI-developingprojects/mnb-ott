@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { PosterCard } from "@/components/layout/PosterCard";
 import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
-import { useSettingsStore } from "@/store/settingsStore";
+import { useT } from "@/store/settingsStore";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 
@@ -24,7 +24,7 @@ const GENRE_ORDER: Genre[] = ["Мэдээ", "Нэвтрүүлэг", "Хүүхэ�
 function ArchiveContent() {
   const params = useSearchParams();
   const genreFilter = params.get("g");
-  const { lang } = useSettingsStore();
+  const t = useT();
   const [videos, setVideos]   = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(PAGE_SIZE);
@@ -84,15 +84,15 @@ function ArchiveContent() {
         ? Array.from({ length: 3 }).map((_, i) => <SectionSkeleton key={i} />)
         : sections.map((s) => (
             <GenreRow key={s.genre} title={s.genre} items={s.items}
-              seeAllHref={`/archive?g=${encodeURIComponent(s.genre)}`} lang={lang} />
+              seeAllHref={`/archive?g=${encodeURIComponent(s.genre)}`} seeAllLabel={t("see_all_short")} />
           ))
       }
     </div>
   );
 }
 
-function GenreRow({ title, items, seeAllHref, lang }: {
-  title: string; items: Video[]; seeAllHref: string; lang: "mn" | "en";
+function GenreRow({ title, items, seeAllHref, seeAllLabel }: {
+  title: string; items: Video[]; seeAllHref: string; seeAllLabel: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const scroll = (d: "l" | "r") => ref.current?.scrollBy({ left: d === "r" ? 320 : -320, behavior: "smooth" });
@@ -103,7 +103,7 @@ function GenreRow({ title, items, seeAllHref, lang }: {
         <h2 className="text-xl md:text-2xl font-bold text-app">{title}</h2>
         <Link href={seeAllHref}
           className="text-[13px] font-semibold text-accent hover:underline">
-          {lang === "mn" ? "Бүгдийг" : "See all"}
+          {seeAllLabel}
         </Link>
       </div>
 

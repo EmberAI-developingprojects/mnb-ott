@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
-import { useSettingsStore, useT } from "@/store/settingsStore";
+import { useT } from "@/store/settingsStore";
 import { cn } from "@/lib/utils";
 
 interface MenuItem { href: string; label: string; }
@@ -12,7 +13,6 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname();
   const router   = useRouter();
   const { user } = useAuthStore();
-  const { lang } = useSettingsStore();
   const t = useT();
 
   const ACCOUNT_MENU: MenuItem[] = [
@@ -24,9 +24,9 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
   ];
 
   const SUPPORT_MENU: MenuItem[] = [
-    { href: "/profile/help",    label: lang === "mn" ? "Түгээмэл асуулт"     : "Help & FAQ" },
-    { href: "/profile/terms",   label: lang === "mn" ? "Үйлчилгээний нөхцөл" : "Terms of Service" },
-    { href: "/profile/privacy", label: lang === "mn" ? "Нууцлалын бодлого"   : "Privacy Policy" },
+    { href: "/profile/help",    label: t("help_faq")       },
+    { href: "/profile/terms",   label: t("terms_short")    },
+    { href: "/profile/privacy", label: t("privacy_short")  },
   ];
 
   const ALL = [...ACCOUNT_MENU, ...SUPPORT_MENU];
@@ -41,7 +41,7 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
         <aside className="hidden lg:flex flex-col w-60 shrink-0 sticky top-[calc(var(--header-h)+24px)] self-start">
           <div className="flex items-center gap-3 mb-6 pb-6 border-b border-app">
             {user?.avatar ? (
-              <img src={user.avatar} alt="" className="w-12 h-12 rounded-full object-cover" />
+              <Image src={user.avatar} alt="" width={48} height={48} className="w-12 h-12 rounded-full object-cover" />
             ) : (
               <div className="w-12 h-12 rounded-full bg-grad-brand flex items-center justify-center text-white font-bold text-lg">
                 {(user?.name ?? user?.phone ?? "U")[0]?.toUpperCase()}
@@ -54,7 +54,7 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
           </div>
 
           <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted mb-2 px-3">
-            {lang === "mn" ? "Бүртгэл" : "Account"}
+            {t("account_section")}
           </p>
           <nav className="space-y-0.5 mb-6">
             {ACCOUNT_MENU.map((m) => (
@@ -63,7 +63,7 @@ export default function ProfileLayout({ children }: { children: React.ReactNode 
           </nav>
 
           <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted mb-2 px-3">
-            {lang === "mn" ? "Тусламж" : "Support"}
+            {t("support_section")}
           </p>
           <nav className="space-y-0.5">
             {SUPPORT_MENU.map((m) => (

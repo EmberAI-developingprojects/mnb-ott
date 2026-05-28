@@ -174,3 +174,47 @@ export async function setUserBlocked(opts: {
 
   return updated;
 }
+
+/* Хэрэглэгчийг бүрмөсөн устгах (hard delete, cascade).
+   Аюулгүй байдлын дүрэм:
+     - Өөрийгөө устгах боломжгүй
+     - ЗӨВХӨН өөрөөсөө ЧАНД БАГА зэрэглэлтэй хэрэглэгчийг устгана
+       (ADMIN → USER/EDITOR/OPERATOR; SUPER_ADMIN → дээрх + ADMIN).
+       Адил эсвэл өндөр зэрэглэлтэйг устгах боломжгүй.
+   Cascade-аар session, purchase, payment, subscription, notification бүгд устана. */
+export async function deleteUser(opts: {
+  actorUserId:  string;
+  actorRole:    Role;
+  targetUserId: string;
+  reason?:      string;
+  ip?:          string;
+}) {
+  if (opts.actorUserId === opts.targetUserId) {
+    throw new AppError("Өөрийгөө устгаж болохгүй", 400, "SELF_DELETE");
+  }
+  const target = await prisma.user.findUnique({ where: { id: opts.targetUserId } });
+  if (!target) throw new AppError("Хэрэглэгч олдсонгүй", 404, "NOT_FOUND");
+
+  /* Чанд бага зэрэглэлтэй л байх ёстой — адил эсвэл өндөр бол хориглоно */
+  if (ROLE_RANK[target.role] >= ROLE_RANK[opts.actorRole]) {
+    throw new AppError(
+      "Зөвхөн өөрөөсөө бага эрх мэдэлтэй хэрэглэгчийг устгах боломжтой",
+      403, "INSUFFICIENT_RANK",
+    );
+  }
+
+  /* Audit-ийг устгахаас ӨМНӨ бичнэ — target устсаны дараа FK aldaa гарахгүй.
+     AuditLog.actorUserId нь actor (устгагч), targetId нь устсан user. */
+  await audit({
+    actorUserId: opts.actorUserId,
+    targetType:  "user",
+    targetId:    opts.targetUserId,
+    action:      "DELETE",
+    before:      { id: target.id, name: target.name, email: target.email, phone: target.phone, role: target.role },
+    reason:      opts.reason,
+    ip:          opts.ip,
+  });
+
+  await prisma.user.delete({ where: { id: opts.targetUserId } });
+  return { deleted: true };
+}

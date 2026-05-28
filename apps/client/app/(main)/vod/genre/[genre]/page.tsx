@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Skeleton } from "@/components/ui/Skeleton";
 import api from "@/lib/api";
 
@@ -71,11 +72,12 @@ export default function GenrePage() {
           {shows.map((s) => (
               <Link key={s.latestId} href={`/vod/shows/${s.slug}`} className="group block">
                 <div className="relative aspect-video rounded-xl overflow-hidden bg-surface">
-                  <img
+                  <Image
                     src={s.thumbnailUrl}
                     alt={s.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                   <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-3">

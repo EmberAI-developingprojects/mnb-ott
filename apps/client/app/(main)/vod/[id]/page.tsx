@@ -176,7 +176,7 @@ export default function VodDetailPage() {
             <span className="font-medium text-app">{video.channelTitle}</span>
             {video.viewCount > 0 && (
               <><span className="text-muted">·</span>
-              <span>{formatViews(video.viewCount)} {lang === "mn" ? "үзэлт" : "views"}</span></>
+              <span>{formatViews(video.viewCount)} {t("views")}</span></>
             )}
             <span className="text-muted">·</span>
             <span>{date}</span>
@@ -192,9 +192,7 @@ export default function VodDetailPage() {
           <ActionPill
             active={saved}
             onClick={toggleWatchlist}
-            label={saved
-              ? (lang === "mn" ? "Хадгалсан" : "Saved")
-              : (lang === "mn" ? "Хадгалах" : "Save")}
+            label={saved ? t("saved") : t("save")}
             icon={saved ? (
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polyline points="20 6 9 17 4 12" fill="none" stroke="currentColor" strokeWidth="2.5"/></svg>
             ) : (
@@ -203,7 +201,7 @@ export default function VodDetailPage() {
 
           <ActionPill
             onClick={share}
-            label={lang === "mn" ? "Хуваалцах" : "Share"}
+            label={t("share")}
             icon={
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
@@ -224,9 +222,7 @@ export default function VodDetailPage() {
             {showToggle && (
               <button onClick={() => setDescExpanded(!descExpanded)}
                 className="mt-2 text-[12px] font-semibold text-sub hover:text-app transition-colors">
-                {descExpanded
-                  ? (lang === "mn" ? "Хураах" : "Show less")
-                  : (lang === "mn" ? "Дэлгэрэнгүй харах" : "Show more")}
+                {descExpanded ? t("show_less") : t("show_more")}
               </button>
             )}
           </div>
@@ -237,9 +233,7 @@ export default function VodDetailPage() {
       {related.length > 0 && (
         <section className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-10 xl:px-16 mt-10 md:mt-14 pb-16">
           <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-lg md:text-xl font-bold text-app">
-              {lang === "mn" ? "Холбоотой нэвтрүүлэг" : "Related videos"}
-            </h2>
+            <h2 className="text-lg md:text-xl font-bold text-app">{t("related_videos")}</h2>
             <Link href="/archive"
               className="text-[13px] font-semibold text-sub hover:text-app transition-colors">
               {t("see_more")}

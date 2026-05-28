@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Shield, Ban, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Shield, Ban, CheckCircle2, Trash2 } from "lucide-react";
 import api, { getApiError } from "@/lib/api";
 import type { ApiResponse, UserDetail, Role } from "@/types";
 import { useAuthStore } from "@/store/authStore";
@@ -41,6 +41,12 @@ export default function UserDetailPage() {
   const [banOpen, setBanOpen]     = useState(false);
   const [banReason, setBanReason] = useState("");
   const [banSaving, setBanSaving] = useState(false);
+
+  /* Delete modal — нэрийг бичиж баталгаажуулна (санамсаргүй устгахаас сэргийлэх) */
+  const [delOpen, setDelOpen]       = useState(false);
+  const [delConfirm, setDelConfirm] = useState("");
+  const [delReason, setDelReason]   = useState("");
+  const [delSaving, setDelSaving]   = useState(false);
 
   useEffect(() => { load(); }, [id]);
 
@@ -88,6 +94,18 @@ export default function UserDetailPage() {
     }
   }
 
+  async function handleDelete() {
+    setDelSaving(true);
+    try {
+      await api.delete(`/api/admin/users/${id}`, { data: { reason: delReason || undefined } });
+      toast.success("Хэрэглэгч устгагдлаа");
+      router.push("/users");
+    } catch (e) {
+      toast.error(getApiError(e).message);
+      setDelSaving(false);
+    }
+  }
+
   if (loading) return <p className="text-sm text-muted">Уншиж байна...</p>;
   if (error)   return <p className="text-sm text-danger">{error}</p>;
   if (!user || !me) return null;
@@ -125,6 +143,10 @@ export default function UserDetailPage() {
                   <Ban size={14} /> Блок хийх
                 </Button>
               )}
+              <Button variant="danger" size="sm"
+                onClick={() => { setDelConfirm(""); setDelReason(""); setDelOpen(true); }}>
+                <Trash2 size={14} /> Устгах
+              </Button>
             </div>
           ) : me.id === user.id ? (
             <span className="text-xs text-muted">Та өөрийнхөө эрхийг өөрчилж чадахгүй</span>
@@ -269,6 +291,34 @@ export default function UserDetailPage() {
             <Button variant="ghost" onClick={() => setBanOpen(false)}>Болих</Button>
             <Button variant="danger" onClick={() => handleBanToggle(true)} loading={banSaving}>
               Блок хийх
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete modal — нэр бичиж баталгаажуулна */}
+      <Modal open={delOpen} onClose={() => setDelOpen(false)} title="Хэрэглэгчийг бүрмөсөн устгах">
+        <div className="space-y-4">
+          <div className="rounded-md border border-danger/40 bg-danger/10 p-3 text-sm">
+            <p className="font-semibold text-danger">⚠ Энэ үйлдлийг буцаах боломжгүй</p>
+            <p className="mt-1 text-muted">
+              Хэрэглэгчийн бүх захиалга, төлбөр, худалдан авалт, төхөөрөмж, мэдэгдэл
+              хамт устана. Accounting-ийн түүх алдагдана.
+            </p>
+          </div>
+          <Field label={<>Баталгаажуулахын тулд <strong className="text-fg">{user.name ?? user.email ?? user.phone}</strong> гэж бичнэ үү</>}>
+            <Input value={delConfirm} onChange={(e) => setDelConfirm(e.target.value)}
+              placeholder={user.name ?? user.email ?? user.phone ?? ""} />
+          </Field>
+          <Field label="Шалтгаан (сонголтоор)">
+            <Input value={delReason} onChange={(e) => setDelReason(e.target.value)}
+              placeholder="Жишээ: давхар бүртгэл" />
+          </Field>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => setDelOpen(false)}>Болих</Button>
+            <Button variant="danger" onClick={handleDelete} loading={delSaving}
+              disabled={delConfirm !== (user.name ?? user.email ?? user.phone)}>
+              <Trash2 size={14} /> Бүрмөсөн устгах
             </Button>
           </div>
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSettingsStore } from "@/store/settingsStore";
+import { useSettingsStore, useT } from "@/store/settingsStore";
 
 type Doc = "terms" | "privacy";
 
@@ -10,23 +10,23 @@ type Doc = "terms" | "privacy";
  * link-үүд. Click дарвал шинэ хуудас руу залуурахгүй modal-аар нээгдэнэ.
  */
 export function LegalLinks() {
-  const { lang } = useSettingsStore();
+  const t = useT();
   const [open, setOpen] = useState<Doc | null>(null);
 
   return (
     <>
       <p className="text-[11px] text-muted text-center leading-relaxed">
-        {lang === "mn" ? "Бүртгүүлснээр та" : "By registering, you agree to our"}{" "}
+        {t("legal_intro")}{" "}
         <button onClick={() => setOpen("terms")}
           className="text-accent hover:underline font-medium">
-          {lang === "mn" ? "үйлчилгээний нөхцөл" : "Terms of Service"}
+          {t("legal_terms_lower")}
         </button>
-        {" "}{lang === "mn" ? "ба" : "and"}{" "}
+        {" "}{t("legal_and")}{" "}
         <button onClick={() => setOpen("privacy")}
           className="text-accent hover:underline font-medium">
-          {lang === "mn" ? "нууцлалын бодлогыг" : "Privacy Policy"}
+          {t("legal_privacy_lower")}
         </button>
-        {" "}{lang === "mn" ? "зөвшөөрнө." : ""}
+        {" "}{t("legal_outro")}
       </p>
 
       {open && <LegalModal doc={open} onClose={() => setOpen(null)} />}
@@ -35,7 +35,9 @@ export function LegalLinks() {
 }
 
 function LegalModal({ doc, onClose }: { doc: Doc; onClose: () => void }) {
+  /* lang нь зөвхөн TermsBody/PrivacyBody-ийн content-switch logic-д хэрэгтэй */
   const { lang } = useSettingsStore();
+  const t = useT();
   return (
     <div className="fixed inset-0 z-50 overlay-bg backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
       onClick={onClose}>
@@ -43,9 +45,7 @@ function LegalModal({ doc, onClose }: { doc: Doc; onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-app">
           <h2 className="text-lg font-bold text-app">
-            {doc === "terms"
-              ? (lang === "mn" ? "Үйлчилгээний нөхцөл" : "Terms of Service")
-              : (lang === "mn" ? "Нууцлалын бодлого" : "Privacy Policy")}
+            {doc === "terms" ? t("terms_short") : t("privacy_short")}
           </h2>
           <button onClick={onClose}
             className="w-9 h-9 rounded-full hover:bg-card-hover flex items-center justify-center text-muted hover:text-app transition-colors">
@@ -62,7 +62,7 @@ function LegalModal({ doc, onClose }: { doc: Doc; onClose: () => void }) {
         <div className="px-6 py-4 border-t border-app">
           <button onClick={onClose}
             className="w-full py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-sm font-bold transition-colors">
-            {lang === "mn" ? "Ойлголоо" : "Got it"}
+            {t("legal_got_it")}
           </button>
         </div>
       </div>

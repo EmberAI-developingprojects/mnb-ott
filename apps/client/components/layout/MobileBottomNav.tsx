@@ -33,7 +33,7 @@ export function MobileBottomNav() {
       href:  "/tv",
       label: t("tv"),
       icon: (active: boolean) => (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.4 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.4 : 1.8} strokeLinecap="round" strokeLinejoin="round">
           <rect x="2" y="6" width="20" height="13" rx="2" />
           <polyline points="17 2 12 7 7 2" />
         </svg>
@@ -44,7 +44,7 @@ export function MobileBottomNav() {
       href:  "/",
       label: t("home"),
       icon: (active: boolean) => (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
         </svg>
       ),
@@ -54,7 +54,7 @@ export function MobileBottomNav() {
       href:  "/library",
       label: t("library"),
       icon: (active: boolean) => (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="7" height="7" rx="1.5"/>
           <rect x="14" y="3" width="7" height="7" rx="1.5"/>
           <rect x="3" y="14" width="7" height="7" rx="1.5"/>
@@ -67,7 +67,7 @@ export function MobileBottomNav() {
       href:  user ? "/profile" : "/login",
       label: user ? t("profile") : t("login"),
       icon: (active: boolean) => (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="8" r="4"/>
           <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>
         </svg>
@@ -82,17 +82,20 @@ export function MobileBottomNav() {
     <>
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 glass border-t border-app
         pb-[max(env(safe-area-inset-bottom),0px)]"
+        aria-label="Үндсэн навигаци"
       >
         <div className="flex items-center justify-around h-[var(--bottomnav-h)] max-w-[600px] mx-auto px-2">
 
           {/* Hamburger — хамгийн зүүн талд. Drawer нээнэ. */}
           <button onClick={() => setDrawerOpen((v) => !v)}
-            aria-label="Menu"
+            aria-label="Цэс"
+            aria-expanded={drawerOpen}
+            aria-controls="mobile-drawer"
             className={cn(
               "flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 transition-colors",
               drawerOpen ? "text-app" : "text-muted hover:text-app",
             )}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={drawerOpen ? 2.4 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={drawerOpen ? 2.4 : 1.8} strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="6" x2="21" y2="6"/>
               <line x1="3" y1="12" x2="21" y2="12"/>
               <line x1="3" y1="18" x2="21" y2="18"/>

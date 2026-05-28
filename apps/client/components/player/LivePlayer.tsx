@@ -334,14 +334,15 @@ export function LivePlayer({
         {/* Bottom controls */}
         <div className="flex items-center gap-3">
           {/* Play/Pause */}
-          <button onClick={togglePlay} className="text-white hover:text-primary transition-colors">
+          <button onClick={togglePlay} aria-label={isPlaying ? "Зогсоох" : "Тоглуулах"}
+            className="text-white hover:text-primary transition-colors">
             {isPlaying ? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                 <rect x="6" y="4" width="4" height="16" />
                 <rect x="14" y="4" width="4" height="16" />
               </svg>
             ) : (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M8 5v14l11-7z" />
               </svg>
             )}
@@ -349,13 +350,14 @@ export function LivePlayer({
 
           {/* Volume */}
           <div className="flex items-center gap-2">
-            <button onClick={toggleMute} className="text-white hover:text-primary transition-colors">
+            <button onClick={toggleMute} aria-label={isMuted || volume === 0 ? "Дуу нээх" : "Дуугүй болгох"}
+              className="text-white hover:text-primary transition-colors">
               {isMuted || volume === 0 ? (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06A8.99 8.99 0 0 0 17.73 18L19 19.27 20.27 18 5.27 3 4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
                 </svg>
               ) : (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
                 </svg>
               )}
@@ -363,6 +365,7 @@ export function LivePlayer({
             <input
               type="range" min={0} max={1} step={0.05} value={isMuted ? 0 : volume}
               onChange={(e) => changeVolume(Number(e.target.value))}
+              aria-label="Дууны түвшин"
               className="w-20 accent-primary"
             />
           </div>
@@ -374,6 +377,7 @@ export function LivePlayer({
             <select
               value={currentQuality}
               onChange={(e) => changeQuality(Number(e.target.value))}
+              aria-label="Чанар сонгох"
               className="bg-black/60 text-white text-xs px-2 py-1 rounded border border-white/20 outline-none hover:bg-black/80 transition-colors cursor-pointer"
             >
               <option value={-1}>AUTO</option>
@@ -386,13 +390,14 @@ export function LivePlayer({
           )}
 
           {/* Fullscreen */}
-          <button onClick={toggleFullscreen} className="text-white hover:text-primary transition-colors">
+          <button onClick={toggleFullscreen} aria-label={isFullscreen ? "Дэлгэцээс гарах" : "Бүтэн дэлгэц"}
+            className="text-white hover:text-primary transition-colors">
             {isFullscreen ? (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
               </svg>
             ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
               </svg>
             )}

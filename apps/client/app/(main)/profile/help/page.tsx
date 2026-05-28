@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSettingsStore } from "@/store/settingsStore";
+import { useSettingsStore, useT } from "@/store/settingsStore";
 import { cn } from "@/lib/utils";
 
 const FAQ_MN: { q: string; a: string }[] = [
@@ -76,20 +76,18 @@ const FAQ_EN: { q: string; a: string }[] = [
 
 export default function HelpPage() {
   const { lang } = useSettingsStore();
+  const t = useT();
+  /* lang-аас хамаарч өөр FAQ массивыг сонгоно — энэ нь бүтэц/контентыг
+     солих learn-аль content-switch logic тул хэвээр үлдээв (dict-руу зөөх
+     боломжгүй). */
   const faq = lang === "mn" ? FAQ_MN : FAQ_EN;
   const [open, setOpen] = useState<number | null>(0);
 
   return (
     <div className="max-w-2xl space-y-6">
       <header>
-        <h1 className="text-xl font-bold text-app">
-          {lang === "mn" ? "Түгээмэл асуулт" : "Help & FAQ"}
-        </h1>
-        <p className="text-sub mt-1 text-sm">
-          {lang === "mn"
-            ? "МНБ OTT-н тухай хамгийн их асуудаг асуултууд"
-            : "Most common questions about МНБ OTT"}
-        </p>
+        <h1 className="text-xl font-bold text-app">{t("help_title")}</h1>
+        <p className="text-sub mt-1 text-sm">{t("help_subtitle")}</p>
       </header>
 
       <div className="space-y-2">

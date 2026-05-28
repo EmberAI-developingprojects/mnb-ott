@@ -7,7 +7,7 @@ import { EPGGrid } from "@/components/channel/EPGGrid";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { UpgradePrompt } from "@/components/layout/UpgradePrompt";
 import { useAuthStore } from "@/store/authStore";
-import { useSettingsStore } from "@/store/settingsStore";
+import { useSettingsStore, useT } from "@/store/settingsStore";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { Channel } from "@/types";
@@ -22,7 +22,10 @@ function TvContent() {
   const params = useSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
+  /* lang нь зөвхөн toLocaleTimeString locale + ChannelSidebar prop (date format)
+     дамжуулахад хэрэгтэй — UI string-ууд dict-руу шилжсэн */
   const { lang } = useSettingsStore();
+  const t = useT();
 
   const initialSlug = params.get("ch");
   const [channels, setChannels]     = useState<Channel[]>([]);
@@ -130,12 +133,8 @@ function TvContent() {
         ) : (
           <div className="aspect-video rounded-2xl border border-app bg-card flex items-center justify-center text-center px-6">
             <div className="space-y-2">
-              <p className="text-app font-semibold">
-                {lang === "mn" ? "TV суваг байхгүй" : "No TV channels"}
-              </p>
-              <p className="text-sm text-muted">
-                {lang === "mn" ? "Админ суваг нэмэхэд энд харагдана." : "Channels added by admin will appear here."}
-              </p>
+              <p className="text-app font-semibold">{t("tv_empty")}</p>
+              <p className="text-sm text-muted">{t("tv_empty_sub")}</p>
             </div>
           </div>
         )}
@@ -167,7 +166,7 @@ function TvContent() {
             <button onClick={backToGrid}
               className="lg:hidden inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub hover:text-app transition-colors mb-4">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-              {lang === "mn" ? "Бүх суваг" : "All channels"}
+              {t("all_channels")}
             </button>
 
             {canPlay === null ? (
@@ -194,14 +193,8 @@ function TvContent() {
                  API алдаа. "Багц авах" биш — TV/Radio нь нэвтэрсэн бүхэнд үнэгүй. */
               <div className="relative aspect-video rounded-2xl overflow-hidden bg-card flex items-center justify-center text-center px-6">
                 <div className="space-y-2">
-                  <p className="text-app font-semibold">
-                    {lang === "mn" ? "Дамжуулалт түр зогссон" : "Stream temporarily unavailable"}
-                  </p>
-                  <p className="text-sm text-muted">
-                    {lang === "mn"
-                      ? "Энэ сувгийн дамжуулалт одоогоор боломжгүй байна. Хэсэг хүлээгээд дахин оролдоно уу."
-                      : "This channel is temporarily unavailable. Please try again shortly."}
-                  </p>
+                  <p className="text-app font-semibold">{t("stream_unavailable")}</p>
+                  <p className="text-sm text-muted">{t("stream_unavailable_sub")}</p>
                 </div>
               </div>
             )}
@@ -227,9 +220,7 @@ function TvContent() {
                   "px-4 py-1.5 rounded-lg text-sm font-medium transition-all",
                   tab === tb ? "bg-brand text-white shadow-card" : "text-sub hover:text-app",
                 )}>
-                {tb === "today"
-                  ? (lang === "mn" ? "Өнөөдрийн хөтөлбөр" : "Today's schedule")
-                  : (lang === "mn" ? "7 өдрийн EPG"      : "7-day EPG")}
+                {tb === "today" ? t("today_schedule") : t("epg_7day")}
               </button>
             ))}
           </div>

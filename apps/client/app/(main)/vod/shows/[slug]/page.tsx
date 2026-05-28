@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatDuration, formatViews } from "@/lib/utils";
 import { useWatchlistStore } from "@/store/watchlistStore";
@@ -82,10 +83,12 @@ export default function ShowPage() {
       {latestEp && (
         <div className="relative rounded-2xl overflow-hidden bg-card">
           <div className="absolute inset-0">
-            <img
+            <Image
               src={latestEp.thumbnailUrl}
               alt={show.name}
-              className="w-full h-full object-cover opacity-30 blur-sm scale-105"
+              fill
+              sizes="100vw"
+              className="object-cover opacity-30 blur-sm scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-dark-bg via-dark-bg/80 to-transparent" />
           </div>
@@ -97,7 +100,13 @@ export default function ShowPage() {
               className="shrink-0 w-44 md:w-56 aspect-video rounded-xl overflow-hidden bg-surface group hidden sm:block"
             >
               <div className="relative w-full h-full">
-                <img src={latestEp.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                <Image
+                  src={latestEp.thumbnailUrl}
+                  alt=""
+                  fill
+                  sizes="(max-width: 768px) 176px, 224px"
+                  className="object-cover"
+                />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                   <div className="w-12 h-12 rounded-full bg-primary/0 group-hover:bg-primary/80 flex items-center justify-center transition-all">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="white"
@@ -232,10 +241,12 @@ function EpisodeCard({ ep, epNum }: { ep: Episode; epNum: number }) {
   return (
     <Link href={`/vod/${ep.youtubeId}`} className="group block space-y-2">
       <div className="relative aspect-video rounded-lg overflow-hidden bg-surface">
-        <img
-          src={ep.thumbnailUrl} alt={ep.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          loading="lazy"
+        <Image
+          src={ep.thumbnailUrl}
+          alt={ep.title}
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+          className="object-cover group-hover:scale-105 transition-transform duration-300"
         />
         <span className="absolute top-2 left-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded font-bold">
           {epNum}-р анги
@@ -274,7 +285,7 @@ function EpisodeRow({ ep, epNum }: { ep: Episode; epNum: number }) {
       className="flex gap-4 p-3 rounded-xl hover:bg-card transition-colors group"
     >
       <div className="relative w-32 aspect-video rounded-lg overflow-hidden bg-surface shrink-0">
-        <img src={ep.thumbnailUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+        <Image src={ep.thumbnailUrl} alt="" fill sizes="128px" className="object-cover" />
         <span className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded font-mono">
           {formatDuration(ep.duration)}
         </span>

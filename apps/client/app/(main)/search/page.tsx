@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
 import { useT } from "@/store/settingsStore";
@@ -66,10 +67,10 @@ function SearchContent() {
             return (
               <Link key={v.youtubeId} href={`/vod/${v.youtubeId}`} className="group block space-y-2">
                 <div className="relative aspect-video rounded-lg overflow-hidden bg-surface">
-                  <img
-                    src={v.thumbnailUrl} alt={v.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
+                  <Image
+                    src={v.thumbnailUrl} alt={v.title} fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   {v.duration > 0 && (
                     <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded font-mono">

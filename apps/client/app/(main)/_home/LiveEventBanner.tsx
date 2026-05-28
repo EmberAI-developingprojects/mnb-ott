@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { useSettingsStore } from "@/store/settingsStore";
+import { useT } from "@/store/settingsStore";
 import type { ApiChannel } from "./types";
 
 interface LiveEvent extends ApiChannel {
@@ -22,7 +22,7 @@ function fmtCountdown(ms: number): string {
 }
 
 export function LiveEventBanner({ events }: { events: LiveEvent[] }) {
-  const { lang } = useSettingsStore();
+  const t = useT();
   const [now, setNow] = useState<number>(() => Date.now());
 
   /* 1s tick — countdown харагдах үед л шинэчилнэ */
@@ -45,10 +45,12 @@ export function LiveEventBanner({ events }: { events: LiveEvent[] }) {
           bg-gradient-to-r from-[var(--danger)]/15 via-[var(--danger)]/5 to-transparent
           hover:border-[var(--danger)]/60 transition-colors">
 
-        {/* Background image — event-ийн thumbnail (хэрэв байгаа бол) */}
+        {/* Background image — event-ийн thumbnail (хэрэв байгаа бол).
+            Banner-ын max-width [1440px], мобайл-д padding-гүй, lg+-д px-10. */}
         {event.thumbnailUrl && (
           <div className="absolute inset-0 opacity-30">
-            <Image src={event.thumbnailUrl} alt="" fill sizes="100vw"
+            <Image src={event.thumbnailUrl} alt="" fill
+              sizes="(max-width: 1024px) 100vw, (max-width: 1440px) 90vw, 1280px"
               className="object-cover" priority={false} />
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
           </div>
@@ -70,18 +72,18 @@ export function LiveEventBanner({ events }: { events: LiveEvent[] }) {
             <p className="text-muted text-[11px] sm:text-xs mt-0.5">
               {remaining !== null ? (
                 <>
-                  {lang === "mn" ? "Дуусахад " : "Ends in "}
+                  {t("live_ends_in")}
                   <span className="font-mono tabular-nums text-app/80">{fmtCountdown(remaining)}</span>
                 </>
               ) : (
-                lang === "mn" ? "Одоо явагдаж байна" : "Live now"
+                t("live_now")
               )}
             </p>
           </div>
 
           {/* CTA — desktop-д "Үзэх" товч, mobile-д сум */}
           <div className="shrink-0 flex items-center gap-1.5 text-app font-semibold text-sm">
-            <span className="hidden sm:inline">{lang === "mn" ? "Үзэх" : "Watch"}</span>
+            <span className="hidden sm:inline">{t("watch")}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               strokeWidth="2.5" className="group-hover:translate-x-0.5 transition-transform">
               <path d="M9 18l6-6-6-6"/>

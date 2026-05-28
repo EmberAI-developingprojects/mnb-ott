@@ -3,6 +3,7 @@
 import Image from "next/image";
 import type { Channel } from "@/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/store/settingsStore";
 import { FALLBACK_LOGO, type EpgChannel } from "./types";
 
 /* Desktop sidebar — суваг бүрд logo + одоо гарч буй хөтөлбөр + цаг.
@@ -17,7 +18,9 @@ export function ChannelSidebar({
   lang:        "mn" | "en";
   onSelect:    (slug: string) => void;
 }) {
+  const t = useT();
   const nowMs = Date.now();
+  /* lang нь зөвхөн toLocaleTimeString locale-д хэрэгтэй — UI string-ууд dict-руу */
   const fmt = (d: string | Date) => new Date(d).toLocaleTimeString(lang === "mn" ? "mn-MN" : "en-US",
     { hour: "2-digit", minute: "2-digit" });
 
@@ -85,7 +88,7 @@ export function ChannelSidebar({
                 </div>
               ) : (
                 <p className="text-[11.5px] text-muted">
-                  {isRadio ? (lang === "mn" ? "Радио" : "Radio") : "—"}
+                  {isRadio ? t("radio_label") : "—"}
                 </p>
               )}
             </div>

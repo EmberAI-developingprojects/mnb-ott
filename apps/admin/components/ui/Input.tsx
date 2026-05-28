@@ -42,7 +42,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 Textarea.displayName = "Textarea";
 
 export function Field({ label, children, error, hint }: {
-  label: string;
+  label: React.ReactNode;
   children: React.ReactNode;
   error?: string;
   hint?: string;

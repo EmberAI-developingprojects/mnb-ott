@@ -29,7 +29,8 @@ export function MobileDrawer({ navKeys, onClose, t, user }: {
           bottom-[calc(var(--bottomnav-h)+env(safe-area-inset-bottom))] animate-fade-in" />
 
       {/* Sheet — bottom nav-ийн дээр байрлаж дээш нээгдэнэ */}
-      <div className="lg:hidden fixed inset-x-0 z-50 bg-elevated border-t border-app
+      <div id="mobile-drawer" role="dialog" aria-modal="true" aria-label="Үндсэн цэс"
+        className="lg:hidden fixed inset-x-0 z-50 bg-elevated border-t border-app
         rounded-t-2xl shadow-pop animate-slide-up
         bottom-[calc(var(--bottomnav-h)+env(safe-area-inset-bottom))]
         max-h-[70vh] overflow-y-auto">

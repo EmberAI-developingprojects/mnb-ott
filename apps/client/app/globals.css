@@ -232,6 +232,60 @@ a { color: inherit; text-decoration: none; }
 ::selection { background-color: var(--primary); color: white; }
 
 /* ═══════════════════════════════════════════════════════════════
+   A11y — Focus visible (WCAG 2.4.7) + skip-to-content
+   ═══════════════════════════════════════════════════════════════ */
+/* Зөвхөн keyboard navigation үед тод brand-blue ring харуулна.
+   Mouse click-ийн focus-ийг (рисайклласан UI-д тохирохгүй) дарна. */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+[role="button"]:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Skip-to-content — sr-only үед, focus болсон үед л харагдана.
+   Tab дарахад хамгийн эхэнд гарч, screen reader + keyboard
+   хэрэглэгчдэд header navigation-г алгасах боломж өгнө. */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0.75rem 1rem;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 0 0 8px 0;
+  z-index: 100;
+  transform: translateY(-150%);
+  transition: transform 0.18s ease;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* SR-only — visually hidden but accessible to screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Animation
    ═══════════════════════════════════════════════════════════════ */
 /* A11y: prefers-reduced-motion дэмжсэн хэрэглэгчдэд animation-ийг

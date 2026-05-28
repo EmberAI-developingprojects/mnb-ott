@@ -6,7 +6,7 @@ import type { Bundle } from "./types";
 
 /* Wide (16:10) bundle card — Багц row-д ашиглагдана.
    Category badge top-left, hover үед image зураг бага зэрэг zoom хийгдэнэ. */
-export function BundleCard({ bundle }: { bundle: Bundle }) {
+export function BundleCard({ bundle, priority = false }: { bundle: Bundle; priority?: boolean }) {
   return (
     <Link href={`/bundles/${bundle.id}`}
       /* prefetch={false}: row дотор олон bundle, click хийх магадлал бага. */
@@ -15,7 +15,8 @@ export function BundleCard({ bundle }: { bundle: Bundle }) {
       <div className="relative aspect-[16/10] rounded-xl overflow-hidden bg-card ring-1 ring-transparent group-hover:ring-2 group-hover:ring-accent ring-inset transition-all duration-200">
         <Image src={bundle.thumbnailUrl} alt={bundle.title} fill
           sizes="(max-width: 640px) 90vw, 360px"
-          className="object-cover transition-transform duration-[700ms] group-hover:scale-[1.04]" loading="lazy" />
+          priority={priority}
+          className="object-cover transition-transform duration-[700ms] group-hover:scale-[1.04]" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent" />
         {bundle.category && (
           <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-accent text-white text-[10px] font-bold uppercase tracking-wider">

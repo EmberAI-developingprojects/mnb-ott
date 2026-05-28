@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { Channel } from "@/types";
 
@@ -24,7 +25,7 @@ export function ChannelCard({ channel, active, onClick }: ChannelCardProps) {
       {/* Thumbnail / logo */}
       <div className="relative h-9 aspect-[2/1] rounded-md bg-black shrink-0 overflow-hidden ring-1 ring-[var(--border-strong)]">
         {channel.thumbnailUrl ? (
-          <img src={channel.thumbnailUrl} alt={channel.name} className="w-full h-full object-contain" />
+          <Image src={channel.thumbnailUrl} alt={channel.name} fill sizes="72px" className="object-contain" />
         ) : (
           <span className="text-base font-bold text-accent flex items-center justify-center w-full h-full">
             {channel.orderIndex}

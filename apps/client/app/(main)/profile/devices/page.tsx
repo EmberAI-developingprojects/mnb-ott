@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { useSettingsStore, useT } from "@/store/settingsStore";
+import { useT } from "@/store/settingsStore";
 import api from "@/lib/api";
 
 interface Session {
@@ -34,7 +34,6 @@ function appName(deviceType: string): string {
 
 export default function DevicesPage() {
   const { user } = useAuthStore();
-  const { lang } = useSettingsStore();
   const t = useT();
   const [sessions,  setSessions]  = useState<Session[]>([]);
   const [loading,   setLoading]   = useState(true);
@@ -56,9 +55,13 @@ export default function DevicesPage() {
     } finally { setRemoving(null); }
   }
 
-  const labels = lang === "mn"
-    ? { device: "Төхөөрөмжийн загвар", app: "Апликейшн", connected: "Холбогдсон өдөр", lastActive: "Сүүлд холбогдсон өдөр", action: "" }
-    : { device: "Device",              app: "App",       connected: "Connected on",  lastActive: "Last active",          action: "" };
+  const labels = {
+    device:     t("devices_table_device"),
+    app:        t("devices_table_app"),
+    connected:  t("devices_table_connected"),
+    lastActive: t("devices_table_last"),
+    action:     "",
+  };
 
   return (
     <div className="space-y-5">

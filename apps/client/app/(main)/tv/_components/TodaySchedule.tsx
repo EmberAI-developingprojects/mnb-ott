@@ -2,11 +2,14 @@
 
 import { useRef } from "react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/store/settingsStore";
 import type { EpgProgram } from "./types";
 
 /* Өнөөдрийн хөтөлбөр — horizontal scroll card (Korean OTT маяг).
    Past үе нь dimmed, current нь accent border + progress bar, future нь clock icon. */
 export function TodaySchedule({ programs, lang }: { programs: EpgProgram[]; lang: "mn" | "en" }) {
+  const t = useT();
+  /* lang нь зөвхөн toLocaleTimeString locale-д хэрэгтэй — UI string-ууд dict-руу */
   const scrollRef = useRef<HTMLDivElement>(null);
   const scroll = (d: "l" | "r") => scrollRef.current?.scrollBy({ left: d === "r" ? 360 : -360, behavior: "smooth" });
 
@@ -22,7 +25,7 @@ export function TodaySchedule({ programs, lang }: { programs: EpgProgram[]; lang
   if (today.length === 0) {
     return (
       <p className="p-8 text-center text-sm text-muted bg-card rounded-xl border border-app">
-        {lang === "mn" ? "Өнөөдрийн хөтөлбөр алга" : "No schedule for today"}
+        {t("today_schedule_empty")}
       </p>
     );
   }
@@ -65,12 +68,12 @@ export function TodaySchedule({ programs, lang }: { programs: EpgProgram[]; lang
                 </p>
                 {isPast && (
                   <button className="shrink-0 px-2.5 py-1 rounded-full border border-app text-[10.5px] font-semibold text-sub hover:text-app">
-                    {lang === "mn" ? "Дахин үзэх" : "Replay"}
+                    {t("replay")}
                   </button>
                 )}
                 {isCurrent && (
                   <button className="shrink-0 px-2.5 py-1 rounded-full bg-accent text-white text-[10.5px] font-bold">
-                    {lang === "mn" ? "Шууд үзэх" : "Watch live"}
+                    {t("watch_live")}
                   </button>
                 )}
                 {isFuture && (

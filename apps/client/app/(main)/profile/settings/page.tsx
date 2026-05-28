@@ -96,9 +96,7 @@ export default function PreferencesPage() {
       </section>
 
       <section className="space-y-2.5">
-        <h2 className="text-sm font-semibold text-app">
-          {lang === "mn" ? "Үзлэгийн тохиргоо" : "Playback"}
-        </h2>
+        <h2 className="text-sm font-semibold text-app">{t("playback_section")}</h2>
         <ToggleRow label={t("prefs_autoplay")} storageKey="pref_autoplay" defaultOn />
       </section>
 
@@ -111,14 +109,8 @@ export default function PreferencesPage() {
       {/* DANGER ZONE — бүртгэл устгах */}
       <section className="space-y-3 pt-6 border-t border-app">
         <div>
-          <h2 className="text-sm font-semibold text-[var(--danger)]">
-            {lang === "mn" ? "Аюултай хэсэг" : "Danger zone"}
-          </h2>
-          <p className="text-xs text-muted mt-1">
-            {lang === "mn"
-              ? "Бүртгэлээ устгасны дараа сэргээх боломжгүй. Захиалга, түүх, мэдэгдэл бүгд алга болно."
-              : "Once you delete your account, it cannot be recovered. All subscription, history, and notifications will be erased."}
-          </p>
+          <h2 className="text-sm font-semibold text-[var(--danger)]">{t("danger_zone")}</h2>
+          <p className="text-xs text-muted mt-1">{t("danger_zone_desc")}</p>
         </div>
 
         {!confirmDelete ? (
@@ -130,9 +122,9 @@ export default function PreferencesPage() {
         ) : (
           <div className="p-4 rounded-xl border border-[var(--danger)]/40 bg-[var(--danger)]/[0.04] space-y-3">
             <p className="text-xs text-app font-medium">
-              {lang === "mn"
-                ? <>Баталгаажуулахын тулд доорх талбарт <span className="font-mono font-bold text-[var(--danger)]">DELETE</span> гэж бичнэ үү.</>
-                : <>To confirm, type <span className="font-mono font-bold text-[var(--danger)]">DELETE</span> in the field below.</>}
+              {t("delete_confirm_pre")}
+              <span className="font-mono font-bold text-[var(--danger)]">DELETE</span>
+              {t("delete_confirm_post")}
             </p>
             <input type="text" value={deleteText} onChange={(e) => setDeleteText(e.target.value)}
               placeholder="DELETE"
@@ -147,15 +139,13 @@ export default function PreferencesPage() {
               <button onClick={() => { setConfirmDelete(false); setDeleteText(""); setDeleteError(null); }}
                 disabled={deleting}
                 className="flex-1 py-2.5 rounded-lg border border-app text-sm font-semibold text-sub hover:text-app transition-colors disabled:opacity-50">
-                {lang === "mn" ? "Болих" : "Cancel"}
+                {t("cancel_short")}
               </button>
               <button onClick={handleDelete}
                 disabled={deleting || deleteText !== "DELETE"}
                 className="flex-1 py-2.5 rounded-lg bg-[var(--danger)] text-white text-sm font-bold
                   hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
-                {deleting
-                  ? (lang === "mn" ? "Устгаж байна..." : "Deleting...")
-                  : (lang === "mn" ? "Бүртгэл устгах" : "Delete account")}
+                {deleting ? t("deleting") : t("delete_account_btn")}
               </button>
             </div>
           </div>

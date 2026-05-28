@@ -127,7 +127,7 @@ export default function NotificationsPage() {
       {/* Header */}
       <header className="mb-8 flex items-center justify-between gap-4">
         <h1 className="text-2xl md:text-[28px] font-bold text-app tracking-tight">
-          {lang === "mn" ? "Мэдэгдэл" : "Notifications"}
+          {t("notifications")}
         </h1>
 
         {unread > 0 && (
@@ -146,7 +146,10 @@ export default function NotificationsPage() {
           ))}
         </div>
       ) : items.length === 0 ? (
-        <EmptyState lang={lang} />
+        <EmptyState
+          title={t("notif_empty_title")}
+          subtitle={t("notif_empty_sub")}
+        />
       ) : (
         <div className="space-y-8">
           {(Object.keys(grouped) as BucketKey[]).map((bucket) => {
@@ -165,6 +168,7 @@ export default function NotificationsPage() {
                       lang={lang}
                       onRead={markRead}
                       onAskDelete={setConfirmDel}
+                      deleteLabel={t("delete")}
                     />
                   ))}
                 </ul>
@@ -183,19 +187,19 @@ export default function NotificationsPage() {
           <div className="surface-base rounded-2xl p-6 w-full max-w-sm space-y-4 shadow-pop animate-scale-in"
             onClick={(e) => e.stopPropagation()}>
             <h2 className="text-base font-bold text-app">
-              {lang === "mn" ? "Мэдэгдэл устгах уу?" : "Delete notification?"}
+              {t("notif_delete_q")}
             </h2>
             <p className="text-sm text-sub leading-relaxed">
-              {lang === "mn" ? "Энэ үйлдлийг буцаах боломжгүй." : "This action cannot be undone."}
+              {t("notif_delete_undo")}
             </p>
             <div className="flex gap-2 pt-1">
               <button onClick={() => setConfirmDel(null)}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-sub hover:text-app hover:bg-card-hover transition-colors">
-                {lang === "mn" ? "Болих" : "Cancel"}
+                {t("cancel_short")}
               </button>
               <button onClick={() => remove(confirmDel)}
                 className="flex-1 py-2.5 rounded-xl bg-app text-sub text-sm font-semibold hover:opacity-90 transition-opacity">
-                {lang === "mn" ? "Устгах" : "Delete"}
+                {t("delete")}
               </button>
             </div>
           </div>
@@ -209,12 +213,13 @@ export default function NotificationsPage() {
    Нэг row — өнгөгүй, соло accent, хулгана дээр subtle lift
 ───────────────────────────────────────────────────── */
 function NotificationRow({
-  n, lang, onRead, onAskDelete,
+  n, lang, onRead, onAskDelete, deleteLabel,
 }: {
   n: AppNotification;
   lang: "mn" | "en";
   onRead: (id: string) => void;
   onAskDelete: (id: string) => void;
+  deleteLabel: string;
 }) {
   const Wrapper = n.link ? Link : "div" as React.ElementType;
   const typeLabel = TYPE_LABEL[n.type]?.[lang === "mn" ? 0 : 1] ?? n.type;
@@ -264,7 +269,7 @@ function NotificationRow({
       <button onClick={() => onAskDelete(n.id)}
         className="absolute top-2 right-2 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity
           w-7 h-7 rounded-full text-muted hover:text-app hover:bg-card-hover flex items-center justify-center"
-        aria-label={lang === "mn" ? "Устгах" : "Delete"}>
+        aria-label={deleteLabel}>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
           strokeLinecap="round">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -277,7 +282,7 @@ function NotificationRow({
 /* ─────────────────────────────────────────────────────
    Empty — meditative, том outline icon + 2 мөр text
 ───────────────────────────────────────────────────── */
-function EmptyState({ lang }: { lang: "mn" | "en" }) {
+function EmptyState({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div className="py-24 text-center space-y-4">
       <div className="w-20 h-20 mx-auto rounded-full bg-card/50 border border-app flex items-center justify-center">
@@ -288,12 +293,8 @@ function EmptyState({ lang }: { lang: "mn" | "en" }) {
         </svg>
       </div>
       <div className="space-y-1">
-        <p className="text-app font-semibold">
-          {lang === "mn" ? "Мэдэгдэл алга" : "No notifications"}
-        </p>
-        <p className="text-[13px] text-muted">
-          {lang === "mn" ? "Шинэ мэдэгдэл орвол энд харагдана" : "New notifications will appear here"}
-        </p>
+        <p className="text-app font-semibold">{title}</p>
+        <p className="text-[13px] text-muted">{subtitle}</p>
       </div>
     </div>
   );

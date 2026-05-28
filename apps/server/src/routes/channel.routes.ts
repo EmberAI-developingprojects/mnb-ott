@@ -93,18 +93,24 @@ channelRouter.get("/", async (req, res, next) => {
 });
 
 /* EPG — public (хөтөлбөрийн жагсаалт хэн ч үзэж болно).
-   Cache: бүх хэрэглэгчид нэг л response, 5 мин TTL — CDN/browser хоёуланд cache. */
-channelRouter.get("/epg", (_req, res) => {
-  const channels = getEpg(3, 5);
-  res.setHeader("Cache-Control", "public, max-age=300");
-  res.json({ success: true, data: { channels } });
+   Cache: бүх хэрэглэгчид нэг л response, 5 мин TTL — CDN/browser хоёуланд cache.
+   getEpg/getChannelEpg нь provider-аас хамаарч sync (mock) эсвэл async (xml fetch)
+   тул `await` хэрэглэж хоёуланд тохирно. */
+channelRouter.get("/epg", async (_req, res, next) => {
+  try {
+    const channels = await getEpg(3, 5);
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.json({ success: true, data: { channels } });
+  } catch (e) { next(e); }
 });
 
-channelRouter.get("/:slug/epg", (req, res) => {
-  const ch = getChannelEpg(req.params.slug);
-  if (!ch) return res.status(404).json({ success: false, message: "Суваг олдсонгүй", code: "NOT_FOUND" });
-  res.setHeader("Cache-Control", "public, max-age=300");
-  res.json({ success: true, data: ch });
+channelRouter.get("/:slug/epg", async (req, res, next) => {
+  try {
+    const ch = await getChannelEpg(req.params.slug);
+    if (!ch) return res.status(404).json({ success: false, message: "Суваг олдсонгүй", code: "NOT_FOUND" });
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.json({ success: true, data: ch });
+  } catch (e) { next(e); }
 });
 
 /* Зөвхөн нэвтэрсэн хэрэглэгч stream URL авах. Plan шалгалт давхар.
