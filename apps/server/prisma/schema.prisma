@@ -143,6 +143,7 @@ model UserSession {
   deviceId     String
   deviceName   String
   deviceType   String
+  ip           String?  // Сүүлд орсон IP — devices хуудаст харагдана
   refreshToken String   @unique
   lastActive   DateTime @default(now())
   isActive     Boolean  @default(true)

@@ -22,6 +22,9 @@ const DEVICE = (req: Request) => ({
   deviceId:   (req.body.deviceId   as string | undefined) ?? "web",
   deviceName: (req.body.deviceName as string | undefined) ?? "Web Browser",
   deviceType: (req.body.deviceType as string | undefined) ?? "web",
+  /* Cloudflare/Render-ийн ард байх үед үнэн IP-г X-Forwarded-For эхний оруулдаг.
+     trust proxy идэвхтэй тул req.ip аль хэдийн зөв унших ёстой. */
+  ip: req.ip,
 });
 
 // ── Register step 1: мэдээлэл + OTP явуулах ──────────
@@ -241,21 +244,41 @@ export async function getSessions(req: Request, res: Response, next: NextFunctio
   try {
     const { prisma } = await import("../lib/prisma");
     const sessions = await prisma.userSession.findMany({
-      where: { userId: req.user!.userId, isActive: true },
+      where:   { userId: req.user!.userId, isActive: true },
       orderBy: { lastActive: "desc" },
+      select:  {
+        id: true, deviceName: true, deviceType: true, ip: true,
+        lastActive: true, createdAt: true,
+      },
     });
-    res.json({ success: true, data: sessions });
+    /* Одоогийн session-ийг JWT-аас уншсан sessionId-аар тэмдэглэнэ. Frontend
+       "Энэ төхөөрөмж" badge харуулах + энэ session-ийг устгахад logout flow
+       trigger хийнэ. */
+    const currentSessionId = req.user!.sessionId;
+    const data = sessions.map((s) => ({ ...s, isCurrent: s.id === currentSessionId }));
+    res.json({ success: true, data });
   } catch (e) { next(e); }
 }
 
 export async function removeSession(req: Request, res: Response, next: NextFunction) {
   try {
     const { prisma } = await import("../lib/prisma");
+    const isCurrent = req.params.id === req.user!.sessionId;
     await prisma.userSession.updateMany({
       where: { id: req.params.id, userId: req.user!.userId },
-      data: { isActive: false },
+      data:  { isActive: false },
     });
-    res.json({ success: true, data: { removed: true } });
+    /* Хэрэглэгч өөрийн идэвхтэй session-ийг устгаж байгаа бол frontend-д logout
+       flag буцаана — clearAuth + redirect хийнэ. Refresh cookie ч цэвэрлэнэ. */
+    if (isCurrent) {
+      res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure:   process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        path:     "/",
+      });
+    }
+    res.json({ success: true, data: { removed: true, isCurrent } });
   } catch (e) { next(e); }
 }
 

@@ -22,11 +22,20 @@ interface JwtPayload { userId: string; role: Role; sessionId: string; }
 function signAccess(p: JwtPayload)   { return jwt.sign(p, process.env.JWT_SECRET!, { expiresIn: (process.env.JWT_EXPIRES_IN ?? "1h") as jwt.SignOptions["expiresIn"] }); }
 function signRefresh(p: JwtPayload)  { return jwt.sign(p, process.env.JWT_SECRET!, { expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? "30d") as jwt.SignOptions["expiresIn"] }); }
 
-async function createSession(userId: string, role: Role, device: { deviceId: string; deviceName: string; deviceType: string }): Promise<TokenPair> {
+/* Email/phone normalization — gmail "User@gmail.com" vs "user@gmail.com" ижил
+   аккаунт болох ёстой. Email бол lowercase + trim, утас бол зөвхөн trim
+   (case-insensitive үг хэлж байж болохгүй).
+   Бүх register/login/forgot/reset endpoint-д хэрэглэнэ. */
+export function normalizeIdentifier(raw: string): string {
+  const trimmed = raw.trim();
+  return trimmed.includes("@") ? trimmed.toLowerCase() : trimmed;
+}
+
+async function createSession(userId: string, role: Role, device: { deviceId: string; deviceName: string; deviceType: string; ip?: string }): Promise<TokenPair> {
   const session = await prisma.userSession.upsert({
     where:  { userId_deviceId: { userId, deviceId: device.deviceId } },
-    create: { userId, deviceId: device.deviceId, deviceName: device.deviceName, deviceType: device.deviceType, refreshToken: "pending" },
-    update: { isActive: true, lastActive: new Date() },
+    create: { userId, deviceId: device.deviceId, deviceName: device.deviceName, deviceType: device.deviceType, ip: device.ip, refreshToken: "pending" },
+    update: { isActive: true, lastActive: new Date(), ip: device.ip ?? undefined },
   });
   const payload: JwtPayload = { userId, role, sessionId: session.id };
   const accessToken  = signAccess(payload);
@@ -43,6 +52,7 @@ export async function registerInit(data: {
   emailOrPhone: string;
   password: string;
 }): Promise<{ phone?: string; email?: string }> {
+  data.emailOrPhone = normalizeIdentifier(data.emailOrPhone);
   const isPhone = /^(\+976|976)?[0-9]{8}$/.test(data.emailOrPhone);
   const isEmail = data.emailOrPhone.includes("@");
   if (!isPhone && !isEmail) throw new AppError("Утас эсвэл email оруулна уу", 400, "INVALID_IDENTIFIER");
@@ -104,8 +114,9 @@ export async function registerInit(data: {
 export async function registerVerify(
   emailOrPhone: string,
   otp: string,
-  device: { deviceId: string; deviceName: string; deviceType: string }
+  device: { deviceId: string; deviceName: string; deviceType: string; ip?: string }
 ): Promise<TokenPair> {
+  emailOrPhone = normalizeIdentifier(emailOrPhone);
   const cached = await redis.get(`otp:reg:${emailOrPhone}`);
   if (!cached || cached !== otp) throw new AppError("Код буруу эсвэл хугацаа дууссан", 400, "INVALID_OTP");
 
@@ -126,8 +137,9 @@ export async function registerVerify(
 export async function loginWithPassword(
   emailOrPhone: string,
   password: string,
-  device: { deviceId: string; deviceName: string; deviceType: string }
+  device: { deviceId: string; deviceName: string; deviceType: string; ip?: string }
 ): Promise<TokenPair> {
+  emailOrPhone = normalizeIdentifier(emailOrPhone);
   const isPhone = /^\d{8}$/.test(emailOrPhone.replace(/^(\+976|976)/, ""));
   const user = await prisma.user.findFirst({
     where: isPhone ? { phone: emailOrPhone } : { email: emailOrPhone },
@@ -163,6 +175,7 @@ export async function loginWithPassword(
 // ── FORGOT PASSWORD ───────────────────────────────────
 
 export async function forgotPassword(emailOrPhone: string): Promise<void> {
+  emailOrPhone = normalizeIdentifier(emailOrPhone);
   const isPhone = /^\d{8}$/.test(emailOrPhone.replace(/^(\+976|976)/, ""));
   const user = await prisma.user.findFirst({
     where: isPhone ? { phone: emailOrPhone } : { email: emailOrPhone },
@@ -185,6 +198,7 @@ export async function forgotPassword(emailOrPhone: string): Promise<void> {
 /* OTP-ийг password шинэчлэхгүйгээр зөвхөн validate хийх — UX: хэрэглэгч "code"
    алхамд буруу OTP оруулбал шууд харагдана, "new password" алхамд хүргэлгүй. */
 export async function verifyResetOtp(emailOrPhone: string, otp: string): Promise<void> {
+  emailOrPhone = normalizeIdentifier(emailOrPhone);
   const cached = await redis.get(`otp:reset:${emailOrPhone}`);
   if (!cached || cached !== otp) {
     throw new AppError("Код буруу эсвэл хугацаа дууссан", 400, "INVALID_OTP");
@@ -192,6 +206,7 @@ export async function verifyResetOtp(emailOrPhone: string, otp: string): Promise
 }
 
 export async function resetPassword(emailOrPhone: string, otp: string, newPassword: string): Promise<void> {
+  emailOrPhone = normalizeIdentifier(emailOrPhone);
   const cached = await redis.get(`otp:reset:${emailOrPhone}`);
   if (!cached || cached !== otp) throw new AppError("Код буруу эсвэл хугацаа дууссан", 400, "INVALID_OTP");
 
@@ -232,10 +247,13 @@ export async function verifyOtp(phone: string, code: string, device: { deviceId:
 
 // ── GOOGLE ────────────────────────────────────────────
 
-export async function googleAuth(idToken: string, device: { deviceId: string; deviceName: string; deviceType: string }): Promise<TokenPair> {
+export async function googleAuth(idToken: string, device: { deviceId: string; deviceName: string; deviceType: string; ip?: string }): Promise<TokenPair> {
   const ticket  = await googleClient.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
   const payload = ticket.getPayload();
   if (!payload?.email) throw new AppError("Google token хүчингүй", 400, "INVALID_GOOGLE_TOKEN");
+  /* Google email-ийг lowercase болгож DB-д хадгална — manual register-ийн
+     "user@gmail.com"-тэй ижил account болж нэгдэнэ. */
+  payload.email = payload.email.toLowerCase();
 
   let user = await prisma.user.findUnique({ where: { email: payload.email } });
   if (!user) {

@@ -9,8 +9,10 @@ interface Session {
   id:          string;
   deviceName:  string;
   deviceType:  string;
+  ip:          string | null;
   lastActive:  string;
   createdAt:   string;
+  isCurrent:   boolean;
 }
 
 /* "yyyy.MM.dd HH:mm:ss" формат — table-д тогтмол өргөнтэй цаг харагдана */
@@ -21,19 +23,15 @@ function fmtDateTime(d: string): string {
        + `${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(dt.getSeconds())}`;
 }
 
-/* deviceType-аас app нэр гаргана — "web" → "MNB Web", "ios" → "MNB iOS" гм. */
-function appName(deviceType: string): string {
-  switch (deviceType) {
-    case "ios":     return "MNB iOS";
-    case "android": return "MNB Android";
-    case "tv":      return "MNB TV";
-    case "web":
-    default:        return "MNB Web";
-  }
+/* IP-ийг тогтсон формат — `34.82.242.193, 104.22.66.80` proxy chain бол эхнийг
+   л харуулна (бодит client IP). */
+function cleanIp(ip: string | null): string {
+  if (!ip) return "—";
+  return ip.split(",")[0].trim();
 }
 
 export default function DevicesPage() {
-  const { user } = useAuthStore();
+  const { user, clearAuth } = useAuthStore();
   const t = useT();
   const [sessions,  setSessions]  = useState<Session[]>([]);
   const [loading,   setLoading]   = useState(true);
@@ -50,16 +48,25 @@ export default function DevicesPage() {
   async function handleRemove(id: string) {
     setRemoving(id);
     try {
-      await api.delete(`/api/auth/sessions/${id}`);
+      const r = await api.delete<{ success: true; data: { removed: boolean; isCurrent: boolean } }>(`/api/auth/sessions/${id}`);
+      /* Одоогийн session-ийг устгасан бол шууд logout flow: clearAuth + hard
+         navigation. Refresh cookie backend-д цэвэрлэгдсэн тул back товч дарвал
+         буцаад нэвтэрсэн state-руу орохгүй. */
+      if (r.data.data.isCurrent) {
+        clearAuth();
+        window.location.href = "/login";
+        return;
+      }
       setSessions((p) => p.filter((s) => s.id !== id));
     } finally { setRemoving(null); }
   }
 
   const labels = {
     device:     t("devices_table_device"),
-    app:        t("devices_table_app"),
+    ip:         t("devices_table_ip"),
     connected:  t("devices_table_connected"),
     lastActive: t("devices_table_last"),
+    current:    t("this_device"),
     action:     "",
   };
 
@@ -87,7 +94,7 @@ export default function DevicesPage() {
               <thead className="bg-card text-muted text-xs font-semibold uppercase tracking-wider">
                 <tr>
                   <th className="text-left px-5 py-3">{labels.device}</th>
-                  <th className="text-left px-5 py-3">{labels.app}</th>
+                  <th className="text-left px-5 py-3 font-mono normal-case tracking-normal">{labels.ip}</th>
                   <th className="text-left px-5 py-3 font-mono normal-case tracking-normal">{labels.connected}</th>
                   <th className="text-left px-5 py-3 font-mono normal-case tracking-normal">{labels.lastActive}</th>
                   <th className="text-right px-5 py-3" />
@@ -96,8 +103,17 @@ export default function DevicesPage() {
               <tbody className="divide-y divide-[var(--border)]">
                 {sessions.map((s) => (
                   <tr key={s.id} className="hover:bg-card-hover transition-colors">
-                    <td className="px-5 py-4 text-app font-medium">{s.deviceName}</td>
-                    <td className="px-5 py-4 text-sub">{appName(s.deviceType)}</td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-app font-medium">{s.deviceName}</span>
+                        {s.isCurrent && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-brand/15 text-brand border border-brand/30">
+                            {labels.current}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-sub font-mono tabular-nums text-xs">{cleanIp(s.ip)}</td>
                     <td className="px-5 py-4 text-muted font-mono tabular-nums text-xs">{fmtDateTime(s.createdAt)}</td>
                     <td className="px-5 py-4 text-muted font-mono tabular-nums text-xs">{fmtDateTime(s.lastActive)}</td>
                     <td className="px-5 py-4 text-right">
@@ -117,9 +133,16 @@ export default function DevicesPage() {
             {sessions.map((s) => (
               <div key={s.id} className="px-4 py-4 space-y-1.5">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-app text-sm font-semibold truncate">{s.deviceName}</p>
-                    <p className="text-sub text-xs">{appName(s.deviceType)}</p>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-app text-sm font-semibold truncate">{s.deviceName}</p>
+                      {s.isCurrent && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-brand/15 text-brand border border-brand/30">
+                          {labels.current}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sub text-xs font-mono tabular-nums">{cleanIp(s.ip)}</p>
                   </div>
                   <button onClick={() => handleRemove(s.id)} disabled={removing === s.id}
                     className="text-xs text-muted hover:text-[var(--danger)] transition-colors disabled:opacity-40 shrink-0">

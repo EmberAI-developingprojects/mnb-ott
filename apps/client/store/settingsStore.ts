@@ -105,6 +105,7 @@ const dict: Record<string, Record<Lang, string>> = {
   no_devices:    { mn: "Төхөөрөмж олдсонгүй",          en: "No devices found" },
   devices_table_device:   { mn: "Төхөөрөмж",           en: "Device" },
   devices_table_app:      { mn: "Апп",                 en: "App" },
+  devices_table_ip:       { mn: "IP хаяг",             en: "IP address" },
   devices_table_connected:{ mn: "Холбогдсон",          en: "Connected" },
   devices_table_last:     { mn: "Сүүлд",               en: "Last active" },
   devices_table_actions:  { mn: "Үйлдэл",              en: "Actions" },
