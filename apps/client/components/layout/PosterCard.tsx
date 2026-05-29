@@ -17,8 +17,8 @@ interface Props {
 
 /* Poster card (2:3)
    ─────────────────────────────────────────────
-   Default : зөвхөн poster (текст байхгүй)
-   Hover   : цэнхэр ring + heart + bottom info overlay
+   Mobile  : info үргэлж ил (hover гэж байхгүй)
+   Desktop : default зөвхөн poster, hover үед info + heart харагдана
    Үнэ нь зөвхөн дэлгэрэнгүй хуудаст харагдана.
 */
 export function PosterCard({ href, id, title, thumbnailUrl, duration, genre }: Props) {
@@ -40,8 +40,8 @@ export function PosterCard({ href, id, title, thumbnailUrl, duration, genre }: P
           sizes="(max-width: 640px) 45vw, (max-width: 1024px) 25vw, 200px"
           className="object-cover" loading="lazy" />
 
-        {/* Hover overlay */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        {/* Info overlay — Mobile-д үргэлж ил, Desktop-д hover үед */}
+        <div className="absolute inset-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200">
           {/* Heart top-right */}
           <button onClick={toggleSave} aria-label="Save"
             className={cn(
