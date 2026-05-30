@@ -49,10 +49,17 @@ export default function LivePage() {
       .then((r) => {
         const liveEvents = r.data.data?.live ?? [];
         const tvChannels = r.data.data?.tv   ?? [];
-        const liveCh = liveEvents[0] ?? tvChannels[0];
+        /* Нүүрний LiveEventBanner-тэй ИЖИЛ шүүлт: дууссан event-ийг алгасна
+           (endsAt > now эсвэл endsAt байхгүй). Эс бөгөөс /live дээр дууссан
+           event гарч, banner-тэй зөрүүтэй болдог. */
+        const now = Date.now();
+        const activeEvents = liveEvents.filter(
+          (e) => !e.endsAt || new Date(e.endsAt).getTime() > now,
+        );
+        const liveCh = activeEvents[0] ?? tvChannels[0];
         setLive(liveCh ?? null);
         if (process.env.NODE_ENV === "development") {
-          console.log("[live page] live events:", liveEvents.length, "selected:", liveCh?.slug);
+          console.log("[live page] live events:", liveEvents.length, "active:", activeEvents.length, "selected:", liveCh?.slug);
         }
       })
       .catch((e) => {
