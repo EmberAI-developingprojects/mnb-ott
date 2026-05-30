@@ -12,6 +12,16 @@ vi.mock("../../lib/prisma", () => ({
   },
 }));
 
+/* Redis mock — getMySubscription одоо cache ашигладаг. get → null (cache miss)
+   буцааж DB-руу унагаана, set/del → no-op. */
+vi.mock("../../lib/redis", () => ({
+  redis: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue("OK"),
+    del: vi.fn().mockResolvedValue(1),
+  },
+}));
+
 vi.mock("../config.service", () => ({
   getSubscriptionPlans: vi.fn().mockResolvedValue([
     { type: "BASIC", capabilities: { premiumVod: false } },

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useWatchlistStore } from "@/store/watchlistStore";
@@ -7,10 +8,14 @@ import { formatDuration, cn } from "@/lib/utils";
 import type { Video } from "./types";
 
 /* Landscape (16:9) video card — Архив row-д ашиглагдана.
-   Hover үед heart toggle + title overlay харуулна. */
-export function VideoCard({ v, priority = false }: { v: Video; priority?: boolean }) {
-  const { has, add, remove } = useWatchlistStore();
-  const isSaved = has(v.youtubeId);
+   Hover үед heart toggle + title overlay харуулна.
+   memo + per-item selector: row дотор нэг картыг save хийхэд бусад карт
+   re-render болохгүй (өмнө бүх store subscribe хийж бүх карт дахин render болдог). */
+export const VideoCard = memo(function VideoCard({ v, priority = false }: { v: Video; priority?: boolean }) {
+  /* Зөвхөн энэ видеоны saved status-д subscribe — items array reference бус */
+  const isSaved = useWatchlistStore((s) => s.items.some((i) => i.id === v.youtubeId));
+  const add     = useWatchlistStore((s) => s.add);
+  const remove  = useWatchlistStore((s) => s.remove);
 
   function toggleSave(e: React.MouseEvent) {
     e.preventDefault(); e.stopPropagation();
@@ -60,4 +65,4 @@ export function VideoCard({ v, priority = false }: { v: Video; priority?: boolea
 
     </Link>
   );
-}
+});

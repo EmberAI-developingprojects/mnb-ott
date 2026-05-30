@@ -32,6 +32,33 @@ export function normalizeIdentifier(raw: string): string {
 }
 
 async function createSession(userId: string, role: Role, device: { deviceId: string; deviceName: string; deviceType: string; ip?: string }): Promise<TokenPair> {
+  /* Device limit enforce — plan-аас хамаарна (BASIC=2, VOD=3 г.м). Тухайн device
+     дээр аль хэдийн идэвхтэй session байгаа бол re-login тул лимит шалгахгүй.
+     Шинэ device + лимит дүүрсэн бол хамгийн хуучин (lastActive) session-ийг
+     идэвхгүй болгож шинийг оруулна (Netflix-маяг "kick oldest"). */
+  const existing = await prisma.userSession.findFirst({
+    where: { userId, deviceId: device.deviceId, isActive: true },
+    select: { id: true },
+  });
+  if (!existing) {
+    const { getDeviceLimit } = await import("./subscription.service");
+    const limit = await getDeviceLimit(userId);
+    const activeCount = await prisma.userSession.count({ where: { userId, isActive: true } });
+    if (activeCount >= limit) {
+      /* Хэт олон — хамгийн хуучин session-ийг идэвхгүй болгож зай гаргана */
+      const oldest = await prisma.userSession.findMany({
+        where: { userId, isActive: true },
+        orderBy: { lastActive: "asc" },
+        take: activeCount - limit + 1,
+        select: { id: true },
+      });
+      await prisma.userSession.updateMany({
+        where: { id: { in: oldest.map((s) => s.id) } },
+        data:  { isActive: false },
+      });
+    }
+  }
+
   const session = await prisma.userSession.upsert({
     where:  { userId_deviceId: { userId, deviceId: device.deviceId } },
     create: { userId, deviceId: device.deviceId, deviceName: device.deviceName, deviceType: device.deviceType, ip: device.ip, refreshToken: "pending" },
@@ -180,7 +207,10 @@ export async function forgotPassword(emailOrPhone: string): Promise<void> {
   const user = await prisma.user.findFirst({
     where: isPhone ? { phone: emailOrPhone } : { email: emailOrPhone },
   });
-  if (!user) throw new AppError("Бүртгэлгүй хаяг байна", 404, "NOT_FOUND");
+  /* SECURITY: user enumeration-аас сэргийлнэ — хаяг бүртгэлтэй эсэхээс үл хамаарч
+     ижил (амжилттай) хариу буцаана. Зөвхөн бодит хэрэглэгчид л OTP илгээгдэнэ.
+     Attacker "энэ email бүртгэлтэй юу" гэдгийг хариунаас ялгаж чадахгүй. */
+  if (!user) return;
 
   const otp = generateOtp();
   await prisma.otpCode.create({ data: { userId: user.id, phone: emailOrPhone, code: otp, expiresAt: new Date(Date.now() + OTP_TTL * 1000) } });

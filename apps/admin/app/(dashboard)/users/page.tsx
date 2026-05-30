@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
-import api from "@/lib/api";
+import api, { getApiError } from "@/lib/api";
 import type { ApiResponse, PaginatedResponse, User, Role } from "@/types";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { useRoleGuard } from "@/components/admin/AuthGate";
+import { toast } from "@/components/ui/Toast";
 import { Input } from "@/components/ui/Input";
 import { Table, THead, TH, TBody, TR, TD, EmptyState } from "@/components/ui/Table";
 import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
@@ -21,6 +22,7 @@ const ROLE_LABEL: Record<Role, string> = {
 export default function UsersPage() {
   useRoleGuard(["ADMIN", "SUPER_ADMIN"]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<Role | "">("");
   /* Load more pattern — items-ыг append хийнэ, filter солигдоход reset */
   const [items, setItems]     = useState<User[]>([]);
@@ -32,19 +34,28 @@ export default function UsersPage() {
   async function load(p: number, replace: boolean) {
     if (replace) setLoading(true); else setLoadingMore(true);
     const params: Record<string, string | number> = { page: p };
-    if (search) params.search = search;
+    if (debouncedSearch) params.search = debouncedSearch;
     if (roleFilter) params.role = roleFilter;
     try {
       const r = await api.get<ApiResponse<PaginatedResponse<User>>>("/api/admin/users", { params });
       const d = r.data.data;
       setItems((prev) => replace ? d.items : [...prev, ...d.items]);
       setTotal(d.total); setPage(p);
+    } catch (e) {
+      toast.error(getApiError(e).message);
     } finally {
       setLoading(false); setLoadingMore(false);
     }
   }
 
-  useEffect(() => { load(1, true); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [search, roleFilter]);
+  /* Search debounce — 350ms */
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(1, true); }, [debouncedSearch, roleFilter]);
 
   const hasMore = items.length < total;
 

@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { LoadMoreButton } from "@/components/ui/LoadMoreButton";
-import { useT } from "@/store/settingsStore";
+import { useT, useSettingsStore } from "@/store/settingsStore";
 import { formatDuration, formatViews } from "@/lib/utils";
 import api from "@/lib/api";
 
@@ -24,6 +24,7 @@ interface SearchResult {
 function SearchContent() {
   const searchParams = useSearchParams();
   const t = useT();
+  const { lang } = useSettingsStore();
   const q = searchParams.get("q") ?? "";
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -63,7 +64,7 @@ function SearchContent() {
       ) : results.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {results.slice(0, visible).map((v) => {
-            const date = new Date(v.publishedAt).toLocaleDateString("mn-MN", { month: "short", day: "numeric" });
+            const date = new Date(v.publishedAt).toLocaleDateString(lang === "mn" ? "mn-MN" : "en-US", { month: "short", day: "numeric" });
             return (
               <Link key={v.youtubeId} href={`/vod/${v.youtubeId}`} className="group block space-y-2">
                 <div className="relative aspect-video rounded-lg overflow-hidden bg-surface">
@@ -89,7 +90,7 @@ function SearchContent() {
                   <p className="text-sm text-app line-clamp-2 leading-snug group-hover:text-accent transition-colors font-medium">
                     {v.title}
                   </p>
-                  <p className="text-xs text-muted">{formatViews(v.viewCount)} үзэлт · {date}</p>
+                  <p className="text-xs text-muted">{formatViews(v.viewCount)} {t("views")} · {date}</p>
                 </div>
               </Link>
             );

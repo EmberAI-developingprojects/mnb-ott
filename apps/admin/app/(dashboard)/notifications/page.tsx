@@ -57,7 +57,7 @@ export default function NotificationsPage() {
   useEffect(() => {
     loadHistory()
       .then((d) => { setHistory(d.items); setCursor(d.nextCursor); })
-      .catch(() => {})
+      .catch((e) => toast.error(getApiError(e).message))
       .finally(() => setHistLd(false));
   }, []);
 

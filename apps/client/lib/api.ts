@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, type AxiosRequestConfig } from "axios";
 import type { ApiError } from "@/types";
 import { translateError } from "./errorMessages";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -16,6 +16,8 @@ const listeners = new Set<TokenListener>();
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
+  /* Auth төлөв өөрчлөгдсөн — auth-аас хамаарсан cache (channels streamUrl) хүчингүй */
+  clearGetCache();
 }
 
 /** authStore-аас subscribe хийж token өөрчлөлтийг хадгална */
@@ -25,7 +27,41 @@ export function onAccessTokenChange(fn: TokenListener): () => void {
 }
 
 function notify(token: string | null) {
+  /* refresh-ийн token rotation / logout зам — cache мөн цэвэрлэнэ */
+  clearGetCache();
   listeners.forEach((fn) => fn(token));
+}
+
+/* ─── GET cache (in-memory, per-tab) ────────────────────────────────
+   /api/channels, /api/channels/epg зэрэг hot endpoint-ийг хуудас хооронд
+   шилжихэд дахин дахин татахаас сэргийлнэ. TTL дотор давхар дуудлагыг нэг
+   in-flight promise болгож coalesce хийнэ (request dedup).
+   ЧУХАЛ: channels-ийн streamUrl нь auth/purchase-аас хамаардаг тул login/
+   logout (token өөрчлөгдөх) бүрт cache-ийг бүхэлд нь цэвэрлэнэ — stale
+   streamUrl (paywall bypass / "Үзэх→login→буцах" flow) үүсэхгүй. */
+type CacheEntry = { expires: number; promise: Promise<{ data: unknown }> };
+const getCache = new Map<string, CacheEntry>();
+
+export function clearGetCache(): void {
+  getCache.clear();
+}
+
+export async function cachedGet<T>(
+  url: string,
+  config?: AxiosRequestConfig & { ttl?: number },
+): Promise<{ data: T }> {
+  const ttl = config?.ttl ?? 30_000;
+  const key = url + (config?.params ? JSON.stringify(config.params) : "");
+  const now = Date.now();
+
+  const hit = getCache.get(key);
+  if (hit && hit.expires > now) return hit.promise as Promise<{ data: T }>;
+
+  const promise = api.get<T>(url, config).then((res) => ({ data: res.data }));
+  getCache.set(key, { expires: now + ttl, promise });
+  /* Алдаа гарвал evict — дараагийн дуудлага дахин оролдоно (stale-error cache-гүй) */
+  promise.catch(() => { getCache.delete(key); });
+  return promise as Promise<{ data: T }>;
 }
 
 api.interceptors.request.use((config) => {

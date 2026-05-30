@@ -25,6 +25,8 @@ function CallbackContent() {
       setAuth(r.data.data, accessToken);
       router.replace(callbackUrl);
     }).catch(() => router.replace("/login"));
+    /* Mount-once — OAuth callback нэг л удаа боловсруулна, dep шаардлагагүй. */
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, []);
 
   return (

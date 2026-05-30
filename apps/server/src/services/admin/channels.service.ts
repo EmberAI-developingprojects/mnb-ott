@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../middleware/error.middleware";
 import { audit } from "./audit.service";
+import { invalidateChannelsCache } from "../../routes/channel.routes";
 import type { ChannelKind } from "@prisma/client";
 
 export async function listChannels() {
@@ -31,6 +32,7 @@ export async function createChannel(actorUserId: string, data: {
     },
   });
   await audit({ actorUserId, targetType: "channel", targetId: ch.id, action: "CREATE", after: data, ip });
+  await invalidateChannelsCache();
   return ch;
 }
 
@@ -57,6 +59,7 @@ export async function updateChannel(actorUserId: string, id: string, data: Parti
     },
   });
   await audit({ actorUserId, targetType: "channel", targetId: id, action: "UPDATE", before, after, ip });
+  await invalidateChannelsCache();
   return after;
 }
 
@@ -65,4 +68,5 @@ export async function deleteChannel(actorUserId: string, id: string, ip?: string
   if (!before) throw new AppError("Channel олдсонгүй", 404, "NOT_FOUND");
   await prisma.channel.delete({ where: { id } });
   await audit({ actorUserId, targetType: "channel", targetId: id, action: "DELETE", before, ip });
+  await invalidateChannelsCache();
 }

@@ -36,6 +36,7 @@ export default function VodPage() {
   useRoleGuard(["EDITOR", "ADMIN", "SUPER_ADMIN"]);
   const confirmDialog = useConfirm();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"" | VodType>("");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<PaginatedResponse<VodContent> | null>(null);
@@ -47,13 +48,20 @@ export default function VodPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => { load(); }, [search, typeFilter, page]);
+  /* Search debounce — 350ms. Үсэг бүрд API дуудахгүй, бичиж дуустал хүлээнэ. */
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [debouncedSearch, typeFilter, page]);
 
   async function load() {
     setLoading(true);
     try {
       const params: Record<string, string | number> = { page };
-      if (search) params.search = search;
+      if (debouncedSearch) params.search = debouncedSearch;
       if (typeFilter) params.type = typeFilter;
       const r = await api.get<ApiResponse<PaginatedResponse<VodContent>>>("/api/admin/vod", { params });
       setData(r.data.data);
@@ -84,9 +92,24 @@ export default function VodPage() {
   }
 
   async function handleSave() {
-    setError(""); setSaving(true);
+    setError("");
+    /* Client-side validation — server рүү буруу data явахаас сэргийлнэ. */
+    if (!form.title.trim()) { setError("Гарчиг заавал шаардлагатай"); return; }
+    if (form.thumbnailUrl && !/^https?:\/\/.+/.test(form.thumbnailUrl)) {
+      setError("Thumbnail URL зөв биш (http:// эсвэл https:// эхэлсэн байх)"); return;
+    }
+    if (form.price && (Number.isNaN(Number(form.price)) || Number(form.price) < 0)) {
+      setError("Үнэ сөрөг эсвэл буруу байна"); return;
+    }
+    if (form.duration && (Number.isNaN(Number(form.duration)) || Number(form.duration) < 0)) {
+      setError("Үргэлжлэх хугацаа буруу байна"); return;
+    }
+    if (form.youtubeId && !/^[a-zA-Z0-9_-]{11}$/.test(form.youtubeId)) {
+      setError("YouTube ID 11 тэмдэгт байх ёстой"); return;
+    }
+    setSaving(true);
     const payload = {
-      title: form.title,
+      title: form.title.trim(),
       description:  form.description || undefined,
       thumbnailUrl: form.thumbnailUrl || undefined,
       genre:        form.genre || undefined,

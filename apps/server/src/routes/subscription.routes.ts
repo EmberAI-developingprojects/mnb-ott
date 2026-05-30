@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.middleware";
 import { getSubscriptionPlans } from "../services/config.service";
-import { getMySubscriptionDetail, checkContentAccess, activateSubscription } from "../services/subscription.service";
+import { getMySubscriptionDetail, checkContentAccess, activateSubscription, invalidateSubscriptionCache } from "../services/subscription.service";
 import { notifySubscriptionActivated } from "../services/notification.service";
 import { AppError } from "../middleware/error.middleware";
 
@@ -96,10 +96,14 @@ subscriptionRouter.post("/activate", requireAuth, async (req, res, next) => {
 subscriptionRouter.post("/cancel", requireAuth, async (req, res, next) => {
   try {
     const { prisma } = await import("../lib/prisma");
-    await prisma.subscription.update({
-      where: { userId: req.user!.userId },
-      data:  { planType: "BASIC", status: "CANCELLED", expiresAt: null },
+    /* upsert — subscription row байхгүй хэрэглэгч (Google/OTP нэвтрэлт зэрэг)
+       дээр update нь P2025 throw хийдэг байсан. upsert аюулгүй. */
+    await prisma.subscription.upsert({
+      where:  { userId: req.user!.userId },
+      update: { planType: "BASIC", status: "CANCELLED", expiresAt: null },
+      create: { userId: req.user!.userId, planType: "BASIC", status: "CANCELLED" },
     });
+    await invalidateSubscriptionCache(req.user!.userId);
     const detail = await getMySubscriptionDetail(req.user!.userId);
     res.json({ success: true, data: detail });
   } catch (e) { next(e); }

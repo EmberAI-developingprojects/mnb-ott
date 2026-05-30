@@ -110,10 +110,20 @@ export default function ChannelsPage() {
   }
 
   async function handleSave() {
-    setError(""); setSaving(true);
+    setError("");
     const kind: ChannelKind = editing?.kind ?? creating ?? "TV";
+    /* Client-side validation */
+    if (!form.name.trim()) { setError("Нэр заавал шаардлагатай"); return; }
+    if (!form.slug.trim()) { setError("Slug заавал шаардлагатай"); return; }
+    if (form.streamUrl && !/^https?:\/\/.+/.test(form.streamUrl)) {
+      setError("Stream URL зөв биш (http:// эсвэл https://)"); return;
+    }
+    if (form.thumbnailUrl && !/^https?:\/\/.+/.test(form.thumbnailUrl)) {
+      setError("Thumbnail URL зөв биш"); return;
+    }
+    setSaving(true);
     const payload = {
-      name: form.name, slug: form.slug, kind,
+      name: form.name.trim(), slug: form.slug.trim(), kind,
       streamUrl:    form.streamUrl || undefined,
       thumbnailUrl: form.thumbnailUrl || undefined,
       isActive:     form.isActive,

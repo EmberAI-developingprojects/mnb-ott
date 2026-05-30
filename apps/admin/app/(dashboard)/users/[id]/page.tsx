@@ -7,6 +7,7 @@ import api, { getApiError } from "@/lib/api";
 import type { ApiResponse, UserDetail, Role } from "@/types";
 import { useAuthStore } from "@/store/authStore";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { useRoleGuard } from "@/components/admin/AuthGate";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -24,6 +25,7 @@ const ROLE_RANK: Record<Role, number> = {
 };
 
 export default function UserDetailPage() {
+  useRoleGuard(["ADMIN", "SUPER_ADMIN"]);
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user: me } = useAuthStore();
@@ -48,6 +50,7 @@ export default function UserDetailPage() {
   const [delReason, setDelReason]   = useState("");
   const [delSaving, setDelSaving]   = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [id]);
 
   async function load() {

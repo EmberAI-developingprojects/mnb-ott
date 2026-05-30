@@ -5,6 +5,11 @@ const YT = "https://www.googleapis.com/youtube/v3";
 const KEY = process.env.YOUTUBE_API_KEY!;
 const CACHE_TTL = 30 * 60; // 30 минут
 
+/* Timeout-той axios instance — hung YouTube/Google холболт request-ийг
+   хязгааргүй барьж event loop + connection pool-ийг шавхахаас сэргийлнэ.
+   50k user-д timeout-гүй гадаад call нэг л удааширвал cascade collapse үүснэ. */
+const http = axios.create({ timeout: 8000 });
+
 /* Олон YouTube channel дэмжих:
    - `YOUTUBE_CHANNEL_IDS=UCxxx,UCyyy` (шинэ, олон channel)
    - `MNB_YOUTUBE_CHANNEL_ID=UCxxx` (хуучин, нэг channel — backward compat)
@@ -88,7 +93,7 @@ async function fetchPlaylistItems(
   pageToken?: string,
   maxResults = 50,
 ): Promise<{ ids: string[]; nextPageToken?: string; totalResults: number }> {
-  const { data } = await axios.get(`${YT}/playlistItems`, {
+  const { data } = await http.get(`${YT}/playlistItems`, {
     params: {
       part: "contentDetails",
       playlistId,
@@ -109,7 +114,7 @@ async function fetchPlaylistItems(
 async function fetchVideoDetails(ids: string[]): Promise<YtVideo[]> {
   if (ids.length === 0) return [];
 
-  const { data } = await axios.get(`${YT}/videos`, {
+  const { data } = await http.get(`${YT}/videos`, {
     params: {
       part: "snippet,contentDetails,statistics",
       id: ids.join(","),
@@ -334,7 +339,7 @@ export async function searchYoutubeVideos(query: string, maxResults = 10): Promi
 
   const all = await Promise.all(
     channels.map(async (channelId) => {
-      const { data } = await axios.get(`${YT}/search`, {
+      const { data } = await http.get(`${YT}/search`, {
         params: {
           part: "snippet",
           channelId,

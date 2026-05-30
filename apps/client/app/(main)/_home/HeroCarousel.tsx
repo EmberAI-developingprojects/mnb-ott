@@ -14,7 +14,11 @@ import type { Video } from "./types";
    lg+ дээр adjacent slide-ууд хоёр талд peek хийнэ. */
 export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolean }) {
   const t = useT();
-  const { has, add, remove } = useWatchlistStore();
+  /* items-ийг л subscribe — map доторх slide бүрд `items.some(...)`-аар saved
+     шалгана (Rules of Hooks тул map дотор hook дуудаж болохгүй). */
+  const items  = useWatchlistStore((s) => s.items);
+  const add    = useWatchlistStore((s) => s.add);
+  const remove = useWatchlistStore((s) => s.remove);
   const [heroIdx, setHeroIdx] = useState(0);
   const heroTimer = useRef<ReturnType<typeof setInterval>>();
 
@@ -36,7 +40,10 @@ export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolea
     /* Mobile (<lg): pt-0 — header-тэй нийлсэн, дээд буланд radius байхгүй.
        Desktop (lg+): pt-6 — card шиг, бүх 4 буланд radius. */
     <section className="max-w-[1440px] mx-auto pt-0 lg:pt-6 overflow-hidden">
-      <div className="relative max-w-[1240px] mx-auto aspect-[4/3] xs:aspect-[16/10] sm:aspect-[16/9] md:aspect-[21/9] min-h-[200px] xs:min-h-[240px] sm:min-h-[300px] md:min-h-[360px] lg:min-h-[420px]">
+      {/* YouTube thumbnail нь 16:9 (1280×720). Контейнерийг ч 16:9 (aspect-video)
+          болгосноор object-cover хайчлахгүй — бүх зураг бүтэн харагдана. min-h
+          тавихгүй: 16:9-ээс өндөр болж дахин таслах эрсдэлтэй. */}
+      <div className="relative max-w-[1240px] mx-auto aspect-video">
 
         {hero.map((v, i) => {
           /* Wrap-around offset тооцоо — урт жагсаалтын сүүлчийн slide эхнийх рүү гүйх боломжтой. */
@@ -48,12 +55,15 @@ export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolea
              (wrap-аар идэвхтэй болж байгаа slide-ийн "хуучин" position-аас)
              transition хийвэл бусдын дундуур "ski" хийж glitchy харагдана. */
           const isAdjacent = Math.abs(offset) <= 1;
-          const saved = has(v.youtubeId);
+          const saved = items.some((it) => it.id === v.youtubeId);
 
           return (
             <div key={v.youtubeId}
               className={cn(
-                "absolute inset-0 lg:inset-x-[2.5%] xl:inset-x-[4%] 2xl:inset-x-[6%] rounded-none lg:rounded-2xl overflow-hidden",
+                /* inset-0 бүх дэлгэцэд — slide бүр контейнерийн бүтэн 16:9-ийг
+                   дүүргэнэ. Desktop peek (inset-x) авсан: тэр нь active зургийг
+                   нарийсгаж ~5% хайчилдаг байсан. Одоо огт хайчлахгүй, цэвэр 16:9. */
+                "absolute inset-0 rounded-none lg:rounded-2xl overflow-hidden",
                 /* transition-all биш — зөвхөн transform + opacity. Inset (resize)
                    эсвэл бусад property animate болохгүй. */
                 isAdjacent
@@ -88,7 +98,9 @@ export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolea
                     </span>
                   </div>
 
-                  <h1 className="text-[15px] xs:text-xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-white leading-[1.1] mb-2 md:mb-4 line-clamp-2 sm:line-clamp-3 drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
+                  {/* YouTube гарчиг урт/эмх замбараагүй байдаг тул томруулахгүй:
+                      lg дээр 4xl (60→36px), бүх дэлгэцэд 2 мөрөөр хязгаар. */}
+                  <h1 className="text-[15px] xs:text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-[1.15] mb-2 md:mb-4 line-clamp-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.7)]">
                     {v.title}
                   </h1>
 
@@ -142,7 +154,7 @@ export function HeroCarousel({ hero, loading }: { hero: Video[]; loading: boolea
         })}
 
         {(loading || !current) && (
-          <div className="absolute inset-0 lg:inset-x-[2.5%] xl:inset-x-[4%] 2xl:inset-x-[6%] rounded-none lg:rounded-2xl bg-card flex items-end p-6 md:p-10">
+          <div className="absolute inset-0 rounded-none lg:rounded-2xl bg-card flex items-end p-6 md:p-10">
             <div className="space-y-3 max-w-xl">
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-10 sm:h-14 w-72 max-w-full" />

@@ -28,6 +28,7 @@ export default function PaymentsPage() {
   const [reason, setReason] = useState("");
   const [refunding, setRefunding] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [filter, page]);
 
   async function load() {

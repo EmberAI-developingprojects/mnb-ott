@@ -1,14 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { LivePlayer } from "@/components/player/LivePlayer";
+import dynamic from "next/dynamic";
+/* LivePlayer нь hls.js (~хүнд) импортолдог — dynamic-аар lazy load хийж
+   nav/browse хуудсуудын initial bundle-аас гаргана. ssr:false — player зөвхөн
+   client дээр ажиллана (hls.js + DOM). */
+const LivePlayer = dynamic(
+  () => import("@/components/player/LivePlayer").then((m) => m.LivePlayer),
+  { ssr: false },
+);
 import { EPGGrid } from "@/components/channel/EPGGrid";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { UpgradePrompt } from "@/components/layout/UpgradePrompt";
 import { useAuthStore } from "@/store/authStore";
 import { useSettingsStore, useT } from "@/store/settingsStore";
-import api from "@/lib/api";
+import api, { cachedGet } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { Channel } from "@/types";
 import { TodaySchedule } from "./_components/TodaySchedule";
@@ -54,7 +61,7 @@ function TvContent() {
 
   const [channelsLoaded, setChannelsLoaded] = useState(false);
   useEffect(() => {
-    api.get<{ success: true; data: { tv: Channel[]; radio: Channel[] } }>("/api/channels")
+    cachedGet<{ success: true; data: { tv: Channel[]; radio: Channel[] } }>("/api/channels")
       .then((r) => {
         /* TV + Radio = "/tv" хуудсанд харагдах суваг. Backend бүлэглэж өгсөн. */
         const list = [...(r.data.data?.tv ?? []), ...(r.data.data?.radio ?? [])];
@@ -71,7 +78,7 @@ function TvContent() {
   }, [initialSlug]);
 
   useEffect(() => {
-    api.get<{ success: true; data: { channels: EpgChannel[] } }>("/api/channels/epg")
+    cachedGet<{ success: true; data: { channels: EpgChannel[] } }>("/api/channels/epg", { ttl: 300_000 })
       .then((r) => setEpgChannels(r.data.data.channels))
       .catch(() => {})
       .finally(() => setEpgLoading(false));
@@ -85,19 +92,22 @@ function TvContent() {
       { kind: "live-tv" },
     ).then((r) => setCanPlay(r.data.data.allowed))
      .catch(() => setCanPlay(false));
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [user?.id]);
 
-  const now = new Date();
+  /* "Одоо явагдаж буй хөтөлбөр" автомат шинэчлэгдэхийн тулд minute tick.
+     Өмнө render бүрд `new Date()` зэрэг шинэ утга авдаг ч timer байхгүй тул
+     хэрэглэгч хуудсыг нээгээд үлдвэл хөтөлбөр шилжихгүй гацдаг байсан. */
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const now = new Date(nowMs);
   const activeEpg = epgChannels.find((c) => c.slug === activeSlug);
   const currentProgram = activeEpg?.programs.find(
     (p) => new Date(p.startTime) <= now && new Date(p.endTime) > now,
   );
-
-  /* Дараах хөтөлбөр — header-ийн "Дараагийн" badge-д ашиглагдаагүй ч memo үлдээв */
-  useMemo(() => {
-    const upcoming = (activeEpg?.programs ?? []).filter((p) => new Date(p.startTime) > now);
-    return upcoming.sort((a, b) => +new Date(a.startTime) - +new Date(b.startTime))[0];
-  }, [activeEpg, now.getTime()]);
 
   function selectChannel(slug: string) {
     setActiveSlug(slug);

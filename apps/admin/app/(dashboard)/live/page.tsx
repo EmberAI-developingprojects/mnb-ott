@@ -211,18 +211,18 @@ export default function LivePage() {
         subtitle="Тусдаа худалдан авдаг (PPV) шууд дамжуулалт — спорт, концерт, тусгай эвент"
       />
 
-      {/* Overlap warning banner */}
+      {/* Overlap warning banner — CLAUDE.md: амбер биш, danger улаан ашиглана */}
       {overlaps.length > 0 && (
-        <div className="mb-6 flex items-start gap-3 p-4 rounded-lg border border-amber-500/40 bg-amber-500/10">
-          <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
+        <div className="mb-6 flex items-start gap-3 p-4 rounded-lg border border-danger/40 bg-danger/10">
+          <AlertTriangle size={20} className="text-danger shrink-0 mt-0.5" />
           <div className="text-sm">
-            <p className="font-semibold text-amber-300">Цаг давхцсан event илэрсэн ({overlaps.length})</p>
-            <ul className="mt-1.5 space-y-0.5 text-amber-200/80">
+            <p className="font-semibold text-danger">Цаг давхцсан event илэрсэн ({overlaps.length})</p>
+            <ul className="mt-1.5 space-y-0.5 text-fg/80">
               {overlaps.map(([a, b], i) => (
                 <li key={i}>• &ldquo;{a.name}&rdquo; ↔ &ldquo;{b.name}&rdquo; — цаг давхцаж байна</li>
               ))}
             </ul>
-            <p className="mt-2 text-xs text-amber-200/60">
+            <p className="mt-2 text-xs text-muted">
               Нэг үед олон LIVE дамжуулагдвал хэрэглэгчид зөвхөн нэгийг л харах боломжтой. Цагийг засна уу.
             </p>
           </div>

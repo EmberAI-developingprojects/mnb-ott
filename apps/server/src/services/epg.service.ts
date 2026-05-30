@@ -159,24 +159,34 @@ function buildPrograms(
 }
 
 /* ─── Mock provider — procedural өгөгдөл ─────────────────────── */
-const mockProvider: EpgProvider = {
-  getAll(daysBack, daysForward) {
-    return CHANNELS.map((ch, idx) => {
-      const programs: EpgProgram[] = [];
-      for (let d = -daysBack; d <= daysForward; d++) {
-        programs.push(...buildPrograms(idx, d));
-      }
-      return { ...ch, programs };
-    });
-  },
-  getOne(slug, daysBack, daysForward) {
-    const idx = CHANNELS.findIndex((c) => c.slug === slug);
-    if (idx === -1) return null;
+/* In-process memoize — EPG нь өдрийн суурьтай (06:00-аас), өдрийн дотор
+   тогтмол. Request бүрд 7 суваг × 8 өдөр × ~6 программ = ~330 object дахин
+   тооцдог байсныг cache-аар арилгана. Key-д өдрийн огноо орсон тул өдөр
+   солигдоход автомат шинэчлэгдэнэ (TTL шаардлагагүй). */
+let epgCache: { key: string; data: EpgChannel[] } | null = null;
+
+function buildAllEpg(daysBack: number, daysForward: number): EpgChannel[] {
+  const today = new Date().toISOString().slice(0, 10);
+  const key = `${daysBack}:${daysForward}:${today}`;
+  if (epgCache && epgCache.key === key) return epgCache.data;
+
+  const data = CHANNELS.map((ch, idx) => {
     const programs: EpgProgram[] = [];
     for (let d = -daysBack; d <= daysForward; d++) {
       programs.push(...buildPrograms(idx, d));
     }
-    return { id: CHANNELS[idx].id, name: CHANNELS[idx].name, slug, programs };
+    return { ...ch, programs };
+  });
+  epgCache = { key, data };
+  return data;
+}
+
+const mockProvider: EpgProvider = {
+  getAll(daysBack, daysForward) {
+    return buildAllEpg(daysBack, daysForward);
+  },
+  getOne(slug, daysBack, daysForward) {
+    return buildAllEpg(daysBack, daysForward).find((c) => c.slug === slug) ?? null;
   },
 };
 

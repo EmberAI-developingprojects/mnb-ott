@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import * as ytService from "../services/youtube.service";
 import * as library from "../services/library.service";
-import type { YtShow } from "../services/youtube.service";
+import { checkContentAccess } from "../services/subscription.service";
 import { prisma } from "../lib/prisma";
 import { AppError } from "../middleware/error.middleware";
 
@@ -127,8 +127,21 @@ export async function getStream(req: Request, res: Response, next: NextFunction)
   try {
     const { id } = req.params;
 
-    // YouTube видео бол iframe embed URL буцаана
+    // YouTube видео — access kind-ээс хамаарч эрх шалгана
     if (/^[a-zA-Z0-9_-]{11}$/.test(id)) {
+      const cls = await library.classifyContent(id);
+
+      /* archive = нэвтэрсэн бүхэнд үнэгүй. library/bundle = эрх шалгана.
+         Өмнө шалгалтгүй шууд embed буцаадаг байсан тул PPV/premium YouTube
+         контентыг дурын нэвтэрсэн хэрэглэгч үнэгүй үздэг security нүх байсан. */
+      if (cls.kind === "library" || cls.kind === "bundle") {
+        const decision = await checkContentAccess(req.user!.userId, cls.kind, id);
+        if (!decision.allowed) {
+          throw new AppError("Эрх хүрэлцэхгүй", 403,
+            cls.kind === "bundle" ? "PURCHASE_REQUIRED" : "SUBSCRIPTION_REQUIRED");
+        }
+      }
+
       return res.json({
         success: true,
         data: {
@@ -147,7 +160,6 @@ export async function getStream(req: Request, res: Response, next: NextFunction)
     if (!vod) throw new AppError("Видео олдсонгүй", 404, "NOT_FOUND");
 
     if (vod.type === "PREMIUM" && req.user) {
-      const { checkContentAccess } = await import("../services/subscription.service");
       const decision = await checkContentAccess(req.user.userId, "library", id);
       if (!decision.allowed) {
         throw new AppError("Эрх хүрэлцэхгүй", 403, "SUBSCRIPTION_REQUIRED");

@@ -10,6 +10,16 @@ vi.mock("../../lib/prisma", () => ({
   },
 }));
 
+/* Redis mock — create/update/delete нь channel cache-ийг invalidate хийдэг
+   (invalidateChannelsCache → redis.del). Бодит redis холболтоос зайлсхийнэ. */
+vi.mock("../../lib/redis", () => ({
+  redis: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue("OK"),
+    del: vi.fn().mockResolvedValue(1),
+  },
+}));
+
 import { createChannel } from "../admin/channels.service";
 import { prisma } from "../../lib/prisma";
 

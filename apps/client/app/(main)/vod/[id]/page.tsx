@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { VodPlayer } from "@/components/player/VodPlayer";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { UpgradePrompt } from "@/components/layout/UpgradePrompt";
 import { LoginPrompt } from "@/components/layout/LoginPrompt";
@@ -14,6 +14,13 @@ import { useT, useSettingsStore } from "@/store/settingsStore";
 import { useWatchlistStore } from "@/store/watchlistStore";
 import { formatDuration, formatViews, cn } from "@/lib/utils";
 import api from "@/lib/api";
+
+/* VodPlayer нь YouTube IFrame API logic-той — dynamic lazy load (vod detail
+   хуудсанд л хэрэгтэй). ssr:false — client only. */
+const VodPlayer = dynamic(
+  () => import("@/components/player/VodPlayer").then((m) => m.VodPlayer),
+  { ssr: false },
+);
 
 interface VideoDetail {
   youtubeId:    string;

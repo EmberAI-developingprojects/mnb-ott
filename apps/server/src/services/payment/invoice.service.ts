@@ -74,33 +74,44 @@ type VodInvoiceLiveResult = QpayInvoiceResponse & { mock: false };
 export async function createVodInvoice(
   userId: string,
   vodId:  string,
-  price:  number,
+  _clientPrice: number,  /* client утга — зөвхөн backward-compat, ҮЛ ТООМСОРЛОНО */
   title?: string,
 ): Promise<VodInvoiceMockResult | VodInvoiceLiveResult> {
-  /* Bundle items нь YouTube ID хэлбэрээр ирдэг (classifyContent дотор pool-оос).
-     Purchase.vodId нь VodContent.id FK тул tomorrow YouTube ID-аар Purchase
-     үүсгэх боломжгүй. Шийдэл: 11-char YouTube ID байвал VodContent stub
-     auto-upsert хийнэ — id-г YouTube ID-тай адил болгож хадгална. */
+  /* SECURITY: Үнийг ХЭЗЭЭ Ч client body-оос авахгүй. Attacker price=100 явуулж
+     үнэтэй контентыг хямдаар авах боломжгүй болгоно. Bundle item бол
+     classifyContent-аас, VodContent бол DB-ийн price-аас server талд тооцоолно. */
   const isYoutubeId = /^[a-zA-Z0-9_-]{11}$/.test(vodId);
+  let price: number;
+
   if (isYoutubeId) {
+    /* Bundle YouTube видео — classifyContent-аас бодит үнэ + bundle эсэхийг шалгах */
+    const { classifyContent } = await import("../library.service");
+    const cls = await classifyContent(vodId);
+    if (cls.kind !== "bundle" || !cls.price) {
+      /* archive/library YouTube видео нь TVOD биш — түрээслэх боломжгүй */
+      throw new AppError("Энэ видео түрээслэх боломжгүй", 400, "NOT_RENTABLE");
+    }
+    price = cls.price;
+
+    /* Purchase.vodId нь VodContent.id FK тул YouTube ID-аар stub upsert хийнэ. */
     await prisma.vodContent.upsert({
       where:  { id: vodId },
       update: {},
-      create: {
-        id:    vodId,
-        title: title ?? "YouTube видео",
-        type:  "FREE",
-        price,
-      },
+      create: { id: vodId, title: title ?? "YouTube видео", type: "FREE", price },
     });
   } else {
     const vod = await prisma.vodContent.findUnique({
-      where: { id: vodId }, select: { id: true },
+      where: { id: vodId }, select: { id: true, price: true },
     });
     if (!vod) {
       throw new AppError("Видео олдсонгүй", 404, "VOD_NOT_FOUND");
     }
+    if (!vod.price || vod.price <= 0) {
+      throw new AppError("Энэ видео түрээслэх боломжгүй", 400, "NOT_RENTABLE");
+    }
+    price = vod.price;
   }
+  void _clientPrice;
 
   const owned = await prisma.purchase.findUnique({
     where: { userId_vodId: { userId, vodId } },

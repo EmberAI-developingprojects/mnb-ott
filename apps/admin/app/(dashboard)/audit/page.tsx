@@ -144,7 +144,8 @@ export default function AuditPage() {
   );
 
   /* Filter/range солигдоход page=1-ээс шинээр ачаална (replace) */
-  useEffect(() => { setPage(1); load(1, true); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [filter, from, to]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setPage(1); load(1, true); }, [filter, from, to]);
 
   async function load(p: number, replace: boolean) {
     if (replace) setLoading(true); else setLoadingMore(true);

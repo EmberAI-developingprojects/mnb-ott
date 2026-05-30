@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useWatchlistStore } from "@/store/watchlistStore";
@@ -8,10 +9,12 @@ import type { Video } from "./types";
 
 /* Portrait (2:3) poster card — Видео сан row-д ашиглагдана.
    VOD badge top-left, hover үед heart toggle top-right.
-   `priority` нь row-ийн эхний карт LCP-д хүрэх боломжтой үед true (нүүр хуудаст). */
-export function PosterCard({ v, priority = false }: { v: Video; priority?: boolean }) {
-  const { has, add, remove } = useWatchlistStore();
-  const isSaved = has(v.youtubeId);
+   `priority` нь row-ийн эхний карт LCP-д хүрэх боломжтой үед true (нүүр хуудаст).
+   memo + per-item selector — row re-render оновчлол. */
+export const PosterCard = memo(function PosterCard({ v, priority = false }: { v: Video; priority?: boolean }) {
+  const isSaved = useWatchlistStore((s) => s.items.some((i) => i.id === v.youtubeId));
+  const add     = useWatchlistStore((s) => s.add);
+  const remove  = useWatchlistStore((s) => s.remove);
 
   function toggleSave(e: React.MouseEvent) {
     e.preventDefault(); e.stopPropagation();
@@ -57,4 +60,4 @@ export function PosterCard({ v, priority = false }: { v: Video; priority?: boole
       </div>
     </Link>
   );
-}
+});

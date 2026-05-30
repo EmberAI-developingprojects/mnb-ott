@@ -15,14 +15,24 @@ export const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
   function OtpInput({ length = 6, onComplete, disabled, hasError }, ref) {
     const [values, setValues] = useState<string[]>(Array(length).fill(""));
     const inputs = useRef<(HTMLInputElement | null)[]>([]);
+    /* Focus-ийн setTimeout-ийг ref-д хадгалж unmount/re-run дээр цэвэрлэнэ —
+       unmounted input дээр focus оролдохоос сэргийлнэ. */
+    const focusTimer = useRef<ReturnType<typeof setTimeout>>();
+    const focusFirst = () => {
+      clearTimeout(focusTimer.current);
+      focusTimer.current = setTimeout(() => inputs.current[0]?.focus(), 50);
+    };
 
-    useEffect(() => { inputs.current[0]?.focus(); }, []);
+    useEffect(() => {
+      inputs.current[0]?.focus();
+      return () => clearTimeout(focusTimer.current);
+    }, []);
 
     // Error болоход автоматаар цэвэрлэх
     useEffect(() => {
       if (hasError) {
         setValues(Array(length).fill(""));
-        setTimeout(() => inputs.current[0]?.focus(), 50);
+        focusFirst();
       }
     }, [hasError, length]);
 
@@ -30,7 +40,7 @@ export const OtpInput = forwardRef<OtpInputRef, OtpInputProps>(
     useImperativeHandle(ref, () => ({
       reset: () => {
         setValues(Array(length).fill(""));
-        setTimeout(() => inputs.current[0]?.focus(), 50);
+        focusFirst();
       },
     }));
 

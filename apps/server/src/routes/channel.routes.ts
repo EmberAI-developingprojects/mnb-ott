@@ -1,41 +1,58 @@
 import { Router } from "express";
-import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma";
+import { redis } from "../lib/redis";
 import { getEpg, getChannelEpg } from "../services/epg.service";
 import { checkContentAccess } from "../services/subscription.service";
-import { requireAuth } from "../middleware/auth.middleware";
-import type { AuthPayload } from "../middleware/auth.middleware";
+import { requireAuth, optionalAuth } from "../middleware/auth.middleware";
 
 export const channelRouter = Router();
+
+/* Идэвхтэй сувгийн base list — admin өөрчлөхөд л шинэчлэгдэнэ. Хамгийн их
+   ачаалалтай endpoint (нүүр+tv+live). Per-user LIVE purchase нь тусдаа.
+   admin channels.service-ийн create/update/delete-д invalidate хийгдэнэ. */
+const CHANNELS_CACHE_KEY = "channels:active";
+const CHANNELS_CACHE_TTL = 60;
+
+type ChannelRow = {
+  id: string; name: string; slug: string; kind: string;
+  thumbnailUrl: string | null; streamUrl: string | null; orderIndex: number;
+  isActive: boolean; price: number | null; startsAt: string | null; endsAt: string | null;
+};
+
+async function getActiveChannels(): Promise<ChannelRow[]> {
+  const cached = await redis.get(CHANNELS_CACHE_KEY);
+  if (cached) return JSON.parse(cached) as ChannelRow[];
+
+  const channels = await prisma.channel.findMany({
+    where:   { isActive: true },
+    orderBy: [{ kind: "asc" }, { orderIndex: "asc" }],
+    select: {
+      id: true, name: true, slug: true, kind: true,
+      thumbnailUrl: true, streamUrl: true, orderIndex: true,
+      isActive: true, price: true, startsAt: true, endsAt: true,
+    },
+  });
+  await redis.set(CHANNELS_CACHE_KEY, JSON.stringify(channels), "EX", CHANNELS_CACHE_TTL);
+  return channels as unknown as ChannelRow[];
+}
+
+/* Admin channel CRUD-ийн дараа дуудна — cache шууд цэвэрлэнэ. */
+export async function invalidateChannelsCache(): Promise<void> {
+  await redis.del(CHANNELS_CACHE_KEY);
+}
 
 /* Public: бүх идэвхтэй суваг буцаана (browse үед нэвтрэхгүй ч харагдана).
    TV/RADIO: нэвтэрсэн л бол streamUrl буцаана (үнэгүй).
    LIVE event: PPV — streamUrl зөвхөн худалдан авсан хэрэглэгчид. Энэ check-ийг
    олон concurrent DB call-аар хийхгүйгээр нэг batch query-аар хийнэ.
    Cache: streamUrl нь user-аас хамаардаг (LIVE PPV) тул private, 60с. */
-channelRouter.get("/", async (req, res, next) => {
+channelRouter.get("/", optionalAuth, async (req, res, next) => {
   try {
-    /* `select`: зөвхөн frontend-д хэрэгтэй field-ийг буцаах. epgUrl, createdAt,
-       updatedAt зэрэг internal field-ийг network-ээр явуулахгүй. */
-    const channels = await prisma.channel.findMany({
-      where:   { isActive: true },
-      orderBy: [{ kind: "asc" }, { orderIndex: "asc" }],
-      select: {
-        id: true, name: true, slug: true, kind: true,
-        thumbnailUrl: true, streamUrl: true, orderIndex: true,
-        isActive: true, price: true, startsAt: true, endsAt: true,
-      },
-    });
+    /* Redis-cached base channel list (admin өөрчлөхөд invalidate) */
+    const channels = await getActiveChannels();
 
-    /* Optional auth — token байгаа бол userId */
-    let userId: string | null = null;
-    const token = req.headers.authorization?.split(" ")[1];
-    if (token) {
-      try {
-        const payload = jwt.verify(token, process.env.JWT_SECRET!) as AuthPayload;
-        userId = payload.userId;
-      } catch { /* token хүчингүй */ }
-    }
+    /* optionalAuth middleware req.user-ийг тавьсан байна (token байвал) */
+    const userId: string | null = req.user?.userId ?? null;
 
     /* LIVE channel-уудын Purchase-ийг нэг query-аар татна (batch). */
     let livePurchaseIds = new Set<string>();

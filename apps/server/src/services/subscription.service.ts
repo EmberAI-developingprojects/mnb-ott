@@ -16,26 +16,61 @@ function normalizePlan(plan: StoredPlan): ActivePlan {
   return "BASIC";
 }
 
+/* Prisma Subscription-ийн shape (cache revive-д) */
+type SubRow = {
+  id: string; userId: string; planType: StoredPlan;
+  startedAt: Date; expiresAt: Date | null; status: string; updatedAt: Date;
+};
+
+const SUB_CACHE_TTL = 60; // секунд — access control hot path, богино TTL
+
+function subCacheKey(userId: string) { return `sub:${userId}`; }
+
+/* Cache invalidate — subscription өөрчлөгдөх БҮХ газарт (activate, cancel,
+   refund, register/google upsert) дуудна. TTL 60с fallback хэдий ч, write дараа
+   шууд del хийвэл stale access decision (paywall bypass) үүсэхгүй. */
+export async function invalidateSubscriptionCache(userId: string): Promise<void> {
+  await redis.del(subCacheKey(userId));
+}
+
+/* JSON-аас Date field-ийг revive — checkContentAccess/Detail нь expiresAt-ийг
+   Date гэж харьцуулдаг тул string үлдээж болохгүй. */
+function reviveSub(raw: Record<string, unknown>): SubRow {
+  return {
+    ...(raw as unknown as SubRow),
+    startedAt: new Date(raw.startedAt as string),
+    expiresAt: raw.expiresAt ? new Date(raw.expiresAt as string) : null,
+    updatedAt: new Date(raw.updatedAt as string),
+  };
+}
+
 export async function getMySubscription(userId: string) {
-  const sub = await prisma.subscription.findUnique({ where: { userId } });
+  /* Redis cache — gated path (checkContentAccess library, getDeviceLimit)-ийн
+     хамгийн их давтагддаг DB query. */
+  const cached = await redis.get(subCacheKey(userId));
+  if (cached) return reviveSub(JSON.parse(cached));
+
+  let sub = await prisma.subscription.findUnique({ where: { userId } });
   if (!sub) {
     /* Анхдагч plan: BASIC — нэвтэрсэн хэрэглэгчдэд TV/Radio + архив үнэгүй */
-    return prisma.subscription.create({ data: { userId, planType: "BASIC" } });
+    sub = await prisma.subscription.create({ data: { userId, planType: "BASIC" } });
   }
+  await redis.set(subCacheKey(userId), JSON.stringify(sub), "EX", SUB_CACHE_TTL);
   return sub;
 }
 
-export async function checkDeviceLimit(userId: string, deviceId: string): Promise<boolean> {
+/* Хэрэглэгчийн plan-ийн device limit-ийг буцаана (тоо). createSession-д
+   "kick oldest" логикт ашиглагдана. */
+export async function getDeviceLimit(userId: string): Promise<number> {
   const sub = await getMySubscription(userId);
   const effective = normalizePlan(sub.planType as StoredPlan);
-
   const limitKey = `plan.${effective.toLowerCase()}.device_limit`;
   const fallback = effective === "VOD" ? 3 : 2;
-  const limit = await getConfigNumber(limitKey, fallback);
+  return getConfigNumber(limitKey, fallback);
+}
 
-  const activeSessions = await prisma.userSession.count({
-    where: { userId, isActive: true },
-  });
+export async function checkDeviceLimit(userId: string, deviceId: string): Promise<boolean> {
+  const limit = await getDeviceLimit(userId);
 
   /* Энэ device аль хэдийн session-тэй бол лимит шалгахгүй (re-login) */
   const hasSession = await prisma.userSession.findFirst({
@@ -43,6 +78,9 @@ export async function checkDeviceLimit(userId: string, deviceId: string): Promis
   });
   if (hasSession) return true;
 
+  const activeSessions = await prisma.userSession.count({
+    where: { userId, isActive: true },
+  });
   return activeSessions < limit;
 }
 

@@ -110,6 +110,10 @@ export function VodPlayer({
           setPlaying(data === PLAYING);
           setEnded(data === ENDED);
           if (data === PLAYING) {
+            /* Эхлээд өмнөх timer-ийг clear — pause→play→pause давтахад шинэ
+               setInterval бүрд хуучин нь leak хийж олон concurrent progress save
+               явуулдаг байсан. */
+            clearInterval(progressTimer.current);
             progressTimer.current = setInterval(() => {
               const sec = playerRef.current?.getCurrentTime() ?? 0;
               setCurrent(sec);

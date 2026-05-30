@@ -207,6 +207,8 @@ export function UpgradePrompt({ kind, vodId, channelId, price, title, backdrop }
             </div>
             {qpay.qrImage && (
               <div className="bg-white rounded-xl p-3 flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element --
+                   base64 data URI — next/image data: URI optimize хийдэггүй тул <img> зөв */}
                 <img src={`data:image/png;base64,${qpay.qrImage}`} alt="QPay QR" className="w-48 h-48" />
               </div>
             )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useWatchlistStore } from "@/store/watchlistStore";
@@ -20,10 +21,12 @@ interface Props {
    Mobile  : info үргэлж ил (hover гэж байхгүй)
    Desktop : default зөвхөн poster, hover үед info + heart харагдана
    Үнэ нь зөвхөн дэлгэрэнгүй хуудаст харагдана.
+   memo + per-item selector — flat grid-д re-render оновчлол.
 */
-export function PosterCard({ href, id, title, thumbnailUrl, duration, genre }: Props) {
-  const { has, add, remove } = useWatchlistStore();
-  const saved = has(id);
+export const PosterCard = memo(function PosterCard({ href, id, title, thumbnailUrl, duration, genre }: Props) {
+  const saved  = useWatchlistStore((s) => s.items.some((i) => i.id === id));
+  const add    = useWatchlistStore((s) => s.add);
+  const remove = useWatchlistStore((s) => s.remove);
 
   function toggleSave(e: React.MouseEvent) {
     e.preventDefault();
@@ -43,7 +46,9 @@ export function PosterCard({ href, id, title, thumbnailUrl, duration, genre }: P
         {/* Info overlay — Mobile-д үргэлж ил, Desktop-д hover үед */}
         <div className="absolute inset-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-200">
           {/* Heart top-right */}
-          <button onClick={toggleSave} aria-label="Save"
+          <button onClick={toggleSave}
+            aria-label={saved ? "Жагсаалтаас хасах" : "Жагсаалтад хадгалах"}
+            aria-pressed={saved}
             className={cn(
               "absolute top-2 right-2 w-9 h-9 rounded-full backdrop-blur flex items-center justify-center transition-colors",
               saved ? "bg-accent text-white" : "bg-black/60 text-white hover:bg-black/80",
@@ -77,4 +82,4 @@ export function PosterCard({ href, id, title, thumbnailUrl, duration, genre }: P
       </div>
     </Link>
   );
-}
+});

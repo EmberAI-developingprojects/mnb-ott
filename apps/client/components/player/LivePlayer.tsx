@@ -174,6 +174,9 @@ export function LivePlayer({
       });
       return () => video.removeEventListener("volumechange", onVolumeChange);
     }
+    /* t (translate) нь stream init-д шаардлагагүй — error мессежид л ашиглана,
+       dep-д оруулбал хэл солих бүрд HLS дахин init болно. */
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [streamUrl, mounted, user, router]);
 
   function togglePlay() {

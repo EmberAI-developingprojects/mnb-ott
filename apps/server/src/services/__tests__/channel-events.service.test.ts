@@ -13,6 +13,15 @@ vi.mock("../../lib/prisma", () => ({
 
 vi.mock("../admin/audit.service", () => ({ audit: vi.fn() }));
 
+/* Redis mock — CRUD нь channel cache-ийг invalidate хийдэг (redis.del). */
+vi.mock("../../lib/redis", () => ({
+  redis: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue("OK"),
+    del: vi.fn().mockResolvedValue(1),
+  },
+}));
+
 import {
   listChannels, createChannel, updateChannel, deleteChannel,
 } from "../admin/channels.service";

@@ -6,6 +6,10 @@ import { AppError } from "../middleware/error.middleware";
 const BASE = process.env.QPAY_BASE_URL!;
 const TOKEN_KEY = "qpay:token";
 
+/* Timeout-той instance — QPay удааширвал payment request-ийг хязгааргүй барьж
+   event loop/connection pool шавхахаас сэргийлнэ. */
+const http = axios.create({ timeout: 10000 });
+
 interface QPayToken { access_token: string; expires_in: number; }
 interface QPayInvoice {
   invoice_id: string;
@@ -19,7 +23,7 @@ async function getToken(): Promise<string> {
   const cached = await redis.get(TOKEN_KEY);
   if (cached) return cached;
 
-  const { data } = await axios.post<QPayToken>(
+  const { data } = await http.post<QPayToken>(
     `${BASE}/auth/token`,
     {},
     {
@@ -48,7 +52,7 @@ export async function createInvoice(params: {
   callbackUrl: string;
 }): Promise<QPayInvoice> {
   const token = await getToken();
-  const { data } = await axios.post<QPayInvoice>(
+  const { data } = await http.post<QPayInvoice>(
     `${BASE}/invoice`,
     {
       invoice_code: process.env.QPAY_INVOICE_CODE,
@@ -66,7 +70,7 @@ export async function createInvoice(params: {
 // Төлбөр шалгах
 export async function checkPayment(qpayInvoiceId: string): Promise<boolean> {
   const token = await getToken();
-  const { data } = await axios.post(
+  const { data } = await http.post(
     `${BASE}/payment/check`,
     { object_type: "INVOICE", object_id: qpayInvoiceId, offset: { page_number: 1, page_limit: 1 } },
     { headers: authHeaders(token) }
@@ -77,7 +81,7 @@ export async function checkPayment(qpayInvoiceId: string): Promise<boolean> {
 // Invoice цуцлах
 export async function cancelInvoice(qpayInvoiceId: string): Promise<void> {
   const token = await getToken();
-  await axios.delete(`${BASE}/invoice/${qpayInvoiceId}`, { headers: authHeaders(token) });
+  await http.delete(`${BASE}/invoice/${qpayInvoiceId}`, { headers: authHeaders(token) });
 }
 
 /* Webhook signature баталгаажуулалт — QPay Basic Auth ашигладаг.

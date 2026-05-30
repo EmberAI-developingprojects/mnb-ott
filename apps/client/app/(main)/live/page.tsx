@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
-import { LivePlayer } from "@/components/player/LivePlayer";
 import { UpgradePrompt } from "@/components/layout/UpgradePrompt";
+
+/* hls.js-ийг initial bundle-аас гаргах — dynamic lazy load */
+const LivePlayer = dynamic(
+  () => import("@/components/player/LivePlayer").then((m) => m.LivePlayer),
+  { ssr: false },
+);
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useAuthStore } from "@/store/authStore";
 import { useT } from "@/store/settingsStore";
-import api from "@/lib/api";
+import api, { cachedGet } from "@/lib/api";
 
 interface EpgProgram {
   id: string; title: string; startTime: string; endTime: string;
@@ -39,7 +45,7 @@ export default function LivePage() {
      Хоёулаа хоосон бол `live` нь null хэвээр → empty state. */
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-    api.get<{ success: true; data: { tv: LiveChannel[]; live: LiveChannel[] } }>("/api/channels")
+    cachedGet<{ success: true; data: { tv: LiveChannel[]; live: LiveChannel[] } }>("/api/channels")
       .then((r) => {
         const liveEvents = r.data.data?.live ?? [];
         const tvChannels = r.data.data?.tv   ?? [];
@@ -57,7 +63,7 @@ export default function LivePage() {
 
   useEffect(() => {
     if (!live) return;
-    api.get<{ success: true; data: { channels: { slug: string; programs: EpgProgram[] }[] } }>("/api/channels/epg")
+    cachedGet<{ success: true; data: { channels: { slug: string; programs: EpgProgram[] }[] } }>("/api/channels/epg", { ttl: 300_000 })
       .then((r) => {
         const ch = r.data.data.channels.find((c) => c.slug === live.slug);
         if (ch) setPrograms(ch.programs);
@@ -76,9 +82,18 @@ export default function LivePage() {
       { kind: "live", vodId: live.id },
     ).then((r) => setCanPlay(r.data.data.allowed))
      .catch(() => setCanPlay(false));
+    /* user?.id + live?.id/kind л хамаатай — бүтэн объектыг dep-д оруулбал
+       reference өөрчлөгдөх бүрд дахин ажиллана. */
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [user?.id, live?.id, live?.kind]);
 
-  const now = new Date();
+  /* Minute tick — "одоо/дараагийн" хөтөлбөр автомат шилжүүлэх (timer-гүй бол гацна) */
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const now = new Date(nowMs);
   const current = programs.find(
     (p) => new Date(p.startTime) <= now && new Date(p.endTime) > now
   );

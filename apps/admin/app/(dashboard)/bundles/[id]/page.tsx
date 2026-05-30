@@ -34,6 +34,7 @@ export default function BundleItemsPage() {
   const [results, setResults] = useState<VodContent[]>([]);
   const [searching, setSearching] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [id]);
 
   async function load() {

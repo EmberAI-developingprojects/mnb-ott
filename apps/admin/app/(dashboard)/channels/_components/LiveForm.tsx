@@ -18,6 +18,9 @@ export function LiveForm({ channel, onSaved }: { channel: Channel; onSaved: () =
   useEffect(() => {
     setName(channel.name);
     setUrl(channel.streamUrl ?? "");
+    /* channel.id/updatedAt солигдоход л form reset — name/streamUrl-ийг dep-д
+       оруулбал хэрэглэгчийн засвар дунд reset болно. */
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [channel.id, channel.updatedAt]);
 
   const dirty = name !== channel.name || streamUrl !== (channel.streamUrl ?? "");

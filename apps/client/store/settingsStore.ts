@@ -301,6 +301,8 @@ const dict: Record<string, Record<Lang, string>> = {
   tv_empty_sub:          { mn: "Админ суваг нэмэхэд энд харагдана.", en: "Channels added by admin will appear here." },
   all_channels:          { mn: "Бүх суваг",                  en: "All channels" },
   stream_unavailable:    { mn: "Дамжуулалт түр зогссон",    en: "Stream temporarily unavailable" },
+  stream_unavailable_sub:{ mn: "Энэ сувгийн дамжуулалт одоогоор боломжгүй байна. Хэсэг хүлээгээд дахин оролдоно уу.",
+                           en: "This channel is temporarily unavailable. Please try again shortly." },
   today_schedule:        { mn: "Өнөөдрийн хөтөлбөр",        en: "Today's schedule" },
   epg_7day:              { mn: "7 өдрийн EPG",              en: "7-day EPG" },
   today_schedule_empty:  { mn: "Өнөөдрийн хөтөлбөр алга",   en: "No schedule for today" },

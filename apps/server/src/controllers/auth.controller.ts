@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import * as authService from "../services/auth.service";
+import { prisma } from "../lib/prisma";
 
 /* Production-д client (Vercel) болон server (Render) өөр domain дээр суудаг тул
    refresh cookie cross-site явах ёстой → sameSite "none" + secure заавал.
@@ -205,9 +206,9 @@ export async function googleAuth(req: Request, res: Response, next: NextFunction
 export async function updateProfile(req: Request, res: Response, next: NextFunction) {
   try {
     const { name } = z.object({ name: z.string().min(1) }).parse(req.body);
-    const user = await import("../lib/prisma").then(({ prisma }) =>
-      prisma.user.update({ where: { id: req.user!.userId }, data: { name }, include: { subscription: true } })
-    );
+    const user = await prisma.user.update({
+      where: { id: req.user!.userId }, data: { name }, include: { subscription: true },
+    });
     const { password, ...safe } = user;
     res.json({ success: true, data: { ...safe, hasPassword: !!password } });
   } catch (e) { next(e); }
@@ -221,8 +222,6 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
       currentPassword: z.string().min(1),
       newPassword:     z.string().min(8),
     }).parse(req.body);
-
-    const { prisma } = await import("../lib/prisma");
     const bcrypt = await import("bcryptjs");
     const { AppError } = await import("../middleware/error.middleware");
 
@@ -242,7 +241,6 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
 
 export async function getSessions(req: Request, res: Response, next: NextFunction) {
   try {
-    const { prisma } = await import("../lib/prisma");
     const sessions = await prisma.userSession.findMany({
       where:   { userId: req.user!.userId, isActive: true },
       orderBy: { lastActive: "desc" },
@@ -262,7 +260,6 @@ export async function getSessions(req: Request, res: Response, next: NextFunctio
 
 export async function removeSession(req: Request, res: Response, next: NextFunction) {
   try {
-    const { prisma } = await import("../lib/prisma");
     const isCurrent = req.params.id === req.user!.sessionId;
     await prisma.userSession.updateMany({
       where: { id: req.params.id, userId: req.user!.userId },
@@ -319,7 +316,6 @@ export async function deleteAccount(req: Request, res: Response, next: NextFunct
   try {
     const { confirm } = z.object({ confirm: z.literal("DELETE") }).parse(req.body);
     void confirm;
-    const { prisma } = await import("../lib/prisma");
     await prisma.user.delete({ where: { id: req.user!.userId } });
     res.json({ success: true, data: { deleted: true } });
   } catch (e) { next(e); }

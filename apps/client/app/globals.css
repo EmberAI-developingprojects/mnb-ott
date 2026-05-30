@@ -328,6 +328,23 @@ a:focus:not(:focus-visible),
     to   { opacity: 1; transform: translateY(0); }
   }
   .animate-slide-up { animation: slideUp 0.24s cubic-bezier(0.32,0.72,0,1); }
+
+  /* Shimmer — skeleton-д gradient sweep. Plain pulse-аас илүү амьд "ачаалж буй"
+     мэдрэмж. base өнгөн дээгүүр гэрэлтсэн зурвас зүүнээс баруун тийш гүйнэ. */
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .animate-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      var(--border-strong) 0%,
+      var(--card-hover) 50%,
+      var(--border-strong) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
 }
 
 /* Reduced-motion дотор зөвхөн opacity transition үлдээнэ — feedback алдагдахгүй */
